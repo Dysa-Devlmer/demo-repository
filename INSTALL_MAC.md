@@ -337,7 +337,7 @@ Necesitarás **3 terminales** separadas:
 
 ### Terminal 1 - Backend API
 ```bash
-cd /Users/TU_USUARIO/ChatBotDysa/apps/backend
+cd /Users/devlmer/ChatBotDysa/apps/backend
 npm run start:dev
 
 # Corre en: http://localhost:8005
@@ -346,7 +346,7 @@ npm run start:dev
 
 ### Terminal 2 - Admin Panel
 ```bash
-cd /Users/TU_USUARIO/ChatBotDysa/apps/admin-panel
+cd /Users/devlmer/ChatBotDysa/apps/admin-panel
 npm run dev
 
 # Corre en: http://localhost:7001
@@ -354,7 +354,7 @@ npm run dev
 
 ### Terminal 3 - Website (Opcional)
 ```bash
-cd /Users/TU_USUARIO/ChatBotDysa/apps/website
+cd /Users/devlmer/ChatBotDysa/apps/website
 npm run dev
 
 # Corre en: http://localhost:6001
