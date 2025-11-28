@@ -113,10 +113,10 @@ export class Payment {
   webhook_data: any;
 
   @Column({ type: 'timestamp', name: 'date_approved', nullable: true })
-  date_approved: Date;
+  date_approved: Date | null;
 
   @Column({ type: 'timestamp', name: 'date_refunded', nullable: true })
-  date_refunded: Date;
+  date_refunded: Date | null;
 
   @Column({ name: 'refund_amount', type: 'decimal', precision: 12, scale: 2, nullable: true })
   refund_amount: number;

@@ -29,7 +29,7 @@ interface ChatMessage {
   metadata?: any;
 }
 
-interface BotStatus {
+export interface BotStatus {
   isOnline: boolean;
   activeConversations: number;
   totalMessagesToday: number;
