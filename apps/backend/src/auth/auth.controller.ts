@@ -66,6 +66,7 @@ export class AuthController {
   }
 
   @Post("forgot-password")
+  @SkipCsrf()
   @RateLimit(RateLimitPresets.PASSWORD_RESET)
   @ApiOperation({
     summary: 'Request password reset',
@@ -74,12 +75,16 @@ export class AuthController {
   @ApiBody({ schema: { properties: { email: { type: 'string', format: 'email' } } } })
   @ApiResponse({ status: 200, description: 'Password reset email sent if account exists' })
   @ApiResponse({ status: 429, description: 'Too many requests - Rate limit exceeded (max 3/min)' })
-  async forgotPassword(@Body() dto: { email: string }) {
-    // Implementation would go here
-    return { message: "Password reset email sent if account exists" };
+  async forgotPassword(@Body() dto: { email: string }, @Request() req) {
+    return this.authService.forgotPassword(
+      dto.email,
+      req.ip,
+      req.headers['user-agent']
+    );
   }
 
   @Post("reset-password")
+  @SkipCsrf()
   @RateLimit(RateLimitPresets.PASSWORD_RESET)
   @ApiOperation({
     summary: 'Reset password',
@@ -89,9 +94,13 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid or expired token' })
   @ApiResponse({ status: 429, description: 'Too many requests - Rate limit exceeded (max 3/min)' })
-  async resetPassword(@Body() dto: { token: string; password: string }) {
-    // Implementation would go here
-    return { message: "Password reset successfully" };
+  async resetPassword(@Body() dto: { token: string; password: string }, @Request() req) {
+    return this.authService.resetPassword(
+      dto.token,
+      dto.password,
+      req.ip,
+      req.headers['user-agent']
+    );
   }
 
   @Post("change-password")

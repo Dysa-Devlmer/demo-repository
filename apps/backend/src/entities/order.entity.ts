@@ -42,6 +42,14 @@ export class Order {
   @Column({ unique: true, name: "orderNumber" })
   order_number: string;
 
+  // Customer relationship
+  @ManyToOne(() => Customer, (customer) => customer.orders, {
+    onDelete: "SET NULL",
+    nullable: true,
+  })
+  @JoinColumn({ name: "customer_id" })
+  customer?: Customer;
+
   @Column({ name: "customerName" })
   customer_name: string;
 
@@ -57,6 +65,15 @@ export class Order {
   @Column({ name: "status" })
   status: string;
 
+  // Order items relationship
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.order, {
+    cascade: true,
+  })
+  order_items?: OrderItem[];
+
+  // Reviews relationship
+  @OneToMany(() => Review, (review) => review.order)
+  reviews?: Review[];
 
   @Column({ type: "json", name: "items" })
   items: any;

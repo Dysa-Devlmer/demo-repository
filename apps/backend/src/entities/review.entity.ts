@@ -36,12 +36,12 @@ export class Review {
   @JoinColumn({ name: "customer_id" })
   customer: Customer;
 
-  // @ManyToOne(() => Order, (order) => order.reviews, {
-  //   onDelete: "CASCADE",
-  //   nullable: true,
-  // })
-  // @JoinColumn({ name: "order_id" })
-  // order?: Order;
+  @ManyToOne(() => Order, (order) => order.reviews, {
+    onDelete: "CASCADE",
+    nullable: true,
+  })
+  @JoinColumn({ name: "order_id" })
+  order?: Order;
 
   @Column({
     type: "enum",

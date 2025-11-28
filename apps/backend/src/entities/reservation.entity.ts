@@ -8,7 +8,7 @@ import {
   JoinColumn,
 } from "typeorm";
 import { Customer } from "./customer.entity";
-// import { Table } from "./table.entity";
+import { Table } from "./table.entity";
 
 export enum ReservationStatus {
   PENDING = "pending",
@@ -41,12 +41,12 @@ export class Reservation {
   @JoinColumn({ name: "customerId" })
   customer: Customer;
 
-  // @ManyToOne(() => Table, (table) => table.reservations, {
-  //   onDelete: "SET NULL",
-  //   eager: true,
-  // })
-  // @JoinColumn({ name: "table_id" })
-  // table?: Table;
+  @ManyToOne(() => Table, (table) => table.reservations, {
+    onDelete: "SET NULL",
+    nullable: true,
+  })
+  @JoinColumn({ name: "table_id" })
+  table?: Table;
 
   @Column({ type: "timestamp without time zone", name: "reservationDate" })
   reservation_date: Date;

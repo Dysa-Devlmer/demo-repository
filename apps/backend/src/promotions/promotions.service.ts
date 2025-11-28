@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, LessThanOrEqual } from "typeorm";
+import { Repository, MoreThanOrEqual, LessThanOrEqual } from "typeorm";
 import { Promotion } from "../entities/promotion.entity";
 import { CreatePromotionDto } from "./dto/create-promotion.dto";
 import { UpdatePromotionDto } from "./dto/update-promotion.dto";
@@ -18,12 +18,20 @@ export class PromotionsService {
   }
 
   async findAll(): Promise<Promotion[]> {
-    return this.promoRepo.find();
+    return this.promoRepo.find({
+      order: { created_at: "DESC" },
+    });
   }
 
   async findActive(): Promise<Promotion[]> {
+    const now = new Date();
     return this.promoRepo.find({
-      where: [{ active: true }, { valid_until: LessThanOrEqual(new Date()) }],
+      where: {
+        active: true,
+        valid_from: LessThanOrEqual(now),
+        valid_until: MoreThanOrEqual(now),
+      },
+      order: { valid_until: "ASC" },
     });
   }
 

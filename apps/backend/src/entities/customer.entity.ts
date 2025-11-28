@@ -78,8 +78,8 @@ export class Customer {
   @OneToMany(() => Reservation, (reservation) => reservation.customer)
   reservations: Reservation[];
 
-  // @OneToMany(() => Order, (order) => order.customer)
-  // orders: Order[];
+  @OneToMany(() => Order, (order) => order.customer)
+  orders: Order[];
 
   @OneToMany(() => Conversation, (conversation) => conversation.customer)
   conversations: Conversation[];

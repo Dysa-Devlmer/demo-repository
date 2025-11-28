@@ -93,6 +93,6 @@ export class Table {
   @UpdateDateColumn()
   updated_at: Date;
 
-  // @OneToMany(() => Reservation, (reservation) => reservation.table)
-  // reservations: Reservation[];
+  @OneToMany(() => Reservation, (reservation) => reservation.table)
+  reservations: Reservation[];
 }

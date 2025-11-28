@@ -274,6 +274,12 @@ export class AuthService {
       throw new BadRequestException("Contraseña actual incorrecta");
     }
 
+    if (!this.isPasswordStrong(newPassword)) {
+      throw new BadRequestException(
+        "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales"
+      );
+    }
+
     const hashedNewPassword = await bcrypt.hash(newPassword, 12);
     await this.userRepository.update(userId, { password: hashedNewPassword });
 
@@ -281,6 +287,99 @@ export class AuthService {
       ipAddress,
       userAgent,
     });
+  }
+
+  async forgotPassword(
+    email: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { email } });
+
+    // Always return success for security (don't reveal if email exists)
+    if (!user) {
+      return { message: "Si el correo existe, recibirás un enlace de recuperación" };
+    }
+
+    // Generate secure reset token
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.userRepository.update(user.id, {
+      passwordResetToken: resetToken,
+      passwordResetExpires: resetExpires,
+    });
+
+    await this.logAuditEvent(AuditAction.PASSWORD_CHANGED, "User", user.id, {
+      action: "reset_requested",
+      ipAddress,
+      userAgent,
+    });
+
+    // TODO: Send email with reset link using SendGrid
+    // const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    // await this.emailService.sendPasswordResetEmail(user.email, resetUrl);
+
+    return { message: "Si el correo existe, recibirás un enlace de recuperación" };
+  }
+
+  async resetPassword(
+    token: string,
+    newPassword: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpires: MoreThan(new Date()),
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException("Token inválido o expirado");
+    }
+
+    if (!this.isPasswordStrong(newPassword)) {
+      throw new BadRequestException(
+        "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales"
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await this.userRepository.update(user.id, {
+      password: hashedPassword,
+      passwordResetToken: null as any,
+      passwordResetExpires: null as any,
+      failedLoginAttempts: 0,
+      accountLockedUntil: null as any,
+    });
+
+    await this.logAuditEvent(AuditAction.PASSWORD_CHANGED, "User", user.id, {
+      method: "reset",
+      ipAddress,
+      userAgent,
+    });
+
+    return { message: "Contraseña actualizada exitosamente" };
+  }
+
+  private isPasswordStrong(password: string): boolean {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    return (
+      password.length >= minLength &&
+      hasUpperCase &&
+      hasLowerCase &&
+      hasNumbers &&
+      hasSpecialChar
+    );
   }
 
   private async handleFailedLogin(
