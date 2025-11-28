@@ -145,7 +145,7 @@ export default function AnalyticsPage() {
         const conversationsData = conversations.data || [];
         const menuData = menu.data || [];
 
-        const totalRevenue = ordersData.reduce((sum: number, order: any) => sum + (order.total || 0), 0);
+        const totalRevenue = ordersData.reduce((sum: number, order: any) => sum + (Number(order.total) || 0), 0);
         const totalOrders = ordersData.length;
         const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 

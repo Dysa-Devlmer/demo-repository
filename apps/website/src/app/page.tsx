@@ -915,23 +915,30 @@ export default function HomePage() {
             <div>
               <h4 className="font-semibold mb-4">Empresa</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><Link href="#" className="hover:text-white transition-colors opacity-50 cursor-not-allowed">Acerca de</Link></li>
+                <li><Link href="/acerca-de" className="hover:text-white transition-colors">Acerca de</Link></li>
                 <li><Link href="mailto:contacto@chatbotdysa.cl" className="hover:text-white transition-colors">Contacto</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors opacity-50 cursor-not-allowed">Carreras</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors opacity-50 cursor-not-allowed">Prensa</Link></li>
+                <li><Link href="/carreras" className="hover:text-white transition-colors">Carreras</Link></li>
+                <li><Link href="/prensa" className="hover:text-white transition-colors">Prensa</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">Soporte</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="mailto:soporte@chatbotdysa.cl" className="hover:text-white transition-colors">Centro de Ayuda</Link></li>
-                <li><Link href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'} className="hover:text-white transition-colors">Documentación</Link></li>
+                <li><Link href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'} className="hover:text-white transition-colors">Documentacion</Link></li>
                 <li><Link href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005/api'}/health`} className="hover:text-white transition-colors">Estado del Sistema</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="/terminos" className="hover:text-white transition-colors">Terminos y Condiciones</Link></li>
+                <li><Link href="/privacidad" className="hover:text-white transition-colors">Politica de Privacidad</Link></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 mt-8 text-center text-gray-400">
-            <p>&copy; 2024 ChatBotDysa Enterprise+++++. Todos los derechos reservados. Desarrollado por DysaDev SpA.</p>
+            <p>&copy; 2025 ChatBotDysa Enterprise+++++. Todos los derechos reservados. Desarrollado por DysaDev SpA.</p>
           </div>
         </div>
       </footer>

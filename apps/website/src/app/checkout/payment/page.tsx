@@ -404,7 +404,7 @@ function PaymentForm() {
 
                 <p className="text-center text-sm text-gray-400">
                   Al confirmar aceptas nuestros{' '}
-                  <a href="/terms" className="text-purple-400 hover:underline">
+                  <a href="/terminos" className="text-purple-400 hover:underline">
                     términos y condiciones
                   </a>
                 </p>

@@ -253,8 +253,9 @@ export default function SettingsPage() {
       return;
     }
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
     try {
-      const response = await fetch(`http://localhost:8005/api/settings/test/${service}`, {
+      const response = await fetch(`${API_URL}/api/settings/test/${service}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -309,9 +310,10 @@ export default function SettingsPage() {
       return;
     }
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
     try {
       const endpoint = type === 'text' ? 'test-message' : 'test-menu';
-      const response = await fetch(`http://localhost:8005/api/settings/whatsapp/${endpoint}`, {
+      const response = await fetch(`${API_URL}/api/settings/whatsapp/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -47,19 +47,50 @@ export class MenuService {
   }
 
   async update(id: number, dto: UpdateMenuItemDto): Promise<MenuItem> {
-    const item = await this.findOne(id);
-    Object.assign(item, dto);
+    // Obtener el item original de la base de datos (sin transformar)
+    const item = await this.menuRepo.findOne({
+      where: { id },
+      relations: ['category_ref'],
+    });
+
+    if (!item) throw new NotFoundException(`Menu item with ID ${id} not found`);
+
+    // Crear una copia del DTO sin el campo 'category' si no es un valor válido del enum
+    // Esto evita sobrescribir el enum con nombres transformados (ej: "Entradas")
+    const safeDto = { ...dto };
+
+    // Valores válidos del enum MenuCategory
+    const validCategories = ['appetizer', 'main_course', 'dessert', 'beverage', 'special'];
+
+    // Si category no es un valor válido del enum, removerlo del DTO
+    if (safeDto.category && !validCategories.includes(safeDto.category as string)) {
+      delete safeDto.category;
+    }
+
+    Object.assign(item, safeDto);
     return this.menuRepo.save(item);
   }
 
   async toggleAvailability(id: number): Promise<MenuItem> {
-    const item = await this.findOne(id);
+    // Obtener item directamente del repo (sin transformar) para evitar problemas con el enum
+    const item = await this.menuRepo.findOne({
+      where: { id },
+    });
+
+    if (!item) throw new NotFoundException(`Menu item with ID ${id} not found`);
+
     item.available = !item.available;
     return this.menuRepo.save(item);
   }
 
   async remove(id: number): Promise<void> {
-    const item = await this.findOne(id);
+    // Obtener item directamente del repo para evitar problemas con datos transformados
+    const item = await this.menuRepo.findOne({
+      where: { id },
+    });
+
+    if (!item) throw new NotFoundException(`Menu item with ID ${id} not found`);
+
     // Hard delete por ahora (TODO: cambiar a soft delete después de migración)
     await this.menuRepo.remove(item);
   }

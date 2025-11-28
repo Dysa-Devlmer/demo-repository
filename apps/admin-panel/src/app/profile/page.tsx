@@ -220,7 +220,7 @@ export default function ProfilePage() {
             <Avatar className="h-32 w-32">
               {profileData.avatar && (
                 <AvatarImage
-                  src={`http://localhost:8005${profileData.avatar}`}
+                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005'}${profileData.avatar}`}
                   alt={`${profileData.firstName} ${profileData.lastName}`}
                 />
               )}
