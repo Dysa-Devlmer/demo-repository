@@ -74,6 +74,47 @@ export class CustomersService {
     await this.customerRepo.remove(customer);
   }
 
+  /**
+   * Find or create customer by WhatsApp phone number
+   */
+  async findOrCreateByWhatsApp(whatsappPhone: string): Promise<Customer> {
+    // Normalize phone number (remove spaces, etc)
+    const normalizedPhone = whatsappPhone.replace(/\s+/g, '');
+
+    // Try to find existing customer by WhatsApp phone
+    let customer = await this.customerRepo.findOne({
+      where: { whatsapp_phone: normalizedPhone },
+    });
+
+    if (customer) {
+      return customer;
+    }
+
+    // Also check regular phone field
+    customer = await this.customerRepo.findOne({
+      where: { phone: normalizedPhone },
+    });
+
+    if (customer) {
+      // Update whatsapp_phone if not set
+      if (!customer.whatsapp_phone) {
+        customer.whatsapp_phone = normalizedPhone;
+        await this.customerRepo.save(customer);
+      }
+      return customer;
+    }
+
+    // Create new customer
+    const newCustomer = new Customer();
+    newCustomer.name = `WhatsApp ${normalizedPhone.slice(-4)}`;
+    newCustomer.phone = normalizedPhone;
+    newCustomer.whatsapp_phone = normalizedPhone;
+    newCustomer.source = CustomerSource.WHATSAPP;
+    newCustomer.is_active = true;
+
+    return await this.customerRepo.save(newCustomer);
+  }
+
   async exportToCSV(): Promise<string> {
     const customers = await this.customerRepo.find({
       relations: ["reservations"],

@@ -10,6 +10,8 @@ import { MenuModule } from "../../menu/menu.module";
 import { CategoriesModule } from "../../categories/categories.module";
 import { ReservationsModule } from "../../reservations/reservations.module";
 import { OrdersModule } from "../../orders/orders.module";
+import { ConversationsModule } from "../../conversations/conversations.module";
+import { CustomersModule } from "../../customers/customers.module";
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { OrdersModule } from "../../orders/orders.module";
     CategoriesModule,
     ReservationsModule,
     OrdersModule,
+    ConversationsModule,
+    CustomersModule,
   ],
   controllers: [WhatsAppController],
   providers: [WhatsAppService, BusinessHoursService],

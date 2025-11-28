@@ -19,6 +19,9 @@ import { MenuService } from "../../menu/menu.service";
 import { CategoriesService } from "../../categories/categories.service";
 import { ReservationsService } from "../../reservations/reservations.service";
 import { OrdersService } from "../../orders/orders.service";
+import { ConversationsService } from "../../conversations/conversations.service";
+import { CustomersService } from "../../customers/customers.service";
+import { ConversationChannel } from "../../entities/conversation.entity";
 
 export class SendMessageDto {
   @IsString()
@@ -46,6 +49,8 @@ export class WhatsAppController {
     private readonly categoriesService: CategoriesService,
     private readonly reservationsService: ReservationsService,
     private readonly ordersService: OrdersService,
+    private readonly conversationsService: ConversationsService,
+    private readonly customersService: CustomersService,
   ) {}
 
   @Get("webhook")
@@ -87,6 +92,43 @@ export class WhatsAppController {
 
         // Mark message as read
         await this.whatsappService.markAsRead(message.messageId);
+
+        // ====================================
+        // SAVE TO DATABASE: Find/Create Customer and Conversation
+        // ====================================
+        let customer;
+        let conversation;
+
+        try {
+          // Find or create customer by WhatsApp phone
+          customer = await this.customersService.findOrCreateByWhatsApp(message.from);
+          this.logger.log(`Customer found/created: ${customer.name} (ID: ${customer.id})`);
+
+          // Create or get active conversation for this customer
+          conversation = await this.conversationsService.create({
+            customerId: customer.id,
+            channel: ConversationChannel.WHATSAPP,
+            metadata: {
+              whatsapp_phone: message.from,
+              last_message_id: message.messageId,
+            },
+          });
+          this.logger.log(`Conversation: ${conversation.session_id} (ID: ${conversation.id})`);
+
+          // Save incoming customer message
+          await this.conversationsService.addMessage(conversation.id, {
+            content: message.content,
+            sender: 'customer',
+            metadata: {
+              whatsapp_message_id: message.messageId,
+              timestamp: message.timestamp,
+            },
+          });
+          this.logger.log(`Customer message saved to conversation ${conversation.session_id}`);
+        } catch (dbError) {
+          this.logger.error(`Error saving to database: ${dbError.message}`);
+          // Continue processing even if DB save fails
+        }
 
         // Check if restaurant is open
         const isOpen = this.businessHoursService.isOpen();
@@ -180,6 +222,25 @@ export class WhatsAppController {
           this.logger.error(`Failed to send response: ${result.error}`);
         }
 
+        // ====================================
+        // SAVE BOT RESPONSE TO DATABASE
+        // ====================================
+        if (conversation) {
+          try {
+            await this.conversationsService.addMessage(conversation.id, {
+              content: responseText,
+              sender: 'bot',
+              metadata: {
+                whatsapp_message_id: result.messageId,
+                success: result.success,
+              },
+            });
+            this.logger.log(`Bot response saved to conversation ${conversation.session_id}`);
+          } catch (dbError) {
+            this.logger.error(`Error saving bot response: ${dbError.message}`);
+          }
+        }
+
         // Notify admin panel via WebSocket
         this.websocketGateway.notifyWhatsAppMessage({
           from: message.from,
@@ -187,6 +248,8 @@ export class WhatsAppController {
           response: responseText,
           timestamp: message.timestamp,
           success: result.success,
+          conversationId: conversation?.id,
+          customerId: customer?.id,
         });
       }
 
