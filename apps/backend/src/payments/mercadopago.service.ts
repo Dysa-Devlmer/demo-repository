@@ -2,23 +2,30 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+import { MercadoPagoConfig, Payment as MPPayment, Preference } from 'mercadopago';
+import * as crypto from 'crypto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { WebhookPaymentDto } from './dto/webhook-payment.dto';
 import { User, UserStatus } from '../auth/entities/user.entity';
+import { Payment, PaymentStatus, PaymentProvider, BillingPeriod } from '../entities/payment.entity';
+import { Subscription, SubscriptionStatus, PlanType } from '../entities/subscription.entity';
 import { EmailService } from '../common/services/email.service';
 
 @Injectable()
 export class MercadoPagoService {
   private readonly logger = new Logger(MercadoPagoService.name);
   private mercadoPago: MercadoPagoConfig;
-  private paymentClient: Payment;
+  private paymentClient: MPPayment;
   private preferenceClient: Preference;
 
   constructor(
     private configService: ConfigService,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Payment)
+    private paymentRepository: Repository<Payment>,
+    @InjectRepository(Subscription)
+    private subscriptionRepository: Repository<Subscription>,
     private emailService: EmailService,
   ) {
     const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
@@ -35,7 +42,7 @@ export class MercadoPagoService {
       }
     });
 
-    this.paymentClient = new Payment(this.mercadoPago);
+    this.paymentClient = new MPPayment(this.mercadoPago);
     this.preferenceClient = new Preference(this.mercadoPago);
 
     this.logger.log('MercadoPago Service inicializado correctamente');
@@ -274,25 +281,146 @@ export class MercadoPagoService {
   /**
    * Registra el pago en la base de datos
    */
-  private async recordPayment(userId: number, payment: any, metadata: any) {
-    this.logger.log(`Registrando pago en BD: ${payment.id}`);
+  private async recordPayment(userId: number, paymentData: any, metadata: any) {
+    this.logger.log(`Registrando pago en BD: ${paymentData.id}`);
 
-    // TODO: Crear tabla Payment en la base de datos
-    // const paymentRecord = this.paymentRepository.create({
-    //   userId,
-    //   paymentId: payment.id,
-    //   amount: payment.transaction_amount,
-    //   currency: payment.currency_id,
-    //   status: payment.status,
-    //   planId: metadata?.plan_id,
-    //   planName: metadata?.plan_name,
-    //   billingPeriod: metadata?.billing_period,
-    //   externalReference: payment.external_reference,
-    //   dateApproved: payment.date_approved,
-    // });
-    // await this.paymentRepository.save(paymentRecord);
+    try {
+      // Verificar si el pago ya existe
+      const existingPayment = await this.paymentRepository.findOne({
+        where: { external_payment_id: String(paymentData.id) }
+      });
 
-    this.logger.log(`✅ Pago registrado (mock) para usuario ${userId}`);
+      if (existingPayment) {
+        // Actualizar pago existente
+        existingPayment.status = this.mapPaymentStatus(paymentData.status);
+        existingPayment.status_detail = paymentData.status_detail;
+        existingPayment.date_approved = paymentData.date_approved ? new Date(paymentData.date_approved) : null;
+        existingPayment.webhook_data = paymentData;
+        await this.paymentRepository.save(existingPayment);
+        this.logger.log(`✅ Pago actualizado: ${existingPayment.id}`);
+        return existingPayment;
+      }
+
+      // Crear nuevo registro de pago
+      const paymentRecord = this.paymentRepository.create({
+        user_id: userId,
+        external_payment_id: String(paymentData.id),
+        external_reference: paymentData.external_reference,
+        provider: PaymentProvider.MERCADOPAGO,
+        status: this.mapPaymentStatus(paymentData.status),
+        status_detail: paymentData.status_detail,
+        amount: paymentData.transaction_amount,
+        currency: paymentData.currency_id || 'CLP',
+        plan_id: metadata?.plan_id || 'saas-multi',
+        plan_name: metadata?.plan_name || 'SaaS Multi-tenant',
+        billing_period: this.mapBillingPeriod(metadata?.billing_period),
+        payer_email: metadata?.email || paymentData.payer?.email,
+        payer_name: paymentData.payer?.name,
+        payer_identification: paymentData.payer?.identification?.number,
+        company_name: metadata?.company_name,
+        metadata: metadata,
+        webhook_data: paymentData,
+        date_approved: paymentData.date_approved ? new Date(paymentData.date_approved) : null,
+      });
+
+      await this.paymentRepository.save(paymentRecord);
+      this.logger.log(`✅ Pago registrado: ${paymentRecord.id}`);
+
+      // Crear o actualizar suscripción
+      await this.updateSubscription(userId, paymentRecord, metadata);
+
+      return paymentRecord;
+    } catch (error) {
+      this.logger.error(`Error registrando pago: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Mapea el estado de MercadoPago a nuestro enum
+   */
+  private mapPaymentStatus(mpStatus: string): PaymentStatus {
+    const statusMap: Record<string, PaymentStatus> = {
+      'approved': PaymentStatus.APPROVED,
+      'pending': PaymentStatus.PENDING,
+      'in_process': PaymentStatus.IN_PROCESS,
+      'rejected': PaymentStatus.REJECTED,
+      'refunded': PaymentStatus.REFUNDED,
+      'cancelled': PaymentStatus.CANCELLED,
+      'in_mediation': PaymentStatus.IN_MEDIATION,
+      'charged_back': PaymentStatus.CHARGED_BACK,
+    };
+    return statusMap[mpStatus] || PaymentStatus.PENDING;
+  }
+
+  /**
+   * Mapea el periodo de facturación
+   */
+  private mapBillingPeriod(period: string): BillingPeriod {
+    if (period === 'annual') return BillingPeriod.ANNUAL;
+    if (period === 'one_time') return BillingPeriod.ONE_TIME;
+    return BillingPeriod.MONTHLY;
+  }
+
+  /**
+   * Actualiza o crea la suscripción del usuario
+   */
+  private async updateSubscription(userId: number, payment: Payment, metadata: any) {
+    try {
+      let subscription = await this.subscriptionRepository.findOne({
+        where: { user_id: userId }
+      });
+
+      const now = new Date();
+      const billingCycle = metadata?.billing_period === 'annual' ? 'annual' : 'monthly';
+      const daysToAdd = billingCycle === 'annual' ? 365 : 30;
+      const endsAt = new Date(now.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
+      if (subscription) {
+        // Actualizar suscripción existente
+        subscription.status = SubscriptionStatus.ACTIVE;
+        subscription.last_payment_at = now;
+        subscription.next_payment_at = endsAt;
+        subscription.ends_at = endsAt;
+        subscription.payment_failures = 0;
+        await this.subscriptionRepository.save(subscription);
+        this.logger.log(`✅ Suscripción actualizada: ${subscription.id}`);
+      } else {
+        // Crear nueva suscripción
+        subscription = this.subscriptionRepository.create({
+          user_id: userId,
+          plan_type: this.mapPlanType(payment.plan_id),
+          plan_name: payment.plan_name,
+          status: SubscriptionStatus.ACTIVE,
+          monthly_price: payment.amount,
+          currency: payment.currency,
+          billing_cycle: billingCycle,
+          starts_at: now,
+          ends_at: endsAt,
+          last_payment_at: now,
+          next_payment_at: endsAt,
+          auto_renew: true,
+        });
+        await this.subscriptionRepository.save(subscription);
+        this.logger.log(`✅ Suscripción creada: ${subscription.id}`);
+      }
+
+      return subscription;
+    } catch (error) {
+      this.logger.error(`Error actualizando suscripción: ${error.message}`);
+    }
+  }
+
+  /**
+   * Mapea el plan_id al enum PlanType
+   */
+  private mapPlanType(planId: string): PlanType {
+    const planMap: Record<string, PlanType> = {
+      'saas-multi': PlanType.SAAS_MULTI_TENANT,
+      'saas-dedicated': PlanType.SAAS_DEDICATED,
+      'on-premise': PlanType.ON_PREMISE,
+    };
+    return planMap[planId] || PlanType.SAAS_MULTI_TENANT;
   }
 
   /**
@@ -429,6 +557,73 @@ export class MercadoPagoService {
     this.logger.log(`💰 Pago reembolsado: ${payment.id}`);
 
     // TODO: Desactivar suscripción y enviar email de confirmación
+  }
+
+  /**
+   * Verifica la firma del webhook de MercadoPago
+   * @see https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
+   */
+  verifyWebhookSignature(
+    xSignature: string,
+    xRequestId: string,
+    dataId: string,
+  ): boolean {
+    try {
+      const webhookSecret = this.configService.get<string>('MERCADOPAGO_WEBHOOK_SECRET');
+
+      if (!webhookSecret) {
+        this.logger.warn('⚠️ MERCADOPAGO_WEBHOOK_SECRET no configurado - Omitiendo verificación');
+        return true; // En desarrollo permitir sin verificación
+      }
+
+      if (!xSignature) {
+        this.logger.warn('⚠️ Header x-signature no presente');
+        return false;
+      }
+
+      // Parsear el header x-signature
+      // Formato: ts=timestamp,v1=hash
+      const signatureParts: Record<string, string> = {};
+      xSignature.split(',').forEach(part => {
+        const [key, value] = part.split('=');
+        if (key && value) {
+          signatureParts[key.trim()] = value.trim();
+        }
+      });
+
+      const ts = signatureParts['ts'];
+      const v1 = signatureParts['v1'];
+
+      if (!ts || !v1) {
+        this.logger.warn('⚠️ Formato de x-signature inválido');
+        return false;
+      }
+
+      // Crear el manifest según la documentación de MP
+      // manifest = id:data.id;request-id:x-request-id;ts:ts;
+      const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+      // Generar HMAC SHA256
+      const expectedHash = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(manifest)
+        .digest('hex');
+
+      // Comparar de forma segura
+      const isValid = crypto.timingSafeEqual(
+        Buffer.from(v1),
+        Buffer.from(expectedHash)
+      );
+
+      if (!isValid) {
+        this.logger.warn('⚠️ Firma de webhook inválida');
+      }
+
+      return isValid;
+    } catch (error) {
+      this.logger.error(`Error verificando firma: ${error.message}`);
+      return false;
+    }
   }
 
   /**

@@ -149,10 +149,19 @@ export class PaymentsController {
   ) {
     this.logger.log(`Received webhook with request ID: ${requestId}`);
 
-    // TODO: Verify webhook signature in production
-    // if (!this.verifyWebhookSignature(webhookData, signature)) {
-    //   throw new UnauthorizedException('Invalid webhook signature');
-    // }
+    // Verificar firma del webhook en producción
+    const dataId = webhookData.data?.id?.toString() || '';
+    const isValidSignature = this.mercadoPagoService.verifyWebhookSignature(
+      signature || '',
+      requestId || '',
+      dataId,
+    );
+
+    if (!isValidSignature) {
+      this.logger.warn('Webhook signature verification failed');
+      // En producción, rechazar webhooks sin firma válida
+      // Por ahora solo loggeamos la advertencia
+    }
 
     try {
       const result = await this.mercadoPagoService.processWebhook(webhookData);

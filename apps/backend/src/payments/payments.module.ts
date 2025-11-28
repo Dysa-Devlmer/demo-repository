@@ -5,13 +5,15 @@ import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { MercadoPagoService } from './mercadopago.service';
 import { User } from '../auth/entities/user.entity';
+import { Payment } from '../entities/payment.entity';
+import { Subscription } from '../entities/subscription.entity';
 import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]), // Para ambos servicios
+    TypeOrmModule.forFeature([User, Payment, Subscription]),
     ConfigModule,
-    CommonModule, // Para EmailService
+    CommonModule,
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, MercadoPagoService],
