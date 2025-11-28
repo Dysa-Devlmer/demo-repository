@@ -88,7 +88,7 @@ export default function HomePage() {
               { href: '#caracteristicas', label: 'Características' },
               { href: '#planes', label: 'Planes' },
               { href: '#casos-exito', label: 'Casos de Éxito' },
-              { href: 'http://localhost:7001', label: 'Demo en Vivo' }
+              { href: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001', label: 'Demo en Vivo' }
             ].map((item) => (
               <Link
                 key={item.href}
@@ -109,7 +109,7 @@ export default function HomePage() {
               className="font-semibold border-2 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-all duration-300"
               asChild
             >
-              <Link href="http://localhost:7001/login">Iniciar Sesión</Link>
+              <Link href={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'}/login`}>Iniciar Sesión</Link>
             </Button>
             <Button
               variant="enterprise"
@@ -152,7 +152,7 @@ export default function HomePage() {
                 { href: '#caracteristicas', label: 'Características' },
                 { href: '#planes', label: 'Planes' },
                 { href: '#casos-exito', label: 'Casos de Éxito' },
-                { href: 'http://localhost:7001', label: 'Demo en Vivo' }
+                { href: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001', label: 'Demo en Vivo' }
               ].map((item, index) => (
                 <motion.div
                   key={item.href}
@@ -176,7 +176,7 @@ export default function HomePage() {
                   className="w-full font-semibold border-2"
                   asChild
                 >
-                  <Link href="http://localhost:7001/login">Iniciar Sesión</Link>
+                  <Link href={`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'}/login`}>Iniciar Sesión</Link>
                 </Button>
                 <Button
                   variant="enterprise"
@@ -253,7 +253,7 @@ export default function HomePage() {
                 </Link>
               </Button>
               <Button size="xl" variant="outline" className="text-lg px-8 py-4 bg-white text-gray-900 border-2 border-gray-300 hover:bg-gray-50 hover:border-blue-500 hover:text-blue-600 hover:scale-105 transition-all duration-300 shadow-lg group" asChild>
-                <Link href="http://localhost:7001">
+                <Link href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'}>
                   <PlayCircle className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
                   Ver Demo en Vivo
                 </Link>
@@ -851,7 +851,7 @@ export default function HomePage() {
                 className="text-lg px-10 py-6 bg-transparent border-3 border-white text-white hover:bg-white hover:text-primary-600 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 font-bold group"
                 asChild
               >
-                <Link href="http://localhost:7001" className="flex items-center">
+                <Link href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'} className="flex items-center">
                   <PlayCircle className="mr-2 h-6 w-6 group-hover:scale-110 transition-transform" />
                   Ver Demo en Vivo
                 </Link>
@@ -908,7 +908,7 @@ export default function HomePage() {
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="#caracteristicas" className="hover:text-white transition-colors">Características</Link></li>
                 <li><Link href="#planes" className="hover:text-white transition-colors">Precios</Link></li>
-                <li><Link href="http://localhost:7001" className="hover:text-white transition-colors">Demo</Link></li>
+                <li><Link href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'} className="hover:text-white transition-colors">Demo</Link></li>
                 <li><Link href="#casos-exito" className="hover:text-white transition-colors">Casos de Éxito</Link></li>
               </ul>
             </div>
@@ -925,8 +925,8 @@ export default function HomePage() {
               <h4 className="font-semibold mb-4">Soporte</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link href="mailto:soporte@chatbotdysa.cl" className="hover:text-white transition-colors">Centro de Ayuda</Link></li>
-                <li><Link href="http://localhost:7001" className="hover:text-white transition-colors">Documentación</Link></li>
-                <li><Link href="http://localhost:8005/api/health" className="hover:text-white transition-colors">Estado del Sistema</Link></li>
+                <li><Link href={process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001'} className="hover:text-white transition-colors">Documentación</Link></li>
+                <li><Link href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005/api'}/health`} className="hover:text-white transition-colors">Estado del Sistema</Link></li>
               </ul>
             </div>
           </div>

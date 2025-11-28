@@ -23,7 +23,8 @@ export default function LoginPage() {
 
     try {
       // Try direct login first (simplified for demo)
-      const response = await fetch('http://localhost:8005/api/auth/login', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
