@@ -525,4 +525,233 @@ export class WhatsAppService {
       apiVersion: this.apiVersion,
     };
   }
+
+  /**
+   * Send an image message (for menu items with photos)
+   */
+  async sendImageMessage(
+    to: string,
+    imageUrl: string,
+    caption?: string,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const message: WhatsAppMessage = {
+      messaging_product: "whatsapp",
+      to,
+      type: "image",
+      image: {
+        link: imageUrl,
+        caption: caption,
+      },
+    };
+
+    return this.sendMessage(message);
+  }
+
+  /**
+   * Send menu item with image
+   */
+  async sendMenuItemWithImage(
+    to: string,
+    item: {
+      name: string;
+      description: string;
+      price: number;
+      imageUrl?: string;
+    },
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const caption = `🍽️ *${item.name}*\n\n${item.description}\n\n💰 Precio: $${item.price.toLocaleString('es-CL')}`;
+
+    if (item.imageUrl) {
+      return this.sendImageMessage(to, item.imageUrl, caption);
+    }
+
+    return this.sendTextMessage(to, caption);
+  }
+
+  /**
+   * Send order confirmation with summary
+   */
+  async sendOrderConfirmation(
+    to: string,
+    order: {
+      orderNumber: string;
+      items: Array<{ name: string; quantity: number; price: number }>;
+      subtotal: number;
+      tax: number;
+      total: number;
+      deliveryAddress?: string;
+      estimatedTime?: number;
+      paymentStatus?: string;
+    },
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const itemsText = order.items
+      .map((item) => `• ${item.quantity}x ${item.name} - $${(item.price * item.quantity).toLocaleString('es-CL')}`)
+      .join('\n');
+
+    let message = `✅ *PEDIDO CONFIRMADO*\n\n`;
+    message += `📋 Pedido #${order.orderNumber}\n\n`;
+    message += `*Detalle:*\n${itemsText}\n\n`;
+    message += `─────────────\n`;
+    message += `Subtotal: $${order.subtotal.toLocaleString('es-CL')}\n`;
+    message += `IVA (19%): $${order.tax.toLocaleString('es-CL')}\n`;
+    message += `*TOTAL: $${order.total.toLocaleString('es-CL')}*\n`;
+    message += `─────────────\n\n`;
+
+    if (order.deliveryAddress) {
+      message += `📍 Dirección: ${order.deliveryAddress}\n`;
+    }
+
+    if (order.estimatedTime) {
+      message += `⏱️ Tiempo estimado: ${order.estimatedTime} minutos\n`;
+    }
+
+    if (order.paymentStatus) {
+      const paymentEmoji = order.paymentStatus === 'paid' ? '✅' : '⏳';
+      const paymentText = order.paymentStatus === 'paid' ? 'Pagado' : 'Pendiente';
+      message += `${paymentEmoji} Estado de pago: ${paymentText}\n`;
+    }
+
+    message += `\n¡Gracias por tu pedido! 🙏`;
+
+    return this.sendTextMessage(to, message);
+  }
+
+  /**
+   * Send order status update
+   */
+  async sendOrderStatusUpdate(
+    to: string,
+    orderNumber: string,
+    status: 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled',
+    additionalInfo?: string,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const statusMessages: Record<string, { emoji: string; text: string }> = {
+      confirmed: { emoji: '✅', text: 'Tu pedido ha sido confirmado' },
+      preparing: { emoji: '👨‍🍳', text: 'Tu pedido está siendo preparado' },
+      ready: { emoji: '🍽️', text: '¡Tu pedido está listo!' },
+      delivered: { emoji: '📦', text: 'Tu pedido ha sido entregado' },
+      cancelled: { emoji: '❌', text: 'Tu pedido ha sido cancelado' },
+    };
+
+    const statusInfo = statusMessages[status];
+    let message = `${statusInfo.emoji} *Actualización de Pedido*\n\n`;
+    message += `Pedido #${orderNumber}\n`;
+    message += `${statusInfo.text}\n`;
+
+    if (additionalInfo) {
+      message += `\n${additionalInfo}`;
+    }
+
+    if (status === 'ready') {
+      message += `\n\n🏃 ¡Te esperamos para recoger tu pedido!`;
+    }
+
+    return this.sendTextMessage(to, message);
+  }
+
+  /**
+   * Send reservation confirmation
+   */
+  async sendReservationConfirmation(
+    to: string,
+    reservation: {
+      code: string;
+      customerName: string;
+      date: string;
+      time: string;
+      partySize: number;
+      notes?: string;
+    },
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+
+    let message = `✅ *RESERVA CONFIRMADA*\n\n`;
+    message += `Hola ${reservation.customerName}!\n\n`;
+    message += `Tu reserva en *${restaurantName}* está confirmada:\n\n`;
+    message += `📋 Código: ${reservation.code}\n`;
+    message += `📅 Fecha: ${reservation.date}\n`;
+    message += `🕐 Hora: ${reservation.time}\n`;
+    message += `👥 Personas: ${reservation.partySize}\n`;
+
+    if (reservation.notes) {
+      message += `📝 Notas: ${reservation.notes}\n`;
+    }
+
+    message += `\n¡Te esperamos! 🎉`;
+
+    return this.sendTextMessage(to, message);
+  }
+
+  /**
+   * Send reservation reminder
+   */
+  async sendReservationReminder(
+    to: string,
+    reservation: {
+      code: string;
+      customerName: string;
+      date: string;
+      time: string;
+      partySize: number;
+    },
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+
+    return this.sendButtonMessage(
+      to,
+      `⏰ *Recordatorio de Reserva*\n\nHola ${reservation.customerName}!\n\nTe recordamos tu reserva en *${restaurantName}*:\n\n📅 ${reservation.date} a las ${reservation.time}\n👥 ${reservation.partySize} personas\n\n¿Confirmas tu asistencia?`,
+      [
+        { id: `confirm_${reservation.code}`, title: '✅ Confirmo' },
+        { id: `cancel_${reservation.code}`, title: '❌ Cancelar' },
+        { id: `modify_${reservation.code}`, title: '✏️ Modificar' },
+      ],
+      `${restaurantName} - Recordatorio`,
+      `Código: ${reservation.code}`,
+    );
+  }
+
+  /**
+   * Send payment confirmation
+   */
+  async sendPaymentConfirmation(
+    to: string,
+    payment: {
+      orderNumber: string;
+      amount: number;
+      currency: string;
+      method: string;
+      transactionId: string;
+    },
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    let message = `💳 *PAGO CONFIRMADO*\n\n`;
+    message += `Pedido #${payment.orderNumber}\n\n`;
+    message += `✅ Monto: $${payment.amount.toLocaleString('es-CL')} ${payment.currency}\n`;
+    message += `💳 Método: ${payment.method}\n`;
+    message += `🔑 ID Transacción: ${payment.transactionId}\n\n`;
+    message += `¡Gracias por tu pago! Tu pedido será procesado inmediatamente. 🚀`;
+
+    return this.sendTextMessage(to, message);
+  }
+
+  /**
+   * Send satisfaction survey after order delivery
+   */
+  async sendSatisfactionSurvey(
+    to: string,
+    orderNumber: string,
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+
+    return this.sendButtonMessage(
+      to,
+      `⭐ *Tu opinión es importante*\n\n¿Cómo fue tu experiencia con el pedido #${orderNumber}?\n\nTu feedback nos ayuda a mejorar.`,
+      [
+        { id: `rating_5_${orderNumber}`, title: '⭐⭐⭐⭐⭐ Excelente' },
+        { id: `rating_3_${orderNumber}`, title: '⭐⭐⭐ Regular' },
+        { id: `rating_1_${orderNumber}`, title: '⭐ Malo' },
+      ],
+      `${restaurantName} - Encuesta`,
+      'Responde tocando un botón',
+    );
+  }
 }
