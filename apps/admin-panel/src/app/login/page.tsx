@@ -24,7 +24,7 @@ export default function LoginPage() {
     try {
       // Try direct login first (simplified for demo)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
-      const response = await fetch(`${apiUrl}/auth/login`, {
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -120,6 +120,7 @@ export default function LoginPage() {
               <Input
                 id="username"
                 type="email"
+                autoComplete="username"
                 placeholder="admin@restaurante.com"
                 value={credentials.username}
                 onChange={(e) => setCredentials({...credentials, username: e.target.value})}
