@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { AuthGuard } from './guards/auth.guard';
 import { EmailService } from './services/email.service';
+import { RealtimeNotificationService } from './services/realtime-notification.service';
+import { WebSocketsModule } from '../modules/websockets/websockets.module';
 
 @Module({
   imports: [
@@ -20,8 +22,9 @@ import { EmailService } from './services/email.service';
         };
       },
     }),
+    forwardRef(() => WebSocketsModule),
   ],
-  providers: [AuthGuard, EmailService],
-  exports: [AuthGuard, JwtModule, EmailService],
+  providers: [AuthGuard, EmailService, RealtimeNotificationService],
+  exports: [AuthGuard, JwtModule, EmailService, RealtimeNotificationService],
 })
 export class CommonModule {}
