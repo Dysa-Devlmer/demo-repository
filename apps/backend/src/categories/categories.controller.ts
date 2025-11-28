@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
@@ -70,13 +71,27 @@ export class CategoriesController {
   }
 
   /**
+   * PUT /api/categories/:id
+   * Actualiza una categoría (reemplazo completo)
+   * Requiere: menu.update o categories.update
+   */
+  @Put(':id')
+  @RequirePermissions('menu.update', 'categories.update')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateCategoryDto: UpdateCategoryDto,
+  ) {
+    return await this.categoriesService.update(id, updateCategoryDto);
+  }
+
+  /**
    * PATCH /api/categories/:id
-   * Actualiza una categoría
+   * Actualiza parcialmente una categoría
    * Requiere: menu.update o categories.update
    */
   @Patch(':id')
   @RequirePermissions('menu.update', 'categories.update')
-  async update(
+  async partialUpdate(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {

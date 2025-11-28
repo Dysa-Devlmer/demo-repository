@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Search, MoreHorizontal, Edit, Trash2, Shield } from "lucide-react";
 import { apiService } from "@/lib/api";
 import { toast } from "sonner";
+import { useDemo } from "@/contexts/demo-context";
 
 interface Role {
   id: number;
@@ -62,6 +63,7 @@ interface User {
 
 export default function UsersPage() {
   const router = useRouter();
+  const { isDemoMode } = useDemo();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -107,6 +109,13 @@ export default function UsersPage() {
   const confirmDelete = async () => {
     if (!userToDelete) return;
 
+    if (isDemoMode) {
+      toast.info("Modo Demo: Las operaciones de eliminación están deshabilitadas");
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+      return;
+    }
+
     try {
       await apiService.users.delete(userToDelete);
       toast.success("Usuario eliminado exitosamente");
@@ -145,7 +154,13 @@ export default function UsersPage() {
               Administra usuarios, roles y permisos del sistema
             </p>
           </div>
-          <Button onClick={() => router.push("/users/new")}>
+          <Button onClick={() => {
+            if (isDemoMode) {
+              toast.info("Modo Demo: La creación de usuarios está deshabilitada");
+              return;
+            }
+            router.push("/users/new");
+          }}>
             <UserPlus className="mr-2 h-4 w-4" />
             Nuevo Usuario
           </Button>
@@ -244,12 +259,24 @@ export default function UsersPage() {
                               <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => router.push(`/users/${user.id}`)}
+                                onClick={() => {
+                                  if (isDemoMode) {
+                                    toast.info("Modo Demo: La edición de usuarios está deshabilitada");
+                                    return;
+                                  }
+                                  router.push(`/users/${user.id}`);
+                                }}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Editar
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/users/${user.id}`)}>
+                              <DropdownMenuItem onClick={() => {
+                                if (isDemoMode) {
+                                  toast.info("Modo Demo: La gestión de roles está deshabilitada");
+                                  return;
+                                }
+                                router.push(`/users/${user.id}`);
+                              }}>
                                 <Shield className="mr-2 h-4 w-4" />
                                 Gestionar Roles
                               </DropdownMenuItem>

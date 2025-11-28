@@ -25,6 +25,7 @@ import { apiService } from '@/lib/api';
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import useDemoMode from '@/hooks/useDemoMode';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ChatMessage {
   id: string;
@@ -44,6 +45,7 @@ interface AIModel {
 export default function AIChatPage() {
   const { t, isLoading: translationsLoading } = useTranslation();
   const { demoData } = useDemoMode();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -134,6 +136,8 @@ export default function AIChatPage() {
 
       // If no conversation exists, create one
       if (!finalConversationId) {
+        // Usar el email del usuario o generar un identificador único
+        const userIdentifier = user?.email || `admin_${Date.now()}`;
         const createResponse = await fetch(`${API_URL}/api/conversations`, {
           method: 'POST',
           headers: {
@@ -141,7 +145,7 @@ export default function AIChatPage() {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            customer_phone: '+56900000000',
+            customer_phone: userIdentifier,
             platform: 'admin_ai_chat',
             status: 'active'
           })

@@ -21,6 +21,13 @@ interface DashboardStats {
   revenue: number;
 }
 
+interface SystemStatus {
+  backend: 'active' | 'inactive' | 'checking';
+  whatsapp: 'active' | 'inactive' | 'checking';
+  ollama: 'active' | 'inactive' | 'checking';
+  database: 'active' | 'inactive' | 'checking';
+}
+
 interface RecentConversation {
   id: number;
   customer_id: number;
@@ -49,6 +56,12 @@ export default function Dashboard() {
     revenue: [],
     ordersByStatus: [],
     customersBySource: [],
+  });
+  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
+    backend: 'checking',
+    whatsapp: 'checking',
+    ollama: 'checking',
+    database: 'checking',
   });
 
   useEffect(() => {
@@ -156,6 +169,68 @@ export default function Dashboard() {
 
     fetchChartData();
   }, [period, isDemoMode]);
+
+  // Check system health status
+  useEffect(() => {
+    const checkSystemStatus = async () => {
+      // Check backend API health
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000),
+        });
+        setSystemStatus(prev => ({
+          ...prev,
+          backend: response.ok ? 'active' : 'inactive',
+          database: response.ok ? 'active' : 'inactive', // Backend implies DB connection
+        }));
+      } catch {
+        setSystemStatus(prev => ({
+          ...prev,
+          backend: 'inactive',
+          database: 'inactive',
+        }));
+      }
+
+      // In demo mode, simulate all services as active
+      if (isDemoMode) {
+        setSystemStatus({
+          backend: 'active',
+          whatsapp: 'active',
+          ollama: 'active',
+          database: 'active',
+        });
+        return;
+      }
+
+      // Check WhatsApp bot status
+      try {
+        const whatsappResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/whatsapp/status`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000),
+        });
+        setSystemStatus(prev => ({ ...prev, whatsapp: whatsappResponse.ok ? 'active' : 'inactive' }));
+      } catch {
+        setSystemStatus(prev => ({ ...prev, whatsapp: 'inactive' }));
+      }
+
+      // Check Ollama AI status
+      try {
+        const ollamaResponse = await fetch(`${process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://localhost:11434'}/api/tags`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000),
+        });
+        setSystemStatus(prev => ({ ...prev, ollama: ollamaResponse.ok ? 'active' : 'inactive' }));
+      } catch {
+        setSystemStatus(prev => ({ ...prev, ollama: 'inactive' }));
+      }
+    };
+
+    checkSystemStatus();
+    // Re-check status every 30 seconds
+    const interval = setInterval(checkSystemStatus, 30000);
+    return () => clearInterval(interval);
+  }, [isDemoMode]);
 
   // Mock data para gráficos - En el futuro se reemplazará con datos del backend
   const conversationsTrendData = period === '7d'
@@ -432,34 +507,50 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200/50 dark:border-emerald-800/30">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('dashboard.backendApi')}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Activo</span>
-                    <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse shadow-sm"></div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200/50 dark:border-emerald-800/30">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('dashboard.whatsappBot')}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Activo</span>
-                    <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse shadow-sm"></div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200/50 dark:border-emerald-800/30">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('dashboard.ollamaAi')}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Activo</span>
-                    <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse shadow-sm"></div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-200/50 dark:border-emerald-800/30">
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('dashboard.database')}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Activo</span>
-                    <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse shadow-sm"></div>
-                  </div>
-                </div>
+                {[
+                  { key: 'backend' as const, label: t('dashboard.backendApi') },
+                  { key: 'whatsapp' as const, label: t('dashboard.whatsappBot') },
+                  { key: 'ollama' as const, label: t('dashboard.ollamaAi') },
+                  { key: 'database' as const, label: t('dashboard.database') },
+                ].map(({ key, label }) => {
+                  const status = systemStatus[key];
+                  const statusConfig = {
+                    active: {
+                      bg: 'bg-emerald-50/50 dark:bg-emerald-900/10',
+                      border: 'border-emerald-200/50 dark:border-emerald-800/30',
+                      text: 'text-emerald-700 dark:text-emerald-400',
+                      dot: 'bg-emerald-600',
+                      label: 'Activo',
+                      animate: 'animate-pulse',
+                    },
+                    inactive: {
+                      bg: 'bg-red-50/50 dark:bg-red-900/10',
+                      border: 'border-red-200/50 dark:border-red-800/30',
+                      text: 'text-red-700 dark:text-red-400',
+                      dot: 'bg-red-600',
+                      label: 'Inactivo',
+                      animate: '',
+                    },
+                    checking: {
+                      bg: 'bg-amber-50/50 dark:bg-amber-900/10',
+                      border: 'border-amber-200/50 dark:border-amber-800/30',
+                      text: 'text-amber-700 dark:text-amber-400',
+                      dot: 'bg-amber-600',
+                      label: 'Verificando...',
+                      animate: 'animate-pulse',
+                    },
+                  }[status];
+
+                  return (
+                    <div key={key} className={`flex items-center justify-between p-2 rounded-lg ${statusConfig.bg} border ${statusConfig.border}`}>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs ${statusConfig.text} font-medium`}>{statusConfig.label}</span>
+                        <div className={`w-2 h-2 ${statusConfig.dot} rounded-full ${statusConfig.animate} shadow-sm`}></div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

@@ -277,6 +277,16 @@ export default function CategoriesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Protección de demo mode
+    if (isDemoMode) {
+      toast({
+        title: "Modo Demo",
+        description: "Las operaciones de guardado están deshabilitadas en modo demo. Inicia sesión para realizar cambios.",
+        variant: "default",
+      });
+      return;
+    }
+
     try {
       if (isEditing && editingId) {
         await apiService.categories.update(editingId, formData);
@@ -322,6 +332,16 @@ export default function CategoriesPage() {
 
   // Handle delete
   const handleDelete = async (id: number) => {
+    // Protección de demo mode
+    if (isDemoMode) {
+      toast({
+        title: "Modo Demo",
+        description: "La eliminación está deshabilitada en modo demo. Inicia sesión para realizar cambios.",
+        variant: "default",
+      });
+      return;
+    }
+
     if (!confirm('¿Estás seguro de que deseas eliminar esta categoría?')) {
       return;
     }
@@ -345,6 +365,16 @@ export default function CategoriesPage() {
 
   // Handle toggle active
   const handleToggleActive = async (id: number) => {
+    // Protección de demo mode
+    if (isDemoMode) {
+      toast({
+        title: "Modo Demo",
+        description: "Los cambios de estado están deshabilitados en modo demo.",
+        variant: "default",
+      });
+      return;
+    }
+
     try {
       await apiService.categories.toggleActive(id);
       toast({

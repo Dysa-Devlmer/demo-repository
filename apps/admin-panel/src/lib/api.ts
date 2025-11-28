@@ -525,9 +525,9 @@ export const apiService = {
     create: (data: any) =>
       api.post('/categories', data),
 
-    // Update existing category
+    // Update existing category (PUT para consistencia con otras APIs)
     update: (id: number, data: any) =>
-      api.patch(`/categories/${id}`, data),
+      api.put(`/categories/${id}`, data),
 
     // Delete category (soft delete if has items, hard delete if empty)
     delete: (id: number) =>

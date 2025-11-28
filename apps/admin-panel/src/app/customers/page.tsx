@@ -198,9 +198,12 @@ export default function CustomersPage() {
           description: t('customers.customerUpdated'),
         });
       } else {
-        // Crear nuevo cliente
+        // Crear nuevo cliente con ID único basado en el máximo existente
+        const maxId = customers.length > 0
+          ? Math.max(...customers.map(c => c.id))
+          : 0;
         const newCustomer: Customer = {
-          id: Date.now(),
+          id: maxId + 1,
           name: formData.name,
           email: formData.email,
           phone: formData.phone,

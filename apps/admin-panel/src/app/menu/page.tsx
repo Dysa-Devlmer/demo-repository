@@ -94,19 +94,13 @@ export default function MenuPage() {
     fetchCategories();
   }, []);
 
-  // Sincronizar con demoData cuando cambie
-  useEffect(() => {
-    if (isDemoMode) {
-      setMenuItems(demoData.menu);
-    }
-  }, [isDemoMode, demoData.menu]);
-
+  // Cargar items del menú - unificado para evitar race conditions
   useEffect(() => {
     let isCancelled = false;
 
     const fetchMenuItems = async () => {
+      // En modo demo, sincronizar con demoData
       if (isDemoMode) {
-        console.log('🚀 Demo mode detected - using demo menu data');
         setMenuItems(demoData.menu);
         setLoading(false);
         return;
@@ -145,7 +139,7 @@ export default function MenuPage() {
     return () => {
       isCancelled = true;
     };
-  }, [isDemoMode]);
+  }, [isDemoMode, demoData.menu]);
 
   // Categorías para filtrado (usando las dinámicas del API)
   const allCategories = [
