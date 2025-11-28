@@ -405,10 +405,8 @@ export default function MenuPage() {
     }
 
     try {
-      // Solo enviar el campo que necesitamos actualizar para evitar errores de validación
-      await apiService.menu.update(item.id.toString(), {
-        available: newAvailability
-      });
+      // Usar endpoint dedicado para toggle de disponibilidad
+      await apiService.menu.toggleAvailability(item.id);
 
       setMenuItems(menuItems.map(menuItem =>
         menuItem.id === item.id ? updatedItem : menuItem

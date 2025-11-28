@@ -216,6 +216,7 @@ export const apiService = {
     create: (data: any) => api.post('/menu', data),
     update: (id: string, data: any) => api.put(`/menu/${id}`, data),
     delete: (id: string) => api.delete(`/menu/${id}`),
+    toggleAvailability: (id: number | string) => api.patch(`/menu/${id}/toggle-availability`),
   },
 
   // Orders management with smart fallback
