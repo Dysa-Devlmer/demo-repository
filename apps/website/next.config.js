@@ -4,10 +4,12 @@ const nextConfig = {
   swcMinify: true,
   output: 'standalone',
   typescript: {
-    ignoreBuildErrors: true, // Ignore TypeScript errors during build
+    // Enable type checking in production builds
+    ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
   eslint: {
-    ignoreDuringBuilds: true, // Ignore ESLint errors during build
+    // Enable linting in production builds
+    ignoreDuringBuilds: process.env.NODE_ENV === 'development',
   },
   experimental: {
     workerThreads: false,
@@ -15,26 +17,34 @@ const nextConfig = {
   },
   images: {
     domains: ['localhost', 'chatbotdysa.cl', 'api.chatbotdysa.cl'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.chatbotdysa.cl',
+      },
+    ],
   },
   async redirects() {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001';
     return [
       {
         source: '/app',
-        destination: 'http://localhost:7001',
+        destination: appUrl,
         permanent: false,
       },
       {
         source: '/panel',
-        destination: 'http://localhost:7001',
+        destination: appUrl,
         permanent: false,
       },
     ];
   },
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005/api';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8005/api/:path*',
+        destination: `${apiUrl}/:path*`,
       },
     ];
   },

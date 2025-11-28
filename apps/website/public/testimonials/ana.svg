@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#E8E8D5"/>
+  <circle cx="100" cy="80" r="45" fill="#C4C4A4"/>
+  <ellipse cx="100" cy="180" rx="60" ry="40" fill="#C4C4A4"/>
+  <text x="100" y="195" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">Ana M.</text>
+</svg>

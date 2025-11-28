@@ -23,7 +23,7 @@ const testimonios = [
     owner: 'María González',
     role: 'Propietaria',
     location: 'Santiago, Chile',
-    image: '/testimonials/maria.jpg', // TODO: Add real images
+    image: '/testimonials/maria.svg',
     rating: 5,
     quote:
       'ChatBotDysa ha transformado completamente nuestra atención al cliente. Antes perdíamos muchas reservas porque no podíamos contestar a tiempo, ahora el chatbot atiende 24/7 y nuestras reservas aumentaron un 45%.',
@@ -40,7 +40,7 @@ const testimonios = [
     owner: 'Carlos Ramírez',
     role: 'Gerente General',
     location: 'Viña del Mar, Chile',
-    image: '/testimonials/carlos.jpg',
+    image: '/testimonials/carlos.svg',
     rating: 5,
     quote:
       'La integración con WhatsApp fue clave para nosotros. Nuestros clientes ya estaban ahí y ahora pueden hacer pedidos directamente desde el chat. Los pedidos online crecieron un 60% en solo 2 meses.',
@@ -57,7 +57,7 @@ const testimonios = [
     owner: 'Ana Soto',
     role: 'Directora',
     location: 'Concepción, Chile',
-    image: '/testimonials/ana.jpg',
+    image: '/testimonials/ana.svg',
     rating: 5,
     quote:
       'El sistema de reservas automáticas nos ha salvado la vida. Ya no tenemos que estar pendientes del teléfono todo el día y los clientes pueden reservar incluso cuando estamos cerrados. El panel de analytics nos ayuda a tomar mejores decisiones.',

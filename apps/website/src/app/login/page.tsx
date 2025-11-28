@@ -44,8 +44,10 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // TODO: Integrar con backend API
-      const response = await fetch('http://localhost:8005/api/auth/login', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005/api';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:7001';
+
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,11 +58,13 @@ export default function LoginPage() {
       if (response.ok) {
         const data = await response.json()
         // Guardar token en localStorage
-        localStorage.setItem('token', data.token)
+        localStorage.setItem('token', data.accessToken || data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
         // Redirigir al panel de administración
-        window.location.href = 'http://localhost:7001'
+        window.location.href = appUrl
       } else {
-        setErrors({ email: 'Credenciales inválidas' })
+        const errorData = await response.json().catch(() => ({}))
+        setErrors({ email: errorData.message || 'Credenciales inválidas' })
       }
     } catch (error) {
       console.error('Error de login:', error)
@@ -216,16 +220,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800 font-medium mb-2">
-              🔐 Credenciales de Demostración:
-            </p>
-            <p className="text-xs text-blue-700">
-              Email: <code className="bg-white px-2 py-1 rounded">admin@zgamersa.com</code>
-            </p>
-            <p className="text-xs text-blue-700">
-              Password: <code className="bg-white px-2 py-1 rounded">admin123</code>
+          {/* Help Link */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              ¿Necesitas ayuda?{' '}
+              <Link href="/demo" className="text-blue-600 hover:text-blue-700">
+                Solicita una demostración
+              </Link>
             </p>
           </div>
         </motion.div>
