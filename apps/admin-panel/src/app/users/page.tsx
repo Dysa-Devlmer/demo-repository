@@ -37,7 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Search, MoreHorizontal, Edit, Trash2, Shield } from "lucide-react";
 import { apiService } from "@/lib/api";
 import { toast } from "sonner";
-import { useDemo } from "@/contexts/demo-context";
+import useDemoMode from "@/hooks/useDemoMode";
 
 interface Role {
   id: number;
@@ -63,7 +63,7 @@ interface User {
 
 export default function UsersPage() {
   const router = useRouter();
-  const { isDemoMode } = useDemo();
+  const { isDemoMode } = useDemoMode();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
