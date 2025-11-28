@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBotDysa - Widget Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .demo-header h1 {
+            color: #8B5CF6;
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+        }
+        .demo-header p {
+            color: #64748b;
+            font-size: 1.2rem;
+            margin: 0;
+        }
+        .demo-content {
+            margin-bottom: 30px;
+        }
+        .demo-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #8B5CF6;
+        }
+        .demo-section h3 {
+            color: #1e293b;
+            margin-top: 0;
+        }
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+        }
+        .highlight {
+            background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        .feature-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .cta-section {
+            text-align: center;
+            padding: 40px 0;
+            background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+            color: white;
+            border-radius: 16px;
+            margin-top: 40px;
+        }
+        .cta-section h2 {
+            margin-top: 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: white;
+            color: #8B5CF6;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 10px;
+            transition: transform 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .widget-preview {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            font-size: 14px;
+            max-width: 300px;
+            z-index: 1000;
+        }
+        .widget-preview::before {
+            content: '👆';
+            font-size: 20px;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🤖 ChatBotDysa</h1>
+            <p>Widget de Chat Inteligente para Restaurantes</p>
+        </div>
+
+        <div class="demo-content">
+            <div class="demo-section">
+                <h3>🚀 Integración Súper Fácil</h3>
+                <p>Añade nuestro widget a tu sitio web con una sola línea de código:</p>
+                <div class="code-block">
+&lt;script src="https://cdn.dysabot.com/widget/dysabot-widget.min.js" 
+        data-dysabot-restaurant-id="tu-restaurante"
+        data-dysabot-api-url="https://api.dysabot.com"&gt;&lt;/script&gt;
+                </div>
+                <p>¡Eso es todo! El widget aparecerá automáticamente en tu sitio.</p>
+            </div>
+
+            <div class="demo-section">
+                <h3>⚙️ Configuración Personalizada</h3>
+                <p>Personaliza el widget según tu marca:</p>
+                <div class="code-block">
+&lt;script&gt;
+const widget = new DysaBotWidget({
+    restaurantId: '<span class="highlight">mi-restaurante</span>',
+    apiUrl: '<span class="highlight">https://api.dysabot.com</span>',
+    title: '<span class="highlight">Restaurante El Buen Sabor</span>',
+    greeting: '<span class="highlight">¡Bienvenido! ¿Listo para ordenar?</span>',
+    theme: '<span class="highlight">purple</span>'
+});
+&lt;/script&gt;
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="icon">💬</div>
+                    <h4>Chat en Tiempo Real</h4>
+                    <p>Conversaciones fluidas con IA avanzada</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🍕</div>
+                    <h4>Gestión de Menú</h4>
+                    <p>Muestra platillos automáticamente</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📅</div>
+                    <h4>Reservas Automáticas</h4>
+                    <p>Procesamiento inteligente de reservas</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📱</div>
+                    <h4>100% Responsive</h4>
+                    <p>Perfecto en móvil y desktop</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎨</div>
+                    <h4>Personalizable</h4>
+                    <p>Adapta colores y mensajes</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">⚡</div>
+                    <h4>Súper Rápido</h4>
+                    <p>Carga instantánea, solo 15KB</p>
+                </div>
+            </div>
+
+            <div class="demo-section">
+                <h3>🎯 Funciones Avanzadas</h3>
+                <ul>
+                    <li><strong>IA Conversacional:</strong> Powered by Ollama/Llama3</li>
+                    <li><strong>Integración WhatsApp:</strong> Sincronización completa</li>
+                    <li><strong>Multiidioma:</strong> Español e Inglés</li>
+                    <li><strong>Analytics:</strong> Métricas de conversación</li>
+                    <li><strong>Fallback Offline:</strong> Funciona sin conexión</li>
+                </ul>
+            </div>
+
+            <div class="demo-section">
+                <h3>🏪 Para Restaurantes</h3>
+                <p>ChatBotDysa está específicamente diseñado para restaurantes:</p>
+                <ul>
+                    <li>✅ <strong>Toma de órdenes</strong> automatizada</li>
+                    <li>✅ <strong>Gestión de reservas</strong> inteligente</li>
+                    <li>✅ <strong>Información del menú</strong> actualizada</li>
+                    <li>✅ <strong>Atención 24/7</strong> sin personal adicional</li>
+                    <li>✅ <strong>Reducción de llamadas</strong> telefónicas</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="cta-section">
+            <h2>¿Listo para revolucionar tu restaurante?</h2>
+            <p>Instala ChatBotDysa en menos de 5 minutos</p>
+            <a href="#" class="btn">🚀 Instalar Ahora</a>
+            <a href="#" class="btn">📞 Contactar Ventas</a>
+        </div>
+    </div>
+
+    <div class="widget-preview">
+        <strong>¡Prueba el widget aquí!</strong><br>
+        Haz clic en el botón flotante púrpura →
+    </div>
+
+    <!-- Widget Integration Example -->
+    <script src="./dysabot-widget.js"
+            data-dysabot-restaurant-id="demo-restaurant"
+            data-dysabot-api-url="http://localhost:3000"
+            data-dysabot-title="Demo Restaurant"
+            data-dysabot-subtitle="Asistente Virtual"
+            data-dysabot-greeting="¡Hola! Soy el asistente de Demo Restaurant. ¿En qué puedo ayudarte?"
+    ></script>
+</body>
+</html>

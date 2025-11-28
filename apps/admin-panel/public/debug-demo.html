@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Demo Data</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+        }
+        button {
+            background: #00ff00;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        .error {
+            color: #ff0000;
+        }
+        .success {
+            color: #00ff00;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Demo Data - ChatBotDysa</h1>
+
+    <div class="section">
+        <h2>LocalStorage Demo Keys</h2>
+        <button onclick="showLocalStorage()">Ver LocalStorage</button>
+        <button onclick="clearDemoData()" style="background: #ff0000; color: white;">Limpiar TODO Demo</button>
+        <button onclick="fixDemoData()" style="background: #00cc00; color: white;">🔧 FIX - Reparar Datos</button>
+        <pre id="localStorage-content"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Datos Demo por Defecto (desde código)</h2>
+        <pre id="default-data"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Test Formato Moneda</h2>
+        <button onclick="testCurrency()">Probar Formatos</button>
+        <pre id="currency-test"></pre>
+    </div>
+
+    <script>
+        const DEMO_DATA = {
+            orders: [
+                {
+                    id: "1",
+                    customerName: "María González",
+                    customerPhone: "+56 9 8765 4321",
+                    orderType: "delivery",
+                    status: "pending",
+                    items: [
+                        { id: "1-1", name: "Pizza Margherita", quantity: 1, price: 12900 },
+                        { id: "1-2", name: "Coca Cola", quantity: 1, price: 2000 }
+                    ],
+                    subtotal: 14900,
+                    deliveryFee: 1000,
+                    total: 15900,
+                    deliveryAddress: "Av. Providencia 123, Santiago",
+                    estimatedTime: 25,
+                    createdAt: "2025-01-20T19:30:00Z"
+                },
+                {
+                    id: "2",
+                    customerName: "Carlos Ruiz",
+                    customerPhone: "+56 9 7654 3210",
+                    orderType: "pickup",
+                    status: "preparing",
+                    items: [
+                        { id: "2-1", name: "Hamburguesa Completa", quantity: 1, price: 9500 },
+                        { id: "2-2", name: "Papas Fritas", quantity: 1, price: 3000 }
+                    ],
+                    subtotal: 12500,
+                    deliveryFee: 0,
+                    total: 12500,
+                    estimatedTime: 15,
+                    createdAt: "2025-01-20T19:25:00Z"
+                },
+                {
+                    id: "3",
+                    customerName: "Ana López",
+                    customerPhone: "+56 9 6543 2109",
+                    orderType: "dine-in",
+                    status: "ready",
+                    items: [
+                        { id: "3-1", name: "Ensalada César", quantity: 1, price: 7900 },
+                        { id: "3-2", name: "Agua Mineral", quantity: 1, price: 1000 }
+                    ],
+                    subtotal: 8900,
+                    deliveryFee: 0,
+                    total: 8900,
+                    estimatedTime: 0,
+                    createdAt: "2025-01-20T19:20:00Z"
+                },
+                {
+                    id: "4",
+                    customerName: "Pedro Silva",
+                    customerPhone: "+56 9 5432 1098",
+                    orderType: "delivery",
+                    status: "delivered",
+                    items: [
+                        { id: "4-1", name: "Pasta Carbonara", quantity: 1, price: 11500 },
+                        { id: "4-2", name: "Vino Tinto", quantity: 1, price: 6000 }
+                    ],
+                    subtotal: 17500,
+                    deliveryFee: 1000,
+                    total: 18500,
+                    deliveryAddress: "Los Leones 456, Las Condes",
+                    estimatedTime: 0,
+                    createdAt: "2025-01-20T19:00:00Z"
+                },
+                {
+                    id: "5",
+                    customerName: "Laura Martín",
+                    customerPhone: "+56 9 4321 0987",
+                    orderType: "delivery",
+                    status: "cancelled",
+                    items: [
+                        { id: "5-1", name: "Sushi Mix", quantity: 1, price: 22900 },
+                        { id: "5-2", name: "Té Verde", quantity: 1, price: 1000 }
+                    ],
+                    subtotal: 23900,
+                    deliveryFee: 1000,
+                    total: 24900,
+                    deliveryAddress: "San Antonio 789, Vitacura",
+                    notes: "Sin jengibre por favor",
+                    estimatedTime: 0,
+                    createdAt: "2025-01-20T18:45:00Z"
+                }
+            ]
+        };
+
+        function showLocalStorage() {
+            const demoKeys = Object.keys(localStorage).filter(k => k.startsWith('demo_') || k === 'demo_mode');
+            const output = document.getElementById('localStorage-content');
+
+            if (demoKeys.length === 0) {
+                output.textContent = '❌ No hay datos demo en localStorage';
+                return;
+            }
+
+            let content = '📦 Claves encontradas:\n\n';
+            demoKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                content += `${key}:\n`;
+
+                if (key.startsWith('demo_') && key !== 'demo_mode' && key !== 'demo_token') {
+                    try {
+                        const parsed = JSON.parse(value);
+                        content += JSON.stringify(parsed, null, 2) + '\n\n';
+
+                        // Si es orders, calcular revenue
+                        if (key === 'demo_orders' && Array.isArray(parsed)) {
+                            const revenue = parsed.reduce((sum, o) => sum + Number(o.total || 0), 0);
+                            content += `💰 Revenue calculado: ${revenue}\n`;
+                            content += `💰 Revenue formateado: ${formatCurrency(revenue)}\n\n`;
+                        }
+                    } catch (e) {
+                        content += `${value}\n\n`;
+                    }
+                } else {
+                    content += `${value}\n\n`;
+                }
+            });
+
+            output.textContent = content;
+        }
+
+        function clearDemoData() {
+            if (!confirm('¿Seguro que quieres limpiar TODOS los datos demo?')) return;
+
+            const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('demo_'));
+            keysToRemove.forEach(k => {
+                if (k !== 'demo_mode' && k !== 'demo_token') {
+                    localStorage.removeItem(k);
+                    console.log('🗑️ Eliminado:', k);
+                }
+            });
+
+            alert(`✅ Eliminadas ${keysToRemove.length} claves del localStorage`);
+            showLocalStorage();
+        }
+
+        function fixDemoData() {
+            console.log('🔧 Iniciando reparación de datos demo...');
+
+            // Paso 1: Mostrar datos ANTES de limpiar
+            console.log('\n📊 DATOS ANTES DE LIMPIAR:');
+            const keysToRemove = Object.keys(localStorage).filter(k =>
+                k.startsWith('demo_') && k !== 'demo_mode' && k !== 'demo_token'
+            );
+            keysToRemove.forEach(k => {
+                const value = localStorage.getItem(k);
+                console.log(`\n${k}:`);
+                try {
+                    const parsed = JSON.parse(value);
+                    if (Array.isArray(parsed) && k === 'demo_orders') {
+                        const revenue = parsed.reduce((sum, o) => sum + Number(o.total || 0), 0);
+                        console.log(`  → ${parsed.length} órdenes, Revenue: ${revenue}`);
+                        parsed.forEach(o => console.log(`    ${o.customerName}: ${o.total}`));
+                    }
+                } catch (e) {
+                    console.log(`  → ${value.substring(0, 100)}...`);
+                }
+            });
+
+            // Paso 2: LIMPIAR TODO (NO guardar nada)
+            console.log('\n🗑️ LIMPIANDO TODO EL LOCALSTORAGE DEMO...');
+            keysToRemove.forEach(k => {
+                localStorage.removeItem(k);
+                console.log(`  ✅ Eliminado: ${k}`);
+            });
+
+            // Paso 3: Verificar limpieza
+            const remaining = Object.keys(localStorage).filter(k => k.startsWith('demo_'));
+            console.log('\n✅ LIMPIEZA COMPLETADA');
+            console.log('Claves restantes:', remaining);
+
+            // Paso 4: Datos esperados (desde código)
+            const revenue = DEMO_DATA.orders.reduce((sum, o) => sum + o.total, 0);
+            console.log('\n📊 DATOS QUE SE CARGARÁN (desde código):');
+            console.log(`  → ${DEMO_DATA.orders.length} órdenes`);
+            console.log(`  → Revenue total: ${revenue}`);
+            console.log(`  → Revenue formateado: ${formatCurrency(revenue)}`);
+
+            // Paso 5: Mostrar resultado
+            alert(`✅ LocalStorage limpiado!\n\n` +
+                  `🗑️ Eliminadas: ${keysToRemove.length} claves\n` +
+                  `📊 Al recargar se usarán los datos por defecto:\n` +
+                  `   • ${DEMO_DATA.orders.length} órdenes\n` +
+                  `   • Revenue: ${formatCurrency(revenue)}\n\n` +
+                  `La página se recargará AHORA...`);
+
+            // Paso 6: Recargar INMEDIATAMENTE
+            console.log('🔄 Recargando página AHORA...');
+            window.location.href = '/orders';
+        }
+
+        function formatCurrency(amount) {
+            const formatted = new Intl.NumberFormat('es-CL', {
+                style: 'currency',
+                currency: 'CLP',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+            return formatted.replace('$', 'CLP $');
+        }
+
+        function testCurrency() {
+            const output = document.getElementById('currency-test');
+            const revenue = DEMO_DATA.orders.reduce((sum, o) => sum + o.total, 0);
+
+            let content = '🧪 Tests de Formato:\n\n';
+            content += `Revenue calculado: ${revenue}\n`;
+            content += `Formato CLP: ${formatCurrency(revenue)}\n\n`;
+
+            content += 'Ejemplos individuales:\n';
+            DEMO_DATA.orders.forEach(order => {
+                content += `${order.customerName}: ${order.total} → ${formatCurrency(order.total)}\n`;
+            });
+
+            output.textContent = content;
+        }
+
+        // Mostrar datos por defecto
+        document.getElementById('default-data').textContent =
+            '📊 Datos Demo por Defecto:\n\n' +
+            JSON.stringify(DEMO_DATA, null, 2) + '\n\n' +
+            `💰 Revenue Total: ${DEMO_DATA.orders.reduce((s, o) => s + o.total, 0)}\n` +
+            `💰 Revenue Formateado: ${formatCurrency(DEMO_DATA.orders.reduce((s, o) => s + o.total, 0))}`;
+
+        // Auto-mostrar localStorage al cargar
+        showLocalStorage();
+    </script>
+</body>
+</html>

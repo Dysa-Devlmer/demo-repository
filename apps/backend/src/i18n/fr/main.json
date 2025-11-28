@@ -1,0 +1,43 @@
+{
+  "common": {
+    "welcome": "Bienvenue",
+    "hello": "Bonjour",
+    "goodbye": "Au revoir",
+    "error": "Erreur",
+    "success": "Succès",
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "update": "Mettre à jour"
+  },
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "invalidCredentials": "Identifiants invalides",
+    "loginSuccess": "Connexion réussie"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "stats": "Statistiques"
+  },
+  "customers": {
+    "title": "Clients",
+    "name": "Nom",
+    "email": "Email"
+  },
+  "menu": {
+    "title": "Menu",
+    "name": "Nom",
+    "price": "Prix"
+  },
+  "orders": {
+    "title": "Commandes",
+    "status": "Statut"
+  },
+  "chatbot": {
+    "welcome": "Bonjour! Comment puis-je vous aider?"
+  }
+}

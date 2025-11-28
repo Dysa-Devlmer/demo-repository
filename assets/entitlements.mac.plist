@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Enable hardened runtime -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-executable-page-protection</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    
+    <!-- Network access -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <true/>
+    
+    <!-- File system access -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+    
+    <!-- Audio/Video permissions -->
+    <key>com.apple.security.device.microphone</key>
+    <true/>
+    <key>com.apple.security.device.camera</key>
+    <true/>
+    
+    <!-- System preferences -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+    
+    <!-- Keychain access -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)com.dysadev.dysabot.enterprise</string>
+    </array>
+    
+    <!-- Printing -->
+    <key>com.apple.security.print</key>
+    <true/>
+    
+    <!-- App Sandbox -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+    
+    <!-- Additional permissions for enterprise features -->
+    <key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+    <array>
+        <string>/tmp</string>
+        <string>/var/tmp</string>
+    </array>
+    
+    <!-- Database access -->
+    <key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+    <array>
+        <string>Library/Application Support/DysaBot Enterprise/</string>
+        <string>Library/Logs/DysaBot Enterprise/</string>
+        <string>Library/Caches/DysaBot Enterprise/</string>
+    </array>
+    
+    <!-- Disable library validation for Node.js modules -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+</dict>
+</plist>

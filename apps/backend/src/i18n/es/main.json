@@ -1,0 +1,43 @@
+{
+  "common": {
+    "welcome": "Bienvenido",
+    "hello": "Hola",
+    "goodbye": "Adiós",
+    "error": "Error",
+    "success": "Éxito",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "update": "Actualizar"
+  },
+  "auth": {
+    "login": "Iniciar Sesión",
+    "logout": "Cerrar Sesión",
+    "invalidCredentials": "Credenciales inválidas",
+    "loginSuccess": "Inicio de sesión exitoso"
+  },
+  "dashboard": {
+    "title": "Panel de Control",
+    "stats": "Estadísticas"
+  },
+  "customers": {
+    "title": "Clientes",
+    "name": "Nombre",
+    "email": "Correo Electrónico"
+  },
+  "menu": {
+    "title": "Menú",
+    "name": "Nombre",
+    "price": "Precio"
+  },
+  "orders": {
+    "title": "Pedidos",
+    "status": "Estado"
+  },
+  "chatbot": {
+    "welcome": "¡Hola! ¿En qué puedo ayudarte?"
+  }
+}

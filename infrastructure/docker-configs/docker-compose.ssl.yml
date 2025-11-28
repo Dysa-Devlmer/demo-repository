@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # Nginx Load Balancer with SSL Termination
+  nginx-ssl:
+    image: nginx:alpine
+    container_name: chatbotdysa-nginx-ssl
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/ssl:/etc/ssl/certs
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+      - admin-panel
+      - web-widget
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+
+  # Backend API
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile.prod
+    container_name: chatbotdysa-backend
+    ports:
+      - "8005:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/chatbotdysa
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: redis://redis:6379
+      SSL_ENABLED: true
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Admin Panel
+  admin-panel:
+    build:
+      context: ./apps/admin-panel
+      dockerfile: Dockerfile.prod
+    container_name: chatbotdysa-admin
+    ports:
+      - "8001:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://api.chatbotdysa.com
+      SSL_ENABLED: true
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+
+  # Web Widget
+  web-widget:
+    build:
+      context: ./apps/web-widget
+      dockerfile: Dockerfile.prod
+    container_name: chatbotdysa-widget
+    ports:
+      - "8002:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://api.chatbotdysa.com
+      SSL_ENABLED: true
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: chatbotdysa-postgres
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_DB: chatbotdysa
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis
+    ports:
+      - "16379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+
+  # Let's Encrypt SSL Certificate Manager
+  certbot:
+    image: certbot/certbot
+    container_name: chatbotdysa-certbot
+    volumes:
+      - ./config/ssl:/etc/letsencrypt
+      - ./config/nginx/challenges:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email admin@chatbotdysa.com --agree-tos --no-eff-email -d chatbotdysa.com -d api.chatbotdysa.com -d admin.chatbotdysa.com
+    networks:
+      - chatbotdysa-network
+
+networks:
+  chatbotdysa-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

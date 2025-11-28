@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurante Demo - ChatBot Dysa</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 0;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Hero Section */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+      margin: 4rem 0;
+    }
+
+    .hero-content h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #667eea;
+    }
+
+    .hero-content p {
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+      color: #666;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .hero-image {
+      text-align: center;
+      font-size: 8rem;
+    }
+
+    /* Features Section */
+    .features {
+      margin: 4rem 0;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 3rem;
+      color: #333;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+      color: #667eea;
+    }
+
+    .feature-card p {
+      color: #666;
+    }
+
+    /* Menu Preview */
+    .menu-preview {
+      margin: 4rem 0;
+      padding: 3rem;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 16px;
+    }
+
+    .menu-preview h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 2rem;
+      color: #333;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .menu-item {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .menu-item h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+      color: #667eea;
+    }
+
+    .menu-item p {
+      color: #666;
+      margin-bottom: 1rem;
+    }
+
+    .menu-item .price {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #764ba2;
+    }
+
+    /* Footer */
+    .footer {
+      background: #2d3748;
+      color: white;
+      padding: 3rem 0;
+      text-align: center;
+      margin-top: 4rem;
+    }
+
+    .footer p {
+      margin-bottom: 1rem;
+    }
+
+    .footer-links {
+      margin-top: 1rem;
+    }
+
+    .footer-links a {
+      color: #667eea;
+      margin: 0 1rem;
+      text-decoration: none;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    /* Call to Action Banner */
+    .cta-banner {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 3rem;
+      border-radius: 16px;
+      text-align: center;
+      margin: 4rem 0;
+    }
+
+    .cta-banner h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .cta-banner p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+
+    .cta-banner-button {
+      background: white;
+      color: #667eea;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+
+    .cta-banner-button:hover {
+      transform: scale(1.05);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .hero-content h2 {
+        font-size: 1.5rem;
+      }
+
+      .hero-image {
+        font-size: 5rem;
+      }
+    }
+
+    /* Widget Info Badge */
+    .widget-info {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #667eea;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 999;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+  </style>
+
+  <!-- ChatBot Dysa Widget CSS -->
+  <link rel="stylesheet" href="../dist/dysabot-widget.min.css">
+</head>
+<body>
+
+  <!-- Widget Info Badge -->
+  <div class="widget-info">
+    💬 ChatBot activo - Haz clic en el botón abajo →
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <h1>🍽️ Restaurante La Delicia</h1>
+    <p>Sabores auténticos, servicio excepcional</p>
+  </header>
+
+  <div class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h2>Bienvenido a La Delicia</h2>
+        <p>
+          Descubre nuestra cocina tradicional con un toque moderno.
+          Reserva tu mesa, ordena delivery o simplemente chatea con
+          nuestro asistente virtual para cualquier consulta.
+        </p>
+        <a href="#menu" class="cta-button">Ver Menú</a>
+      </div>
+      <div class="hero-image">
+        🍕🍔🍜
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+      <h2>¿Por qué elegirnos?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">👨‍🍳</div>
+          <h3>Chefs Expertos</h3>
+          <p>Más de 20 años de experiencia en cocina internacional</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🚚</div>
+          <h3>Delivery Rápido</h3>
+          <p>Entrega en 30 minutos o menos a domicilio</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>Asistente Virtual</h3>
+          <p>Respuestas instantáneas 24/7 a tus consultas</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⭐</div>
+          <h3>Calidad Premium</h3>
+          <p>Ingredientes frescos y de primera calidad</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Menu Preview -->
+    <section class="menu-preview" id="menu">
+      <h2>Nuestro Menú Destacado</h2>
+      <div class="menu-grid">
+        <div class="menu-item">
+          <h3>🍕 Pizza Margherita</h3>
+          <p>Masa artesanal, tomate fresco, mozzarella y albahaca</p>
+          <div class="price">$12.990</div>
+        </div>
+        <div class="menu-item">
+          <h3>🍔 Hamburguesa Clásica</h3>
+          <p>Carne angus 180g, queso cheddar, lechuga, tomate y salsa especial</p>
+          <div class="price">$9.990</div>
+        </div>
+        <div class="menu-item">
+          <h3>🍜 Ramen Tradicional</h3>
+          <p>Caldo de cerdo, fideos frescos, huevo marinado y cebollín</p>
+          <div class="price">$11.990</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Banner -->
+    <section class="cta-banner">
+      <h2>¿Tienes preguntas?</h2>
+      <p>Nuestro asistente virtual está listo para ayudarte</p>
+      <a href="#" class="cta-banner-button" onclick="openChatbot(); return false;">
+        Hablar con el Chatbot 💬
+      </a>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>📍 Av. Principal 123, Santiago, Chile</p>
+      <p>📞 +56 9 1234 5678 | 📧 contacto@ladelicia.cl</p>
+      <p>🕐 Lunes a Domingo: 12:00 - 23:00</p>
+      <div class="footer-links">
+        <a href="#">Acerca de</a>
+        <a href="#">Menú Completo</a>
+        <a href="#">Reservas</a>
+        <a href="#">Contacto</a>
+      </div>
+      <p style="margin-top: 2rem; opacity: 0.7;">
+        © 2025 Restaurante La Delicia. Powered by ChatBot Dysa.
+      </p>
+    </div>
+  </footer>
+
+  <!-- ChatBot Dysa Widget Script -->
+  <script src="../dist/dysabot-widget.min.js"></script>
+  <script>
+    // Configuración del ChatBot
+    const widget = new DysaBotWidget({
+      apiUrl: 'http://localhost:8005',
+      restaurantId: 'demo-restaurante-delicia',
+      position: 'bottom-right',
+      theme: 'purple',
+      language: 'es',
+      enableImageUpload: true,
+      enableFileUpload: true,
+      enableGeolocation: true
+    });
+
+    // Función para abrir el chatbot programáticamente
+    function openChatbot() {
+      // El widget se abrirá al hacer clic en el botón flotante
+      // Esta función es para referencia futura cuando se implemente .open()
+      alert('💬 Haz clic en el botón flotante morado en la esquina inferior derecha para iniciar el chat');
+    }
+
+    // Log para debug
+    console.log('✅ ChatBot Dysa Widget inicializado correctamente');
+    console.log('📍 Configuración:', {
+      apiUrl: 'http://localhost:8005',
+      restaurantId: 'demo-restaurante-delicia',
+      position: 'bottom-right',
+      theme: 'purple'
+    });
+  </script>
+
+</body>
+</html>

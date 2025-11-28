@@ -1,0 +1,43 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "hello": "Hello",
+    "goodbye": "Goodbye",
+    "error": "Error",
+    "success": "Success",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "invalidCredentials": "Invalid credentials",
+    "loginSuccess": "Login successful"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "stats": "Statistics"
+  },
+  "customers": {
+    "title": "Customers",
+    "name": "Name",
+    "email": "Email"
+  },
+  "menu": {
+    "title": "Menu",
+    "name": "Name",
+    "price": "Price"
+  },
+  "orders": {
+    "title": "Orders",
+    "status": "Status"
+  },
+  "chatbot": {
+    "welcome": "Hello! How can I help you?"
+  }
+}

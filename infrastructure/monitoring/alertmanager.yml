@@ -1,0 +1,335 @@
+# 🚨 Enterprise AlertManager Configuration
+# Fortune 10 Global Military Grade Alerting
+# ChatBotDysa Enterprise Real-Time Notification System
+
+global:
+  smtp_smarthost: '${SMTP_SERVER:-smtp.gmail.com:587}'
+  smtp_from: '${ALERT_EMAIL_FROM:-alerts@chatbotdysa.com}'
+  smtp_auth_username: '${SMTP_USERNAME:-alerts@chatbotdysa.com}'
+  smtp_auth_password: '${SMTP_PASSWORD:-}'
+  smtp_require_tls: true
+
+  # Slack Configuration
+  slack_api_url: '${SLACK_WEBHOOK_URL:-}'
+
+  # Microsoft Teams Configuration
+  teams_webhook_url: '${TEAMS_WEBHOOK_URL:-}'
+
+  # PagerDuty Configuration
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing configuration
+route:
+  group_by: ['alertname', 'cluster', 'service', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'enterprise-default'
+
+  routes:
+    # ===== CRITICAL ALERTS - IMMEDIATE RESPONSE =====
+    - match:
+        severity: critical
+      receiver: 'enterprise-critical'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 5m
+      continue: true
+
+    # ===== SECURITY ALERTS - IMMEDIATE RESPONSE =====
+    - match_re:
+        alertname: 'Security.*|Auth.*|Intrusion.*|Breach.*'
+      receiver: 'enterprise-security'
+      group_wait: 5s
+      group_interval: 30s
+      repeat_interval: 1h
+      continue: true
+
+    # ===== HIGH SEVERITY ALERTS =====
+    - match:
+        severity: high
+      receiver: 'enterprise-high'
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 2h
+
+    # ===== WARNING ALERTS =====
+    - match:
+        severity: warning
+      receiver: 'enterprise-warning'
+      group_wait: 5m
+      group_interval: 15m
+      repeat_interval: 6h
+
+    # ===== DATABASE ALERTS =====
+    - match_re:
+        service: '.*postgres.*|.*redis.*|.*database.*'
+      receiver: 'enterprise-database'
+      group_wait: 2m
+      group_interval: 10m
+      repeat_interval: 4h
+
+    # ===== APPLICATION ALERTS =====
+    - match_re:
+        service: 'chatbotdysa.*'
+      receiver: 'enterprise-application'
+      group_wait: 3m
+      group_interval: 10m
+      repeat_interval: 6h
+
+    # ===== INFRASTRUCTURE ALERTS =====
+    - match_re:
+        alertname: '.*Node.*|.*Disk.*|.*Memory.*|.*CPU.*'
+      receiver: 'enterprise-infrastructure'
+      group_wait: 5m
+      group_interval: 15m
+      repeat_interval: 8h
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning if critical is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']
+
+  # Inhibit high if critical is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'high'
+    equal: ['alertname', 'cluster', 'service']
+
+# Receiver configurations
+receivers:
+  # ===== DEFAULT ENTERPRISE RECEIVER =====
+  - name: 'enterprise-default'
+    email_configs:
+      - to: '${ALERT_EMAIL_TO:-devops@chatbotdysa.com}'
+        subject: '🏢 ChatBotDysa Enterprise Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🏢 **ChatBotDysa Enterprise Alert**
+
+          **Alert:** {{ .GroupLabels.alertname }}
+          **Severity:** {{ .CommonLabels.severity }}
+          **Environment:** {{ .CommonLabels.environment }}
+          **Cluster:** {{ .CommonLabels.cluster }}
+          **Service:** {{ .CommonLabels.service }}
+
+          **Details:**
+          {{ range .Alerts }}
+          - **Instance:** {{ .Labels.instance }}
+          - **Description:** {{ .Annotations.description }}
+          - **Summary:** {{ .Annotations.summary }}
+          - **Runbook:** {{ .Annotations.runbook_url }}
+          - **Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          {{ end }}
+
+          **Dashboard:** http://localhost:3000/d/enterprise-overview
+          **Prometheus:** http://localhost:9090
+        html: |
+          <h2>🏢 ChatBotDysa Enterprise Alert</h2>
+          <table>
+            <tr><td><strong>Alert:</strong></td><td>{{ .GroupLabels.alertname }}</td></tr>
+            <tr><td><strong>Severity:</strong></td><td>{{ .CommonLabels.severity }}</td></tr>
+            <tr><td><strong>Environment:</strong></td><td>{{ .CommonLabels.environment }}</td></tr>
+            <tr><td><strong>Cluster:</strong></td><td>{{ .CommonLabels.cluster }}</td></tr>
+            <tr><td><strong>Service:</strong></td><td>{{ .CommonLabels.service }}</td></tr>
+          </table>
+
+          <h3>Alert Details:</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <strong>{{ .Labels.instance }}</strong><br>
+              {{ .Annotations.description }}<br>
+              <em>{{ .Annotations.summary }}</em><br>
+              <small>{{ .StartsAt.Format "2006-01-02 15:04:05" }}</small>
+            </li>
+          {{ end }}
+          </ul>
+
+  # ===== CRITICAL ALERTS =====
+  - name: 'enterprise-critical'
+    email_configs:
+      - to: '${CRITICAL_EMAIL_TO:-cto@chatbotdysa.com,devops@chatbotdysa.com}'
+        subject: '🚨 CRITICAL: ChatBotDysa Enterprise - {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 **CRITICAL ENTERPRISE ALERT**
+
+          This is a CRITICAL alert requiring immediate attention.
+
+          **Alert:** {{ .GroupLabels.alertname }}
+          **Severity:** CRITICAL
+          **Environment:** {{ .CommonLabels.environment }}
+          **Service:** {{ .CommonLabels.service }}
+
+          **Immediate Action Required:**
+          {{ range .Alerts }}
+          - **Instance:** {{ .Labels.instance }}
+          - **Issue:** {{ .Annotations.description }}
+          - **Impact:** {{ .Annotations.summary }}
+          - **Runbook:** {{ .Annotations.runbook_url }}
+          {{ end }}
+
+          **Response Team:** Contact DevOps Lead immediately
+          **Escalation:** If not resolved in 15 minutes, contact CTO
+
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#critical-alerts'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          CRITICAL alert in ChatBotDysa Enterprise
+          Severity: {{ .CommonLabels.severity }}
+          Service: {{ .CommonLabels.service }}
+          Environment: {{ .CommonLabels.environment }}
+        color: danger
+        actions:
+          - type: button
+            text: 'View Dashboard'
+            url: 'http://localhost:3000/d/enterprise-overview'
+          - type: button
+            text: 'View Prometheus'
+            url: 'http://localhost:9090'
+
+  # ===== SECURITY ALERTS =====
+  - name: 'enterprise-security'
+    email_configs:
+      - to: '${SECURITY_EMAIL_TO:-security@chatbotdysa.com,ciso@chatbotdysa.com}'
+        subject: '🔐 SECURITY ALERT: ChatBotDysa Enterprise - {{ .GroupLabels.alertname }}'
+        body: |
+          🔐 **SECURITY ALERT - IMMEDIATE INVESTIGATION REQUIRED**
+
+          A security-related alert has been triggered in the ChatBotDysa Enterprise system.
+
+          **Alert:** {{ .GroupLabels.alertname }}
+          **Severity:** {{ .CommonLabels.severity }}
+          **Detection Time:** {{ .Alerts.First.StartsAt.Format "2006-01-02 15:04:05" }}
+
+          **Security Incident Details:**
+          {{ range .Alerts }}
+          - **Source:** {{ .Labels.instance }}
+          - **Event:** {{ .Annotations.description }}
+          - **Risk Level:** {{ .Annotations.summary }}
+          - **SOC Playbook:** {{ .Annotations.runbook_url }}
+          {{ end }}
+
+          **Immediate Actions:**
+          1. Investigate the source of the alert
+          2. Check for related security events
+          3. Implement containment measures if necessary
+          4. Document findings in security incident log
+
+          **SOC Contact:** security-team@chatbotdysa.com
+          **CISO Escalation:** If critical, contact CISO immediately
+
+  # ===== HIGH SEVERITY ALERTS =====
+  - name: 'enterprise-high'
+    email_configs:
+      - to: '${HIGH_EMAIL_TO:-devops@chatbotdysa.com,sre@chatbotdysa.com}'
+        subject: '⚠️ HIGH: ChatBotDysa Enterprise - {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ **HIGH PRIORITY ALERT**
+
+          **Alert:** {{ .GroupLabels.alertname }}
+          **Severity:** HIGH
+          **Service:** {{ .CommonLabels.service }}
+          **Environment:** {{ .CommonLabels.environment }}
+
+          **Details:**
+          {{ range .Alerts }}
+          - **Instance:** {{ .Labels.instance }}
+          - **Issue:** {{ .Annotations.description }}
+          - **Summary:** {{ .Annotations.summary }}
+          {{ end }}
+
+          **SLA:** Response within 30 minutes
+
+  # ===== WARNING ALERTS =====
+  - name: 'enterprise-warning'
+    email_configs:
+      - to: '${WARNING_EMAIL_TO:-devops@chatbotdysa.com}'
+        subject: '⚠️ WARNING: ChatBotDysa Enterprise - {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ **WARNING ALERT**
+
+          **Alert:** {{ .GroupLabels.alertname }}
+          **Service:** {{ .CommonLabels.service }}
+          **Environment:** {{ .CommonLabels.environment }}
+
+          {{ range .Alerts }}
+          - **Instance:** {{ .Labels.instance }}
+          - **Description:** {{ .Annotations.description }}
+          {{ end }}
+
+  # ===== DATABASE ALERTS =====
+  - name: 'enterprise-database'
+    email_configs:
+      - to: '${DBA_EMAIL_TO:-dba@chatbotdysa.com,devops@chatbotdysa.com}'
+        subject: '🗄️ DATABASE ALERT: ChatBotDysa Enterprise - {{ .GroupLabels.alertname }}'
+        body: |
+          🗄️ **DATABASE ALERT**
+
+          **Database Alert:** {{ .GroupLabels.alertname }}
+          **Severity:** {{ .CommonLabels.severity }}
+          **Database Service:** {{ .CommonLabels.service }}
+
+          **Database Issues:**
+          {{ range .Alerts }}
+          - **Database Instance:** {{ .Labels.instance }}
+          - **Issue:** {{ .Annotations.description }}
+          - **Impact:** {{ .Annotations.summary }}
+          {{ end }}
+
+          **DBA Response Required**
+          **Backup Status:** Check recent backup logs
+          **Replication Status:** Verify slave lag if applicable
+
+  # ===== APPLICATION ALERTS =====
+  - name: 'enterprise-application'
+    email_configs:
+      - to: '${APP_EMAIL_TO:-developers@chatbotdysa.com,devops@chatbotdysa.com}'
+        subject: '🚀 APPLICATION ALERT: ChatBotDysa Enterprise - {{ .GroupLabels.alertname }}'
+        body: |
+          🚀 **APPLICATION ALERT**
+
+          **Application:** {{ .GroupLabels.alertname }}
+          **Service:** {{ .CommonLabels.service }}
+          **Severity:** {{ .CommonLabels.severity }}
+
+          **Application Issues:**
+          {{ range .Alerts }}
+          - **Service Instance:** {{ .Labels.instance }}
+          - **Issue:** {{ .Annotations.description }}
+          - **User Impact:** {{ .Annotations.summary }}
+          {{ end }}
+
+          **Development Team Action Required**
+
+  # ===== INFRASTRUCTURE ALERTS =====
+  - name: 'enterprise-infrastructure'
+    email_configs:
+      - to: '${INFRA_EMAIL_TO:-infrastructure@chatbotdysa.com,devops@chatbotdysa.com}'
+        subject: '🏗️ INFRASTRUCTURE ALERT: ChatBotDysa Enterprise - {{ .GroupLabels.alertname }}'
+        body: |
+          🏗️ **INFRASTRUCTURE ALERT**
+
+          **Infrastructure Component:** {{ .GroupLabels.alertname }}
+          **Severity:** {{ .CommonLabels.severity }}
+          **Cluster:** {{ .CommonLabels.cluster }}
+
+          **Infrastructure Issues:**
+          {{ range .Alerts }}
+          - **Node/Component:** {{ .Labels.instance }}
+          - **Issue:** {{ .Annotations.description }}
+          - **System Impact:** {{ .Annotations.summary }}
+          {{ end }}
+
+          **Infrastructure Team Response Required**
+          **Check:** System resources, network connectivity, hardware status

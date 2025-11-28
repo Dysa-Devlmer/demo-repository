@@ -1,0 +1,116 @@
+# 📊 Enterprise Grafana Dashboard Provisioning
+# Fortune 10 Global Military Grade Dashboard Configuration
+# ChatBotDysa Enterprise Observability Dashboards
+
+apiVersion: 1
+
+providers:
+  # ===== ENTERPRISE OVERVIEW DASHBOARDS =====
+  - name: 'Enterprise Overview'
+    type: file
+    folder: 'Enterprise'
+    folderUid: 'enterprise'
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/enterprise
+
+  # ===== EXECUTIVE DASHBOARDS =====
+  - name: 'Executive KPIs'
+    type: file
+    folder: 'Executive'
+    folderUid: 'executive'
+    disableDeletion: false
+    updateIntervalSeconds: 60
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/executive
+
+  # ===== APPLICATION MONITORING =====
+  - name: 'Application Monitoring'
+    type: file
+    folder: 'Applications'
+    folderUid: 'applications'
+    disableDeletion: false
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/applications
+
+  # ===== INFRASTRUCTURE MONITORING =====
+  - name: 'Infrastructure Monitoring'
+    type: file
+    folder: 'Infrastructure'
+    folderUid: 'infrastructure'
+    disableDeletion: false
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/infrastructure
+
+  # ===== DATABASE MONITORING =====
+  - name: 'Database Monitoring'
+    type: file
+    folder: 'Database'
+    folderUid: 'database'
+    disableDeletion: false
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/database
+
+  # ===== SECURITY MONITORING =====
+  - name: 'Security Monitoring'
+    type: file
+    folder: 'Security'
+    folderUid: 'security'
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/security
+
+  # ===== BUSINESS METRICS =====
+  - name: 'Business Metrics'
+    type: file
+    folder: 'Business'
+    folderUid: 'business'
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/business
+
+  # ===== ALERTING DASHBOARDS =====
+  - name: 'Alerting & Incidents'
+    type: file
+    folder: 'Alerting'
+    folderUid: 'alerting'
+    disableDeletion: false
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/alerting
+
+  # ===== PERFORMANCE MONITORING =====
+  - name: 'Performance Monitoring'
+    type: file
+    folder: 'Performance'
+    folderUid: 'performance'
+    disableDeletion: false
+    updateIntervalSeconds: 15
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/performance
+
+  # ===== COMPLIANCE REPORTING =====
+  - name: 'Compliance Reporting'
+    type: file
+    folder: 'Compliance'
+    folderUid: 'compliance'
+    disableDeletion: false
+    updateIntervalSeconds: 300
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/compliance

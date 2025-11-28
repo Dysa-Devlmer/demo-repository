@@ -1,0 +1,355 @@
+version: '3.8'
+
+# 📊 Enterprise Monitoring & Observability Stack
+# Fortune 10 Global Military Grade Infrastructure
+# Prometheus + Grafana + OpenTelemetry + AlertManager + Jaeger
+
+networks:
+  chatbotdysa-monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  chatbotdysa-enterprise:
+    external: true
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  jaeger_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+services:
+  # ===== PROMETHEUS - METRICS COLLECTION =====
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: chatbotdysa-prometheus-enterprise
+    hostname: prometheus-enterprise
+    restart: unless-stopped
+    user: "0:0"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=90d'
+      - '--storage.tsdb.retention.size=50GB'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--web.external-url=http://localhost:9090'
+      - '--web.route-prefix=/'
+      - '--query.max-concurrency=50'
+      - '--query.timeout=30s'
+      - '--alertmanager.notification-queue-capacity=10000'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    networks:
+      - chatbotdysa-monitoring
+      - chatbotdysa-enterprise
+    depends_on:
+      - node-exporter
+      - redis-exporter
+      - postgres-exporter
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=prometheus"
+
+  # ===== ALERTMANAGER - ENTERPRISE ALERTING =====
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: chatbotdysa-alertmanager-enterprise
+    hostname: alertmanager-enterprise
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--web.route-prefix=/'
+      - '--cluster.listen-address='
+      - '--log.level=info'
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - chatbotdysa-monitoring
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=alertmanager"
+
+  # ===== GRAFANA - ENTERPRISE DASHBOARDS =====
+  grafana:
+    image: grafana/grafana-enterprise:10.2.2
+    container_name: chatbotdysa-grafana-enterprise
+    hostname: grafana-enterprise
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "3000:3000"
+    environment:
+      # Enterprise Configuration
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-ChatBotDysa@Enterprise2024!}
+      GF_ENTERPRISE_LICENSE_TEXT: ${GRAFANA_ENTERPRISE_LICENSE:-}
+
+      # Security Configuration
+      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY:-ChatBotDysaEnterprise2024SecretKey}
+      GF_SECURITY_DISABLE_GRAVATAR: true
+      GF_SECURITY_COOKIE_SECURE: true
+      GF_SECURITY_COOKIE_SAMESITE: strict
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY: true
+      GF_SECURITY_X_CONTENT_TYPE_OPTIONS: true
+      GF_SECURITY_X_XSS_PROTECTION: true
+
+      # Server Configuration
+      GF_SERVER_DOMAIN: localhost
+      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_SERVER_SERVE_FROM_SUB_PATH: false
+
+      # Database Configuration
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: ${DATABASE_HOST:-localhost}:${DATABASE_PORT:-15432}
+      GF_DATABASE_NAME: ${DATABASE_NAME:-chatbotdysa}_grafana
+      GF_DATABASE_USER: ${DATABASE_USER:-postgres}
+      GF_DATABASE_PASSWORD: ${DATABASE_PASSWORD:-supersecret}
+      GF_DATABASE_SSL_MODE: disable
+
+      # Analytics
+      GF_ANALYTICS_REPORTING_ENABLED: false
+      GF_ANALYTICS_CHECK_FOR_UPDATES: false
+
+      # Auth Configuration
+      GF_AUTH_DISABLE_LOGIN_FORM: false
+      GF_AUTH_DISABLE_SIGNOUT_MENU: false
+
+      # Provisioning
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+
+      # Plugins
+      GF_INSTALL_PLUGINS: grafana-piechart-panel,grafana-worldmap-panel,redis-datasource,postgres-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - chatbotdysa-monitoring
+      - chatbotdysa-enterprise
+    depends_on:
+      - prometheus
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=grafana"
+
+  # ===== JAEGER - DISTRIBUTED TRACING =====
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: chatbotdysa-jaeger-enterprise
+    hostname: jaeger-enterprise
+    restart: unless-stopped
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger collector HTTP
+      - "14250:14250"  # Jaeger collector gRPC
+      - "6831:6831/udp"  # Jaeger agent UDP
+      - "6832:6832/udp"  # Jaeger agent UDP
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: 9411
+      COLLECTOR_OTLP_ENABLED: true
+      SPAN_STORAGE_TYPE: elasticsearch
+      ES_SERVER_URLS: http://elasticsearch:9200
+      ES_USERNAME: ${ELASTIC_USERNAME:-elastic}
+      ES_PASSWORD: ${ELASTIC_PASSWORD:-ChatBotDysa@Enterprise2024!}
+    networks:
+      - chatbotdysa-monitoring
+    depends_on:
+      - elasticsearch
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=jaeger"
+
+  # ===== ELASTICSEARCH - LOG STORAGE =====
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: chatbotdysa-elasticsearch-enterprise
+    hostname: elasticsearch-enterprise
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-ChatBotDysa@Enterprise2024!}
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.monitoring.collection.enabled=true
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - chatbotdysa-monitoring
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=elasticsearch"
+
+  # ===== KIBANA - LOG VISUALIZATION =====
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: chatbotdysa-kibana-enterprise
+    hostname: kibana-enterprise
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD:-ChatBotDysa@Enterprise2024!}
+      - KIBANA_SYSTEM_PASSWORD=${ELASTIC_PASSWORD:-ChatBotDysa@Enterprise2024!}
+    networks:
+      - chatbotdysa-monitoring
+    depends_on:
+      - elasticsearch
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=kibana"
+
+  # ===== NODE EXPORTER - SYSTEM METRICS =====
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: chatbotdysa-node-exporter
+    hostname: node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.systemd'
+      - '--collector.processes'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - chatbotdysa-monitoring
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=node-exporter"
+
+  # ===== REDIS EXPORTER - REDIS METRICS =====
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: chatbotdysa-redis-exporter
+    hostname: redis-exporter
+    restart: unless-stopped
+    command:
+      - '--redis.addr=redis://redis:6379'
+      - '--redis.password=${REDIS_PASSWORD:-}'
+    ports:
+      - "9121:9121"
+    networks:
+      - chatbotdysa-monitoring
+      - chatbotdysa-enterprise
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=redis-exporter"
+
+  # ===== POSTGRES EXPORTER - DATABASE METRICS =====
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: chatbotdysa-postgres-exporter
+    hostname: postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-supersecret}@${DATABASE_HOST:-postgres}:${DATABASE_PORT:-5432}/${DATABASE_NAME:-chatbotdysa}?sslmode=disable"
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres_exporter/queries.yaml"
+    ports:
+      - "9187:9187"
+    volumes:
+      - ./postgres-exporter/queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    networks:
+      - chatbotdysa-monitoring
+      - chatbotdysa-enterprise
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=postgres-exporter"
+
+  # ===== NGINX EXPORTER - WEB SERVER METRICS =====
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:0.11.0
+    container_name: chatbotdysa-nginx-exporter
+    hostname: nginx-exporter
+    restart: unless-stopped
+    command:
+      - '-nginx.scrape-uri=http://nginx:8080/nginx_status'
+    ports:
+      - "9113:9113"
+    networks:
+      - chatbotdysa-monitoring
+      - chatbotdysa-enterprise
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=nginx-exporter"
+
+  # ===== BLACKBOX EXPORTER - ENDPOINT MONITORING =====
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    container_name: chatbotdysa-blackbox-exporter
+    hostname: blackbox-exporter
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks:
+      - chatbotdysa-monitoring
+      - chatbotdysa-enterprise
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=blackbox-exporter"
+
+  # ===== CADVISOR - CONTAINER METRICS =====
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.48.1
+    container_name: chatbotdysa-cadvisor
+    hostname: cadvisor
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    networks:
+      - chatbotdysa-monitoring
+    labels:
+      - "com.chatbotdysa.service=monitoring"
+      - "com.chatbotdysa.tier=enterprise"
+      - "com.chatbotdysa.component=cadvisor"

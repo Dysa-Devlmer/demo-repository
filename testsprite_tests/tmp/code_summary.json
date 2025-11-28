@@ -1,0 +1,964 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "Node.js",
+    "NestJS",
+    "TypeORM",
+    "PostgreSQL",
+    "Redis",
+    "Socket.io",
+    "Passport JWT",
+    "Swagger/OpenAPI",
+    "Express",
+    "Helmet",
+    "Bcrypt"
+  ],
+  "features": [
+    {
+      "name": "Authentication API",
+      "description": "User authentication and authorization with JWT tokens, including login, registration, password reset, and CSRF protection",
+      "files": [
+        "apps/backend/src/auth/auth.controller.ts",
+        "apps/backend/src/auth/auth.service.ts",
+        "apps/backend/src/auth/dto/login.dto.ts",
+        "apps/backend/src/auth/dto/register.dto.ts",
+        "apps/backend/src/auth/guards/jwt-auth.guard.ts",
+        "apps/backend/src/auth/guards/csrf.guard.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/auth/csrf-token": {
+            "get": {
+              "summary": "Get CSRF token",
+              "description": "Generate and retrieve a CSRF token for secure form submissions",
+              "responses": {
+                "200": {
+                  "description": "CSRF token generated successfully"
+                }
+              }
+            }
+          },
+          "/api/auth/login": {
+            "post": {
+              "summary": "User login",
+              "description": "Authenticate user with email and password. Returns JWT access token on success",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "email": { "type": "string", "format": "email" },
+                        "password": { "type": "string" }
+                      },
+                      "required": ["email", "password"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Login successful - Returns access_token and user data" },
+                "401": { "description": "Unauthorized - Invalid credentials" },
+                "429": { "description": "Too many requests - Rate limit exceeded (max 5/min)" }
+              }
+            }
+          },
+          "/api/auth/register": {
+            "post": {
+              "summary": "User registration",
+              "description": "Create a new user account with email and password",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "email": { "type": "string", "format": "email" },
+                        "password": { "type": "string", "minLength": 8 },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" }
+                      },
+                      "required": ["email", "password"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "User registered successfully" },
+                "400": { "description": "Bad request - Invalid input or weak password" },
+                "409": { "description": "Conflict - Email already exists" },
+                "429": { "description": "Too many requests - Rate limit exceeded" }
+              }
+            }
+          },
+          "/api/auth/forgot-password": {
+            "post": {
+              "summary": "Request password reset",
+              "description": "Request a password reset email",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "email": { "type": "string", "format": "email" }
+                      },
+                      "required": ["email"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Password reset email sent if account exists" },
+                "429": { "description": "Too many requests" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Customers API",
+      "description": "CRUD operations for managing restaurant customers",
+      "files": [
+        "apps/backend/src/customers/customers.controller.ts",
+        "apps/backend/src/customers/customers.service.ts",
+        "apps/backend/src/customers/entities/customer.entity.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/customers": {
+            "get": {
+              "summary": "Get all customers",
+              "description": "Retrieve paginated list of customers",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "List of customers retrieved successfully" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "post": {
+              "summary": "Create customer",
+              "description": "Create a new customer record",
+              "security": [{ "bearer": [] }],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "email": { "type": "string", "format": "email" },
+                        "phone": { "type": "string" },
+                        "preferences": { "type": "object" }
+                      },
+                      "required": ["name"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Customer created successfully" },
+                "400": { "description": "Bad request" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          },
+          "/api/customers/{id}": {
+            "get": {
+              "summary": "Get customer by ID",
+              "description": "Retrieve a specific customer",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Customer retrieved successfully" },
+                "404": { "description": "Customer not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "patch": {
+              "summary": "Update customer",
+              "description": "Update customer information",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Customer updated successfully" },
+                "404": { "description": "Customer not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "delete": {
+              "summary": "Delete customer",
+              "description": "Remove a customer from the system",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Customer deleted successfully" },
+                "404": { "description": "Customer not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Menu API",
+      "description": "Restaurant menu management including categories and items",
+      "files": [
+        "apps/backend/src/menu/menu.controller.ts",
+        "apps/backend/src/menu/menu.service.ts",
+        "apps/backend/src/menu/entities/menu-item.entity.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/menu": {
+            "get": {
+              "summary": "Get menu items",
+              "description": "Retrieve all menu items with optional filtering",
+              "responses": {
+                "200": { "description": "Menu items retrieved successfully" }
+              }
+            },
+            "post": {
+              "summary": "Create menu item",
+              "description": "Add a new item to the menu",
+              "security": [{ "bearer": [] }],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "price": { "type": "number" },
+                        "category": { "type": "string" },
+                        "image": { "type": "string" },
+                        "available": { "type": "boolean" }
+                      },
+                      "required": ["name", "price", "category"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Menu item created successfully" },
+                "400": { "description": "Bad request" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          },
+          "/api/menu/{id}": {
+            "get": {
+              "summary": "Get menu item by ID",
+              "description": "Retrieve a specific menu item",
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Menu item retrieved successfully" },
+                "404": { "description": "Menu item not found" }
+              }
+            },
+            "patch": {
+              "summary": "Update menu item",
+              "description": "Update menu item details",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Menu item updated successfully" },
+                "404": { "description": "Menu item not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "delete": {
+              "summary": "Delete menu item",
+              "description": "Remove a menu item",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Menu item deleted successfully" },
+                "404": { "description": "Menu item not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Orders API",
+      "description": "Order management system for restaurant orders",
+      "files": [
+        "apps/backend/src/orders/orders.controller.ts",
+        "apps/backend/src/orders/orders.service.ts",
+        "apps/backend/src/orders/entities/order.entity.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/orders": {
+            "get": {
+              "summary": "Get all orders",
+              "description": "Retrieve paginated list of orders",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "Orders retrieved successfully" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "post": {
+              "summary": "Create order",
+              "description": "Create a new restaurant order",
+              "security": [{ "bearer": [] }],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "customerId": { "type": "integer" },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "menuItemId": { "type": "integer" },
+                              "quantity": { "type": "integer" },
+                              "specialInstructions": { "type": "string" }
+                            }
+                          }
+                        },
+                        "deliveryAddress": { "type": "string" },
+                        "notes": { "type": "string" }
+                      },
+                      "required": ["items"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Order created successfully" },
+                "400": { "description": "Bad request" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          },
+          "/api/orders/{id}": {
+            "get": {
+              "summary": "Get order by ID",
+              "description": "Retrieve a specific order with all details",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Order retrieved successfully" },
+                "404": { "description": "Order not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "patch": {
+              "summary": "Update order",
+              "description": "Update order status or details",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "status": { "type": "string", "enum": ["pending", "preparing", "ready", "delivered", "cancelled"] }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": { "description": "Order updated successfully" },
+                "404": { "description": "Order not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Reservations API",
+      "description": "Table reservation management system",
+      "files": [
+        "apps/backend/src/reservations/reservations.controller.ts",
+        "apps/backend/src/reservations/reservations.service.ts",
+        "apps/backend/src/reservations/entities/reservation.entity.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/reservations": {
+            "get": {
+              "summary": "Get all reservations",
+              "description": "Retrieve paginated list of reservations",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "Reservations retrieved successfully" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "post": {
+              "summary": "Create reservation",
+              "description": "Create a new table reservation",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "customerName": { "type": "string" },
+                        "customerPhone": { "type": "string" },
+                        "customerEmail": { "type": "string", "format": "email" },
+                        "date": { "type": "string", "format": "date-time" },
+                        "numberOfGuests": { "type": "integer", "minimum": 1 },
+                        "specialRequests": { "type": "string" }
+                      },
+                      "required": ["customerName", "customerPhone", "date", "numberOfGuests"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Reservation created successfully" },
+                "400": { "description": "Bad request" },
+                "409": { "description": "Conflict - Time slot not available" }
+              }
+            }
+          },
+          "/api/reservations/{id}": {
+            "get": {
+              "summary": "Get reservation by ID",
+              "description": "Retrieve a specific reservation",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Reservation retrieved successfully" },
+                "404": { "description": "Reservation not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "patch": {
+              "summary": "Update reservation",
+              "description": "Update reservation details or status",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Reservation updated successfully" },
+                "404": { "description": "Reservation not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "delete": {
+              "summary": "Cancel reservation",
+              "description": "Cancel a reservation",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Reservation cancelled successfully" },
+                "404": { "description": "Reservation not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Conversations API",
+      "description": "AI chatbot conversation management",
+      "files": [
+        "apps/backend/src/conversations/conversations.controller.ts",
+        "apps/backend/src/conversations/conversations.service.ts",
+        "apps/backend/src/conversations/entities/conversation.entity.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/conversations": {
+            "get": {
+              "summary": "Get all conversations",
+              "description": "Retrieve paginated list of AI chatbot conversations",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "Conversations retrieved successfully" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "post": {
+              "summary": "Create conversation",
+              "description": "Start a new AI chatbot conversation",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "message": { "type": "string" },
+                        "customerId": { "type": "integer" },
+                        "sessionId": { "type": "string" }
+                      },
+                      "required": ["message"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Conversation created successfully with AI response" },
+                "400": { "description": "Bad request" }
+              }
+            }
+          },
+          "/api/conversations/{id}": {
+            "get": {
+              "summary": "Get conversation by ID",
+              "description": "Retrieve a specific conversation with message history",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "Conversation retrieved successfully" },
+                "404": { "description": "Conversation not found" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Dashboard API",
+      "description": "Dashboard analytics and statistics",
+      "files": [
+        "apps/backend/src/dashboard/dashboard-snapshot.controller.ts",
+        "apps/backend/src/dashboard/dashboard-analytics.controller.ts",
+        "apps/backend/src/common/controllers/analytics.controller.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/dashboard/stats": {
+            "get": {
+              "summary": "Get dashboard statistics",
+              "description": "Retrieve key metrics for the restaurant dashboard",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": {
+                  "description": "Dashboard statistics retrieved successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "totalCustomers": { "type": "integer" },
+                          "totalOrders": { "type": "integer" },
+                          "totalRevenue": { "type": "number" },
+                          "activeReservations": { "type": "integer" },
+                          "conversationCount": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          },
+          "/api/analytics/dashboard": {
+            "get": {
+              "summary": "Get analytics dashboard",
+              "description": "Retrieve detailed analytics data",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "Analytics data retrieved successfully" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Users API",
+      "description": "User management and administration",
+      "files": [
+        "apps/backend/src/users/users.controller.ts",
+        "apps/backend/src/users/users.service.ts",
+        "apps/backend/src/users/entities/user.entity.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/users": {
+            "get": {
+              "summary": "Get all users",
+              "description": "Retrieve paginated list of system users",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "Users retrieved successfully" },
+                "401": { "description": "Unauthorized" },
+                "403": { "description": "Forbidden - Admin access required" }
+              }
+            },
+            "post": {
+              "summary": "Create user",
+              "description": "Create a new system user",
+              "security": [{ "bearer": [] }],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "email": { "type": "string", "format": "email" },
+                        "password": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" },
+                        "roles": { "type": "array", "items": { "type": "string" } }
+                      },
+                      "required": ["email", "password"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "User created successfully" },
+                "400": { "description": "Bad request" },
+                "401": { "description": "Unauthorized" },
+                "403": { "description": "Forbidden - Admin access required" }
+              }
+            }
+          },
+          "/api/users/profile": {
+            "get": {
+              "summary": "Get current user profile",
+              "description": "Retrieve authenticated user's profile",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "Profile retrieved successfully" },
+                "401": { "description": "Unauthorized" }
+              }
+            },
+            "patch": {
+              "summary": "Update current user profile",
+              "description": "Update authenticated user's profile",
+              "security": [{ "bearer": [] }],
+              "responses": {
+                "200": { "description": "Profile updated successfully" },
+                "400": { "description": "Bad request" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          },
+          "/api/users/{id}": {
+            "get": {
+              "summary": "Get user by ID",
+              "description": "Retrieve a specific user",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "User retrieved successfully" },
+                "404": { "description": "User not found" },
+                "401": { "description": "Unauthorized" },
+                "403": { "description": "Forbidden" }
+              }
+            },
+            "patch": {
+              "summary": "Update user",
+              "description": "Update user details",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "User updated successfully" },
+                "404": { "description": "User not found" },
+                "401": { "description": "Unauthorized" },
+                "403": { "description": "Forbidden" }
+              }
+            },
+            "delete": {
+              "summary": "Delete user",
+              "description": "Remove a user from the system",
+              "security": [{ "bearer": [] }],
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "integer" }
+                }
+              ],
+              "responses": {
+                "200": { "description": "User deleted successfully" },
+                "404": { "description": "User not found" },
+                "401": { "description": "Unauthorized" },
+                "403": { "description": "Forbidden - Admin access required" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Health Check API",
+      "description": "System health monitoring and status checks",
+      "files": [
+        "apps/backend/src/health/health.controller.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/health": {
+            "get": {
+              "summary": "Health check",
+              "description": "Check if the API is running and healthy",
+              "responses": {
+                "200": {
+                  "description": "API is healthy",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "status": { "type": "string", "example": "ok" },
+                          "info": { "type": "object" },
+                          "error": { "type": "object" },
+                          "details": { "type": "object" }
+                        }
+                      }
+                    }
+                  }
+                },
+                "503": { "description": "Service unavailable" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Promotions API",
+      "description": "Restaurant promotions and special offers management",
+      "files": [
+        "apps/backend/src/promotions/promotions.controller.ts",
+        "apps/backend/src/promotions/promotions.service.ts",
+        "apps/backend/src/promotions/entities/promotion.entity.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/promotions": {
+            "get": {
+              "summary": "Get all promotions",
+              "description": "Retrieve list of active promotions",
+              "responses": {
+                "200": { "description": "Promotions retrieved successfully" }
+              }
+            },
+            "post": {
+              "summary": "Create promotion",
+              "description": "Create a new promotion",
+              "security": [{ "bearer": [] }],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "title": { "type": "string" },
+                        "description": { "type": "string" },
+                        "discountPercentage": { "type": "number" },
+                        "startDate": { "type": "string", "format": "date-time" },
+                        "endDate": { "type": "string", "format": "date-time" },
+                        "code": { "type": "string" }
+                      },
+                      "required": ["title", "description"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Promotion created successfully" },
+                "400": { "description": "Bad request" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Uploads API",
+      "description": "File upload management for images and documents",
+      "files": [
+        "apps/backend/src/uploads/uploads.controller.ts",
+        "apps/backend/src/uploads/uploads.service.ts"
+      ],
+      "api_doc": {
+        "paths": {
+          "/api/upload/image": {
+            "post": {
+              "summary": "Upload image",
+              "description": "Upload an image file",
+              "security": [{ "bearer": [] }],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "multipart/form-data": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "file": {
+                          "type": "string",
+                          "format": "binary"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "Image uploaded successfully" },
+                "400": { "description": "Bad request - Invalid file type or size" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          },
+          "/api/upload/file": {
+            "post": {
+              "summary": "Upload file",
+              "description": "Upload a document file",
+              "security": [{ "bearer": [] }],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "multipart/form-data": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "file": {
+                          "type": "string",
+                          "format": "binary"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": { "description": "File uploaded successfully" },
+                "400": { "description": "Bad request" },
+                "401": { "description": "Unauthorized" }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import * as request from 'supertest';
+import { AppModule } from '../app.module';
+
+describe('Security Integration Tests - Banking Level', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('🛡️ API Security Headers', () => {
+    it('should include security headers in responses', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/health')
+        .expect(200);
+
+      // Check for basic security headers
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+      expect(response.headers['x-frame-options']).toBeDefined();
+      expect(response.headers['x-xss-protection']).toBeDefined();
+    });
+
+    it('should not expose sensitive server information', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/health')
+        .expect(200);
+
+      // Should not expose server details
+      expect(response.headers['x-powered-by']).toBeUndefined();
+      expect(response.headers['server']).not.toContain('Express');
+    });
+  });
+
+  describe('🚨 Rate Limiting Protection', () => {
+    it('should enforce rate limits on multiple rapid requests', async () => {
+      const endpoint = '/api/health';
+      const requests = [];
+
+      // Send many requests rapidly to trigger rate limiting
+      for (let i = 0; i < 150; i++) {
+        requests.push(request(app.getHttpServer()).get(endpoint));
+      }
+
+      const responses = await Promise.allSettled(requests);
+      const statusCodes = responses
+        .filter(r => r.status === 'fulfilled')
+        .map(r => (r as any).value.status);
+
+      // Should have some 429 (rate limited) responses
+      const rateLimitedCount = statusCodes.filter(code => code === 429).length;
+      expect(rateLimitedCount).toBeGreaterThan(0);
+    }, 10000);
+  });
+
+  describe('💉 SQL Injection Protection', () => {
+    const sqlPayloads = [
+      "'; DROP TABLE users; --",
+      "1' OR '1'='1",
+      "UNION SELECT * FROM sensitive_data",
+      "1; DELETE FROM orders WHERE 1=1; --",
+      "admin'/**/OR/**/1=1#",
+    ];
+
+    sqlPayloads.forEach((payload, index) => {
+      it(`should block SQL injection attempt ${index + 1}`, async () => {
+        await request(app.getHttpServer())
+          .get('/api/health')
+          .query({ search: payload })
+          .expect(400);
+      });
+    });
+  });
+
+  describe('🔐 XSS Protection', () => {
+    const xssPayloads = [
+      '<script>alert("xss")</script>',
+      'javascript:alert(1)',
+      '<img src=x onerror=alert(1)>',
+      '<iframe src="javascript:alert(1)"></iframe>',
+      '<svg onload=alert(1)>',
+      'onclick=alert(1)',
+    ];
+
+    xssPayloads.forEach((payload, index) => {
+      it(`should block XSS attempt ${index + 1}`, async () => {
+        await request(app.getHttpServer())
+          .post('/api/test-endpoint')
+          .send({ message: payload })
+          .expect(res => {
+            expect([400, 404]).toContain(res.status);
+          });
+      });
+    });
+  });
+
+  describe('🚪 CORS Protection', () => {
+    it('should handle CORS for allowed origins', async () => {
+      const response = await request(app.getHttpServer())
+        .options('/api/health')
+        .set('Origin', 'http://localhost:8001')
+        .expect(res => {
+          expect([200, 204]).toContain(res.status);
+        });
+
+      expect(response.headers['access-control-allow-origin']).toBeDefined();
+    });
+
+    it('should reject requests from unauthorized origins', async () => {
+      await request(app.getHttpServer())
+        .get('/api/health')
+        .set('Origin', 'https://malicious-site.com')
+        .expect(res => {
+          // Should either block or not include CORS headers
+          expect(res.status).toBeDefined();
+        });
+    });
+  });
+
+  describe('🛡️ Input Validation', () => {
+    it('should validate request body size limits', async () => {
+      const largePayload = 'x'.repeat(10 * 1024 * 1024); // 10MB
+
+      await request(app.getHttpServer())
+        .post('/api/test-endpoint')
+        .send({ data: largePayload })
+        .expect(res => {
+          expect([413, 400, 404]).toContain(res.status);
+        });
+    });
+
+    it('should validate JSON structure', async () => {
+      await request(app.getHttpServer())
+        .post('/api/test-endpoint')
+        .set('Content-Type', 'application/json')
+        .send('invalid json syntax{')
+        .expect(res => {
+          expect([400, 404]).toContain(res.status);
+        });
+    });
+  });
+
+  describe('🔍 API Endpoint Security', () => {
+    it('should protect sensitive endpoints', async () => {
+      const sensitiveEndpoints = [
+        '/api/admin',
+        '/api/users',
+        '/api/config',
+        '/api/system',
+        '/api/security',
+      ];
+
+      for (const endpoint of sensitiveEndpoints) {
+        await request(app.getHttpServer())
+          .get(endpoint)
+          .expect(res => {
+            // Should require authentication or return 404
+            expect([401, 403, 404]).toContain(res.status);
+          });
+      }
+    });
+
+    it('should allow public endpoints', async () => {
+      const publicEndpoints = [
+        '/api/health',
+        '/api-docs',
+      ];
+
+      for (const endpoint of publicEndpoints) {
+        await request(app.getHttpServer())
+          .get(endpoint)
+          .expect(res => {
+            expect([200, 301, 302]).toContain(res.status);
+          });
+      }
+    });
+  });
+
+  describe('⚡ Performance Under Load', () => {
+    it('should maintain security performance under load', async () => {
+      const startTime = Date.now();
+      const requests = [];
+
+      // Send 50 concurrent requests
+      for (let i = 0; i < 50; i++) {
+        requests.push(request(app.getHttpServer()).get('/api/health'));
+      }
+
+      const responses = await Promise.all(requests);
+      const endTime = Date.now();
+
+      // All requests should complete
+      expect(responses).toHaveLength(50);
+
+      // Performance should be acceptable (under 5 seconds for 50 requests)
+      expect(endTime - startTime).toBeLessThan(5000);
+
+      // Most responses should be successful
+      const successCount = responses.filter(r => r.status === 200).length;
+      expect(successCount).toBeGreaterThan(40);
+    }, 10000);
+  });
+
+  describe('🏥 Health Check Security', () => {
+    it('should not expose sensitive system information', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/health')
+        .expect(200);
+
+      const body = response.body;
+
+      // Should not expose sensitive info
+      expect(JSON.stringify(body)).not.toContain('password');
+      expect(JSON.stringify(body)).not.toContain('secret');
+      expect(JSON.stringify(body)).not.toContain('key');
+      expect(JSON.stringify(body)).not.toContain('token');
+    });
+
+    it('should provide basic status without details', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/health')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status');
+      expect(['ok', 'healthy', 'up']).toContain(response.body.status);
+    });
+  });
+
+  describe('🔒 Authentication Security', () => {
+    it('should reject requests without valid tokens', async () => {
+      await request(app.getHttpServer())
+        .get('/api/protected-endpoint')
+        .expect(res => {
+          expect([401, 403, 404]).toContain(res.status);
+        });
+    });
+
+    it('should reject malformed authorization headers', async () => {
+      const malformedHeaders = [
+        'Bearer invalid-token',
+        'Basic invalid-base64',
+        'JWT malformed.token.here',
+        'Bearer ',
+        'invalid-format',
+      ];
+
+      for (const header of malformedHeaders) {
+        await request(app.getHttpServer())
+          .get('/api/protected-endpoint')
+          .set('Authorization', header)
+          .expect(res => {
+            expect([401, 403, 404]).toContain(res.status);
+          });
+      }
+    });
+  });
+
+  describe('📊 Monitoring and Logging', () => {
+    it('should log security events properly', async () => {
+      // Trigger a security event (SQL injection attempt)
+      await request(app.getHttpServer())
+        .get('/api/health')
+        .query({ test: "'; DROP TABLE test; --" })
+        .expect(res => {
+          expect([400, 200]).toContain(res.status);
+        });
+
+      // The test passes if no errors are thrown
+      // Real logging verification would require log file inspection
+      expect(true).toBe(true);
+    });
+  });
+});

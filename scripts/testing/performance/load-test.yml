@@ -1,0 +1,218 @@
+# =============================================================================
+# 🚀 CHATBOTDYSA ENTERPRISE+++++ LOAD TESTING
+# Artillery.js Performance Testing Configuration - Fortune 500 Standards
+# =============================================================================
+
+config:
+  target: 'http://localhost:8005'
+  phases:
+    # Warm-up Phase: Gradual ramp-up
+    - duration: 60
+      arrivalRate: 1
+      name: "Warm-up Phase"
+
+    # Load Testing Phase: Sustained load
+    - duration: 300
+      arrivalRate: 10
+      name: "Sustained Load Phase"
+
+    # Stress Testing Phase: Peak load
+    - duration: 120
+      arrivalRate: 50
+      name: "Peak Load Phase"
+
+    # Spike Testing Phase: Sudden load increase
+    - duration: 60
+      arrivalRate: 100
+      name: "Spike Testing Phase"
+
+    # Recovery Phase: Cool down
+    - duration: 120
+      arrivalRate: 5
+      name: "Recovery Phase"
+
+  # Enterprise Performance Thresholds
+  ensure:
+    # Response time requirements (Fortune 500 standards)
+    - p95: 500        # 95% of requests under 500ms
+    - p99: 1000       # 99% of requests under 1000ms
+    - median: 200     # Median response time under 200ms
+    - max: 3000       # Maximum response time under 3s
+
+    # Error rate requirements
+    - errorRate: 0.1  # Error rate under 0.1%
+
+    # Throughput requirements
+    - requestsPerSecond: 100  # Minimum 100 RPS
+
+  # Request defaults
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+      User-Agent: 'Artillery/ChatBotDysa-Enterprise-Load-Test'
+      Accept: 'application/json'
+
+  # Environment variables for dynamic testing
+  environments:
+    development:
+      target: 'http://localhost:8005'
+    staging:
+      target: 'https://staging.chatbotdysa.com'
+    production:
+      target: 'https://api.chatbotdysa.com'
+
+  # Processor for custom logic
+  processor: './load-test-processor.js'
+
+  # Metrics and reporting
+  statsHistogramBase: 10
+  statsHistogramFactor: 2
+
+# Test Scenarios
+scenarios:
+  # Scenario 1: Authentication Flow Testing
+  - name: "Authentication Load Test"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            email: "loadtest{{ $randomString() }}@chatbotdysa.com"
+            password: "Enterprise123!"
+            firstName: "Load"
+            lastName: "Test{{ $randomInt(1, 1000) }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 201
+            - hasProperty: "token"
+            - contentType: json
+
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "loadtest{{ $randomString() }}@chatbotdysa.com"
+            password: "Enterprise123!"
+          expect:
+            - statusCode: [200, 401]  # Accept both success and auth failure
+
+      - think: 2  # Simulate user think time
+
+  # Scenario 2: Menu Operations Testing
+  - name: "Menu Operations Load Test"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/menu"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: "data"
+
+      - get:
+          url: "/api/menu/categories"
+          expect:
+            - statusCode: 200
+
+      - think: 1
+
+  # Scenario 3: Orders Operations Testing
+  - name: "Orders Operations Load Test"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/demo-token"
+          json:
+            sessionId: "demo_{{ $randomString() }}_{{ $timestamp() }}"
+          capture:
+            - json: "$.token"
+              as: "demoToken"
+          expect:
+            - statusCode: 200
+
+      - get:
+          url: "/api/orders"
+          headers:
+            Authorization: "Bearer {{ demoToken }}"
+          expect:
+            - statusCode: 200
+
+      - think: 3
+
+  # Scenario 4: Customer Operations Testing
+  - name: "Customer Operations Load Test"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/customers"
+          expect:
+            - statusCode: 200
+
+      - post:
+          url: "/api/customers"
+          json:
+            name: "Load Test Customer {{ $randomInt(1, 10000) }}"
+            email: "customer{{ $randomString() }}@test.com"
+            phone: "+1{{ $randomInt(1000000000, 9999999999) }}"
+          expect:
+            - statusCode: [201, 409]  # Accept creation or conflict
+
+  # Scenario 5: Analytics Dashboard Testing
+  - name: "Analytics Dashboard Load Test"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/analytics/dashboard"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+      - get:
+          url: "/api/settings"
+          expect:
+            - statusCode: 200
+
+# =============================================================================
+# ENTERPRISE LOAD TESTING METRICS
+# =============================================================================
+#
+# This configuration tests:
+#
+# 1. AUTHENTICATION PERFORMANCE:
+#    - User registration under load
+#    - Login performance with concurrent users
+#    - Token generation and validation
+#
+# 2. API ENDPOINT PERFORMANCE:
+#    - Menu operations (GET requests)
+#    - Order operations (CRUD operations)
+#    - Customer management (CRUD operations)
+#    - Analytics dashboard (complex queries)
+#
+# 3. SYSTEM SCALABILITY:
+#    - Gradual load increase (1-100 concurrent users)
+#    - Sustained load testing (10 users for 5 minutes)
+#    - Spike testing (sudden load bursts)
+#    - Recovery testing (system stability after load)
+#
+# 4. PERFORMANCE THRESHOLDS:
+#    - P95 response time: <500ms (Fortune 500 standard)
+#    - P99 response time: <1000ms
+#    - Error rate: <0.1%
+#    - Minimum throughput: 100 RPS
+#
+# 5. REALISTIC USER BEHAVIOR:
+#    - Think time between requests
+#    - Mixed read/write operations
+#    - Authentication flows
+#    - Error handling scenarios
+#
+# To run this test:
+# npm install -g artillery
+# artillery run test/performance/load-test.yml
+#
+# To run with custom target:
+# artillery run test/performance/load-test.yml --environment staging
+#
+# =============================================================================

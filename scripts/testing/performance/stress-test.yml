@@ -1,0 +1,244 @@
+# =============================================================================
+# 🚀 CHATBOTDYSA ENTERPRISE+++++ STRESS TESTING
+# Artillery.js Stress Testing Configuration - Fortune 500 Stress Standards
+# =============================================================================
+
+config:
+  target: 'http://localhost:8005'
+  phases:
+    # Baseline Phase: Normal load
+    - duration: 120
+      arrivalRate: 10
+      name: "Baseline Normal Load"
+
+    # Stress Ramp-up Phase: Gradual increase
+    - duration: 180
+      arrivalRate: 25
+      rampTo: 100
+      name: "Stress Ramp-up Phase"
+
+    # Peak Stress Phase: Maximum sustained load
+    - duration: 300
+      arrivalRate: 150
+      name: "Peak Stress Phase"
+
+    # Extreme Stress Phase: Beyond normal capacity
+    - duration: 180
+      arrivalRate: 250
+      name: "Extreme Stress Phase"
+
+    # Burst Stress Phase: Sudden extreme load
+    - duration: 60
+      arrivalRate: 500
+      name: "Burst Stress Phase"
+
+    # Recovery Monitoring: System recovery
+    - duration: 300
+      arrivalRate: 10
+      name: "Recovery Monitoring Phase"
+
+  # Stress Testing Thresholds (More aggressive than load testing)
+  ensure:
+    # Under extreme stress, some degradation is acceptable
+    - p95: 2000       # 95% of requests under 2s during stress
+    - p99: 5000       # 99% of requests under 5s during stress
+    - median: 800     # Median response time under 800ms
+    - max: 10000      # Maximum response time under 10s
+
+    # Error rate during stress (higher tolerance)
+    - errorRate: 5    # Error rate under 5% during stress testing
+
+  # Stress test request configuration
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+      User-Agent: 'Artillery/ChatBotDysa-Enterprise-Stress-Test'
+      Accept: 'application/json'
+      X-Stress-Test: 'true'
+      X-Test-Intensity: 'maximum'
+
+  # Processor for stress-specific logic
+  processor: './stress-test-processor.js'
+
+  # HTTP configuration for stress testing
+  http:
+    timeout: 30           # 30s timeout for stress conditions
+    maxSockets: 1000      # High socket limit for stress
+    keepAlive: true       # Keep connections alive
+
+# Stress Testing Scenarios
+scenarios:
+  # Scenario 1: Authentication Stress Test
+  - name: "Authentication Stress Test"
+    weight: 40
+    flow:
+      # Rapid user registration
+      - loop:
+          - post:
+              url: "/api/auth/register"
+              json:
+                email: "stress{{ $randomString() }}{{ $timestamp() }}@chatbotdysa.com"
+                password: "StressTest123!"
+                firstName: "Stress{{ $randomInt(1, 100000) }}"
+                lastName: "User{{ $timestamp() }}"
+              capture:
+                - json: "$.token"
+                  as: "stressToken"
+              expect:
+                - statusCode: [200, 201, 429, 503]  # Accept rate limiting and overload
+
+          # Immediate login attempt
+          - post:
+              url: "/api/auth/login"
+              json:
+                email: "stress{{ $randomString() }}@chatbotdysa.com"
+                password: "StressTest123!"
+              expect:
+                - statusCode: [200, 401, 429, 503]
+
+          - think: 0.1  # Minimal think time for stress
+        count: 3
+
+  # Scenario 2: API Endpoint Hammering
+  - name: "API Endpoint Stress Hammering"
+    weight: 30
+    flow:
+      # Rapid-fire API calls
+      - parallel:
+          - get:
+              url: "/api/menu"
+              expect:
+                - statusCode: [200, 429, 503]
+
+          - get:
+              url: "/api/customers"
+              expect:
+                - statusCode: [200, 429, 503]
+
+          - get:
+              url: "/api/orders"
+              expect:
+                - statusCode: [200, 401, 429, 503]
+
+          - get:
+              url: "/api/analytics/dashboard"
+              expect:
+                - statusCode: [200, 429, 503]
+
+  # Scenario 3: Database Stress Test
+  - name: "Database Intensive Operations"
+    weight: 20
+    flow:
+      # Create multiple customers rapidly
+      - loop:
+          - post:
+              url: "/api/customers"
+              json:
+                name: "StressCustomer{{ $randomInt(1, 1000000) }}"
+                email: "stresscust{{ $randomString() }}{{ $timestamp() }}@test.com"
+                phone: "+1{{ $randomInt(1000000000, 9999999999) }}"
+                address: "{{ $randomInt(1, 9999) }} Stress Test Ave, Load City"
+                metadata:
+                  testType: "stress"
+                  intensity: "maximum"
+                  batch: "{{ $timestamp() }}"
+              expect:
+                - statusCode: [200, 201, 409, 429, 503]
+        count: 5
+
+      # Query operations under stress
+      - get:
+          url: "/api/customers?limit=100&sortBy=createdAt"
+          expect:
+            - statusCode: [200, 429, 503]
+
+  # Scenario 4: Memory and Resource Stress
+  - name: "Resource Intensive Operations"
+    weight: 10
+    flow:
+      # Large payload stress test
+      - post:
+          url: "/api/orders"
+          json:
+            items: [
+              { id: 1, name: "Stress Item 1", price: 10.99, quantity: 50, notes: "{{ $randomString() }}" },
+              { id: 2, name: "Stress Item 2", price: 15.99, quantity: 30, notes: "{{ $randomString() }}" },
+              { id: 3, name: "Stress Item 3", price: 8.99, quantity: 25, notes: "{{ $randomString() }}" },
+              { id: 4, name: "Stress Item 4", price: 12.99, quantity: 40, notes: "{{ $randomString() }}" },
+              { id: 5, name: "Stress Item 5", price: 18.99, quantity: 20, notes: "{{ $randomString() }}" }
+            ]
+            customerInfo:
+              name: "StressOrder Customer {{ $randomInt(1, 100000) }}"
+              email: "stressorder{{ $randomString() }}@test.com"
+              phone: "+1{{ $randomInt(1000000000, 9999999999) }}"
+              address: "{{ $randomInt(1, 9999) }} Performance Test Blvd"
+              specialInstructions: "Stress test order with large payload data for performance testing under extreme load conditions. This is a synthetic order generated during stress testing to evaluate system performance under heavy load. {{ $randomString() }} {{ $randomString() }} {{ $randomString() }}"
+            paymentInfo:
+              method: "credit_card"
+              cardLast4: "{{ $randomInt(1000, 9999) }}"
+              amount: 9999.99
+            metadata:
+              stressTest: true
+              largePayload: true
+              timestamp: "{{ $timestamp() }}"
+              sessionId: "stress_{{ $randomString() }}_{{ $timestamp() }}"
+          expect:
+            - statusCode: [200, 201, 400, 413, 429, 503]
+
+# =============================================================================
+# ENTERPRISE STRESS TESTING OBJECTIVES
+# =============================================================================
+#
+# This stress test configuration evaluates:
+#
+# 1. BREAKING POINT IDENTIFICATION:
+#    - Maximum concurrent users (500+ virtual users)
+#    - System failure thresholds
+#    - Resource exhaustion points
+#    - Recovery capabilities
+#
+# 2. PERFORMANCE DEGRADATION:
+#    - Response time under extreme load
+#    - Throughput degradation curves
+#    - Error rate progression
+#    - System stability under stress
+#
+# 3. RESOURCE LIMITS:
+#    - Memory usage under load
+#    - CPU utilization peaks
+#    - Database connection limits
+#    - Network bandwidth consumption
+#
+# 4. FAILURE SCENARIOS:
+#    - Graceful degradation testing
+#    - Error handling under stress
+#    - Rate limiting effectiveness
+#    - Circuit breaker functionality
+#
+# 5. RECOVERY TESTING:
+#    - System recovery after peak load
+#    - Resource cleanup verification
+#    - Performance restoration
+#    - Data consistency after stress
+#
+# 6. STRESS TEST PHASES:
+#    - Baseline: Normal 10 RPS load
+#    - Ramp-up: 25 to 100 RPS over 3 minutes
+#    - Peak: Sustained 150 RPS for 5 minutes
+#    - Extreme: 250 RPS stress for 3 minutes
+#    - Burst: 500 RPS spike for 1 minute
+#    - Recovery: Return to 10 RPS for monitoring
+#
+# Expected Outcomes:
+# - Identify maximum sustainable load
+# - Validate rate limiting and circuit breakers
+# - Verify graceful degradation
+# - Ensure system recovery capabilities
+# - Document performance characteristics under stress
+#
+# To run this stress test:
+# npm install -g artillery
+# artillery run test/performance/stress-test.yml --output stress-report.json
+# artillery report stress-report.json --output stress-report.html
+#
+# =============================================================================

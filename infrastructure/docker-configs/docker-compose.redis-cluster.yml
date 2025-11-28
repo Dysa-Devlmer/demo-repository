@@ -1,0 +1,346 @@
+version: '3.8'
+
+# =============================================================================
+# 🚀 CHATBOTDYSA ENTERPRISE+++++ REDIS CLUSTER
+# High Availability Redis Configuration for Fortune 500 Operations
+# =============================================================================
+
+services:
+  # Redis Master Nodes
+  redis-node-1:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-1
+    ports:
+      - "7001:7001"
+      - "17001:17001"
+    volumes:
+      - redis-node-1-data:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf --port 7001 --cluster-announce-port 7001 --cluster-announce-bus-port 17001
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    sysctls:
+      net.core.somaxconn: 1024
+    ulimits:
+      memlock: -1
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  redis-node-2:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-2
+    ports:
+      - "7002:7002"
+      - "17002:17002"
+    volumes:
+      - redis-node-2-data:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf --port 7002 --cluster-announce-port 7002 --cluster-announce-bus-port 17002
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    sysctls:
+      net.core.somaxconn: 1024
+    ulimits:
+      memlock: -1
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  redis-node-3:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-3
+    ports:
+      - "7003:7003"
+      - "17003:17003"
+    volumes:
+      - redis-node-3-data:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf --port 7003 --cluster-announce-port 7003 --cluster-announce-bus-port 17003
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    sysctls:
+      net.core.somaxconn: 1024
+    ulimits:
+      memlock: -1
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Redis Replica Nodes
+  redis-node-4:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-4
+    ports:
+      - "7004:7004"
+      - "17004:17004"
+    volumes:
+      - redis-node-4-data:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf --port 7004 --cluster-announce-port 7004 --cluster-announce-bus-port 17004
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    sysctls:
+      net.core.somaxconn: 1024
+    ulimits:
+      memlock: -1
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  redis-node-5:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-5
+    ports:
+      - "7005:7005"
+      - "17005:17005"
+    volumes:
+      - redis-node-5-data:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf --port 7005 --cluster-announce-port 7005 --cluster-announce-bus-port 17005
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    sysctls:
+      net.core.somaxconn: 1024
+    ulimits:
+      memlock: -1
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  redis-node-6:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-6
+    ports:
+      - "7006:7006"
+      - "17006:17006"
+    volumes:
+      - redis-node-6-data:/data
+      - ./config/redis/redis-cluster.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf --port 7006 --cluster-announce-port 7006 --cluster-announce-bus-port 17006
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    sysctls:
+      net.core.somaxconn: 1024
+    ulimits:
+      memlock: -1
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Redis Cluster Setup Service
+  redis-cluster-setup:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-cluster-setup
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+      - redis-node-6
+    networks:
+      - chatbotdysa-redis-network
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    command: >
+      sh -c "
+        echo '🚀 Waiting for Redis nodes to be ready...' &&
+        sleep 10 &&
+        echo '🔧 Creating Redis cluster...' &&
+        redis-cli --cluster create
+        redis-node-1:7001
+        redis-node-2:7002
+        redis-node-3:7003
+        redis-node-4:7004
+        redis-node-5:7005
+        redis-node-6:7006
+        --cluster-replicas 1
+        --cluster-yes &&
+        echo '✅ Redis cluster created successfully!' &&
+        echo '🔍 Cluster info:' &&
+        redis-cli -h redis-node-1 -p 7001 cluster info &&
+        echo '📊 Cluster nodes:' &&
+        redis-cli -h redis-node-1 -p 7001 cluster nodes &&
+        echo '🎉 Redis Enterprise Cluster is ready for ChatBotDysa!'
+      "
+
+  # Redis Sentinel for Monitoring
+  redis-sentinel-1:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-sentinel-1
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./config/redis/sentinel.conf:/etc/redis/sentinel.conf
+    command: redis-sentinel /etc/redis/sentinel.conf
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-setup
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+
+  redis-sentinel-2:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-sentinel-2
+    ports:
+      - "26380:26379"
+    volumes:
+      - ./config/redis/sentinel.conf:/etc/redis/sentinel.conf
+    command: redis-sentinel /etc/redis/sentinel.conf
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-setup
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+
+  redis-sentinel-3:
+    image: redis:7-alpine
+    container_name: chatbotdysa-redis-sentinel-3
+    ports:
+      - "26381:26379"
+    volumes:
+      - ./config/redis/sentinel.conf:/etc/redis/sentinel.conf
+    command: redis-sentinel /etc/redis/sentinel.conf
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-setup
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+
+  # Redis Commander - Web UI for cluster management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: chatbotdysa-redis-commander
+    hostname: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=cluster:redis-node-1:7001:0:${REDIS_PASSWORD:-enterprise_secure_password_2024},replica1:redis-node-2:7002:0:${REDIS_PASSWORD:-enterprise_secure_password_2024},replica2:redis-node-3:7003:0:${REDIS_PASSWORD:-enterprise_secure_password_2024}
+      - HTTP_USER=admin
+      - HTTP_PASSWORD=${REDIS_COMMANDER_PASSWORD:-enterprise_admin_2024}
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-setup
+
+  # Redis Exporter for Prometheus monitoring
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: chatbotdysa-redis-exporter
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis-node-1:7001,redis://redis-node-2:7002,redis://redis-node-3:7003,redis://redis-node-4:7004,redis://redis-node-5:7005,redis://redis-node-6:7006
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-enterprise_secure_password_2024}
+    networks:
+      - chatbotdysa-redis-network
+    restart: unless-stopped
+    depends_on:
+      - redis-cluster-setup
+
+networks:
+  chatbotdysa-redis-network:
+    driver: bridge
+    name: chatbotdysa-redis-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  redis-node-1-data:
+    driver: local
+    name: chatbotdysa-redis-node-1-data
+  redis-node-2-data:
+    driver: local
+    name: chatbotdysa-redis-node-2-data
+  redis-node-3-data:
+    driver: local
+    name: chatbotdysa-redis-node-3-data
+  redis-node-4-data:
+    driver: local
+    name: chatbotdysa-redis-node-4-data
+  redis-node-5-data:
+    driver: local
+    name: chatbotdysa-redis-node-5-data
+  redis-node-6-data:
+    driver: local
+    name: chatbotdysa-redis-node-6-data
+
+# =============================================================================
+# 📊 ENTERPRISE MONITORING & HEALTH CHECKS
+# =============================================================================
+
+# Usage:
+# docker-compose -f docker-compose.redis-cluster.yml up -d
+# docker-compose -f docker-compose.redis-cluster.yml logs redis-cluster-setup
+#
+# Access Redis Commander: http://localhost:8081
+# Monitor with Prometheus: http://localhost:9121/metrics
+#
+# Test cluster: redis-cli -h localhost -p 7001 -c
+#
+# Enterprise Features:
+# - 6-node Redis cluster (3 masters + 3 replicas)
+# - Automatic failover with Sentinel
+# - Web management interface
+# - Prometheus metrics export
+# - Data persistence with volumes
+# - Network isolation
+# - Resource limits and health checks
+# =============================================================================

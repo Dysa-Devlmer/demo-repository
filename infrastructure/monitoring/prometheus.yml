@@ -1,0 +1,173 @@
+# 📊 Enterprise Prometheus Configuration
+# Fortune 10 Global Military Grade Monitoring
+# ChatBotDysa Enterprise Metrics Collection
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'chatbotdysa-enterprise'
+    environment: 'production'
+    region: 'global'
+    company: 'dysadev'
+
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      timeout: 10s
+      api_version: v2
+
+scrape_configs:
+  # ===== PROMETHEUS SELF-MONITORING =====
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # ===== CHATBOTDYSA BACKEND ENTERPRISE =====
+  - job_name: 'chatbotdysa-backend'
+    static_configs:
+      - targets: ['host.docker.internal:8005']
+    scrape_interval: 15s
+    metrics_path: /api/metrics
+    scrape_timeout: 10s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # ===== CHATBOTDYSA ADMIN PANEL =====
+  - job_name: 'chatbotdysa-admin-panel'
+    static_configs:
+      - targets: ['host.docker.internal:8002']
+    scrape_interval: 30s
+    metrics_path: /api/metrics
+    scrape_timeout: 10s
+
+  # ===== CHATBOTDYSA WEB WIDGET =====
+  - job_name: 'chatbotdysa-web-widget'
+    static_configs:
+      - targets: ['host.docker.internal:8003']
+    scrape_interval: 30s
+    metrics_path: /api/metrics
+    scrape_timeout: 10s
+
+  # ===== SYSTEM MONITORING =====
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+  # ===== DATABASE MONITORING =====
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 15s
+
+  # ===== REDIS MONITORING =====
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 15s
+
+  # ===== CONTAINER MONITORING =====
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 15s
+
+  # ===== WEB SERVER MONITORING =====
+  - job_name: 'nginx-exporter'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+    scrape_interval: 15s
+
+  # ===== BLACKBOX MONITORING - HTTP ENDPOINTS =====
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - http://host.docker.internal:8005/api/health
+        - http://host.docker.internal:8002/api/health
+        - http://host.docker.internal:8003/api/health
+        - https://chatbotdysa.com
+        - https://api.chatbotdysa.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # ===== BLACKBOX MONITORING - ICMP =====
+  - job_name: 'blackbox-icmp'
+    metrics_path: /probe
+    params:
+      module: [icmp]
+    static_configs:
+      - targets:
+        - 8.8.8.8
+        - 1.1.1.1
+        - google.com
+        - github.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # ===== BLACKBOX MONITORING - SSL CERTIFICATES =====
+  - job_name: 'blackbox-ssl'
+    metrics_path: /probe
+    params:
+      module: [tcp_connect_tls]
+    static_configs:
+      - targets:
+        - chatbotdysa.com:443
+        - api.chatbotdysa.com:443
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # ===== ELASTICSEARCH MONITORING =====
+  - job_name: 'elasticsearch'
+    static_configs:
+      - targets: ['elasticsearch:9200']
+    scrape_interval: 30s
+    metrics_path: /_prometheus/metrics
+
+# ===== REMOTE WRITE CONFIGURATION =====
+remote_write:
+  - url: "http://localhost:9090/api/v1/write"
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'go_.*|process_.*|prometheus_.*'
+        action: drop
+
+# ===== STORAGE CONFIGURATION =====
+storage:
+  tsdb:
+    retention_time: 90d
+    retention_size: 50GB
+    wal_compression: true

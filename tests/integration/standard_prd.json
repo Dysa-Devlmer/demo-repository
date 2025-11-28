@@ -1,0 +1,370 @@
+{
+  "project_name": "ChatBotDysa",
+  "project_description": "Enterprise-grade restaurant management system with AI-powered chatbot, order management, reservations, and customer engagement features",
+  "tech_stack": {
+    "backend": ["Node.js", "NestJS", "TypeScript", "TypeORM"],
+    "database": ["PostgreSQL", "Redis"],
+    "frontend": ["Next.js", "React", "TypeScript"],
+    "ai": ["Ollama", "Llama3"],
+    "infrastructure": ["Docker", "Nginx"]
+  },
+  "features": [
+    {
+      "id": "auth",
+      "name": "Authentication & Authorization",
+      "description": "JWT-based authentication with role-based access control, CSRF protection, and rate limiting",
+      "priority": "high",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "description": "User login with email and password",
+          "requires_auth": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/register",
+          "description": "User registration",
+          "requires_auth": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/csrf-token",
+          "description": "Get CSRF token",
+          "requires_auth": false
+        }
+      ]
+    },
+    {
+      "id": "customers",
+      "name": "Customer Management",
+      "description": "CRUD operations for managing restaurant customers with profiles and preferences",
+      "priority": "high",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/customers",
+          "description": "Get paginated list of customers",
+          "requires_auth": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/customers",
+          "description": "Create new customer",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/customers/:id",
+          "description": "Get customer by ID",
+          "requires_auth": true
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/customers/:id",
+          "description": "Update customer",
+          "requires_auth": true
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/customers/:id",
+          "description": "Delete customer",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "menu",
+      "name": "Menu Management",
+      "description": "Restaurant menu management with categories, items, pricing, and availability",
+      "priority": "high",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/menu",
+          "description": "Get all menu items",
+          "requires_auth": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/menu",
+          "description": "Create menu item",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/menu/:id",
+          "description": "Get menu item by ID",
+          "requires_auth": false
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/menu/:id",
+          "description": "Update menu item",
+          "requires_auth": true
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/menu/:id",
+          "description": "Delete menu item",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "name": "Order Management",
+      "description": "Complete order management system with status tracking, items, and customer information",
+      "priority": "critical",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/orders",
+          "description": "Get all orders with pagination",
+          "requires_auth": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/orders",
+          "description": "Create new order",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/orders/:id",
+          "description": "Get order by ID with details",
+          "requires_auth": true
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/orders/:id",
+          "description": "Update order status",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "reservations",
+      "name": "Reservation System",
+      "description": "Table reservation management with date/time slots and guest information",
+      "priority": "high",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/reservations",
+          "description": "Get all reservations",
+          "requires_auth": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/reservations",
+          "description": "Create new reservation",
+          "requires_auth": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/reservations/:id",
+          "description": "Get reservation by ID",
+          "requires_auth": true
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/reservations/:id",
+          "description": "Update reservation",
+          "requires_auth": true
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/reservations/:id",
+          "description": "Cancel reservation",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "conversations",
+      "name": "AI Chatbot Conversations",
+      "description": "AI-powered chatbot for customer interaction using Ollama/Llama3",
+      "priority": "high",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/conversations",
+          "description": "Get all conversations",
+          "requires_auth": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/conversations",
+          "description": "Start new conversation with AI",
+          "requires_auth": false
+        },
+        {
+          "method": "GET",
+          "path": "/api/conversations/:id",
+          "description": "Get conversation history",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "dashboard",
+      "name": "Dashboard Analytics",
+      "description": "Business intelligence dashboard with KPIs, statistics, and analytics",
+      "priority": "medium",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/dashboard/stats",
+          "description": "Get dashboard statistics and KPIs",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/analytics/dashboard",
+          "description": "Get detailed analytics data",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "users",
+      "name": "User Management",
+      "description": "System user administration with roles and permissions",
+      "priority": "high",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/users",
+          "description": "Get all system users",
+          "requires_auth": true
+        },
+        {
+          "method": "POST",
+          "path": "/api/users",
+          "description": "Create new user",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/users/profile",
+          "description": "Get current user profile",
+          "requires_auth": true
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/users/profile",
+          "description": "Update current user profile",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/api/users/:id",
+          "description": "Get user by ID",
+          "requires_auth": true
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/users/:id",
+          "description": "Update user",
+          "requires_auth": true
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/users/:id",
+          "description": "Delete user",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "promotions",
+      "name": "Promotions & Offers",
+      "description": "Marketing promotions and special offers management",
+      "priority": "medium",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/promotions",
+          "description": "Get active promotions",
+          "requires_auth": false
+        },
+        {
+          "method": "POST",
+          "path": "/api/promotions",
+          "description": "Create new promotion",
+          "requires_auth": true
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "name": "Health Check",
+      "description": "System health monitoring and status",
+      "priority": "critical",
+      "status": "implemented",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "description": "Check API health status",
+          "requires_auth": false
+        }
+      ]
+    }
+  ],
+  "base_url": "http://localhost:8005",
+  "auth": {
+    "type": "JWT",
+    "header": "Authorization",
+    "prefix": "Bearer",
+    "test_credentials": {
+      "email": "admin@zgamersa.com",
+      "password": "Admin123!"
+    }
+  },
+  "test_data": {
+    "customer": {
+      "name": "Test Customer",
+      "email": "test@example.com",
+      "phone": "+1234567890"
+    },
+    "menu_item": {
+      "name": "Test Dish",
+      "description": "A delicious test item",
+      "price": 15.99,
+      "category": "Main Course",
+      "available": true
+    },
+    "order": {
+      "items": [
+        {
+          "menuItemId": 1,
+          "quantity": 2,
+          "specialInstructions": "No onions"
+        }
+      ]
+    },
+    "reservation": {
+      "customerName": "John Doe",
+      "customerPhone": "+1234567890",
+      "customerEmail": "john@example.com",
+      "numberOfGuests": 4,
+      "specialRequests": "Window seat preferred"
+    }
+  },
+  "quality_criteria": {
+    "response_time_ms": 1000,
+    "success_rate_percent": 95,
+    "coverage_percent": 80
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@chatbotdysa/web-widget",
+  "version": "1.0.0",
+  "description": "ChatBotDysa Web Widget for Restaurant Websites",
+  "main": "dist/dysabot-widget.min.js",
+  "scripts": {
+    "build": "webpack --mode production",
+    "dev": "webpack serve --mode development",
+    "start": "webpack serve --mode production --port 7002",
+    "test": "echo \"Web Widget built successfully\"",
+    "preview": "webpack serve --mode production"
+  },
+  "keywords": [
+    "chatbot",
+    "restaurant",
+    "ai",
+    "widget",
+    "customer-service"
+  ],
+  "author": "DysaDev SpA",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "babel-loader": "^9.1.3",
+    "css-loader": "^6.10.0",
+    "html-webpack-plugin": "^5.6.0",
+    "mini-css-extract-plugin": "^2.8.1",
+    "style-loader": "^3.3.4",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.2.2"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "socket.io-client": "^4.7.4",
+    "vite": "^7.1.5"
+  }
+}

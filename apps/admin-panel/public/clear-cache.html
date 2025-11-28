@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Limpiar Cache Completo</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 40px;
+            background: #1a1a1a;
+            color: #00ff00;
+            text-align: center;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            text-align: left;
+        }
+        .step h2 {
+            color: #00ff00;
+            margin-top: 0;
+        }
+        button {
+            background: #00ff00;
+            color: #1a1a1a;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+        .success {
+            color: #00ff00;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .error {
+            color: #ff0000;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        #status {
+            margin: 30px 0;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧹 LIMPIEZA COMPLETA DE CACHE</h1>
+
+    <div class="step">
+        <h2>Paso 1: Limpiar LocalStorage Demo</h2>
+        <p>Elimina todos los datos demo del navegador</p>
+        <button onclick="clearLocalStorage()">🗑️ Limpiar LocalStorage</button>
+    </div>
+
+    <div class="step">
+        <h2>Paso 2: Limpiar Cache del Navegador</h2>
+        <p>Usa el atajo de teclado:</p>
+        <ul>
+            <li><strong>Mac:</strong> Cmd + Shift + Delete</li>
+            <li><strong>Windows:</strong> Ctrl + Shift + Delete</li>
+        </ul>
+        <p>Selecciona <strong>"Imágenes y archivos en caché"</strong> y haz clic en "Borrar datos"</p>
+        <button onclick="openClearDataDialog()">🧹 Abrir Diálogo de Limpieza</button>
+    </div>
+
+    <div class="step">
+        <h2>Paso 3: Reiniciar Navegador</h2>
+        <p>Cierra TODAS las pestañas de localhost:7001 y ábrelas de nuevo</p>
+        <button onclick="redirectToFresh()">🔄 Ir al Dashboard (Nueva Pestaña)</button>
+    </div>
+
+    <div id="status"></div>
+
+    <script>
+        function clearLocalStorage() {
+            const statusDiv = document.getElementById('status');
+
+            console.log('🧹 Limpiando LocalStorage...');
+
+            // Mostrar ANTES
+            const before = Object.keys(localStorage).filter(k => k.startsWith('demo_'));
+            console.log('📊 ANTES:', before);
+
+            // Limpiar TODO excepto demo_mode y demo_token
+            const keysToRemove = Object.keys(localStorage).filter(k =>
+                k.startsWith('demo_') && k !== 'demo_mode' && k !== 'demo_token'
+            );
+
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                console.log(`  ✅ Eliminado: ${key}`);
+            });
+
+            // Mostrar DESPUÉS
+            const after = Object.keys(localStorage).filter(k => k.startsWith('demo_'));
+            console.log('📊 DESPUÉS:', after);
+
+            statusDiv.innerHTML = `
+                <div class="success">
+                    ✅ LocalStorage limpiado!<br><br>
+                    Eliminadas ${keysToRemove.length} claves<br>
+                    Restantes: ${after.join(', ') || 'ninguna'}<br><br>
+                    Ahora continúa con el Paso 2
+                </div>
+            `;
+        }
+
+        function openClearDataDialog() {
+            alert('Instrucciones:\n\n1. Presiona Cmd+Shift+Delete (Mac) o Ctrl+Shift+Delete (Windows)\n2. Selecciona "Imágenes y archivos en caché"\n3. Haz clic en "Borrar datos"\n4. Luego continúa con el Paso 3');
+        }
+
+        function redirectToFresh() {
+            const statusDiv = document.getElementById('status');
+
+            statusDiv.innerHTML = `
+                <div class="success">
+                    🚀 Abriendo nueva pestaña con el Dashboard...<br><br>
+                    ⚠️ IMPORTANTE: Cierra esta pestaña y todas las demás de localhost:7001<br>
+                    Solo usa la nueva pestaña que se acaba de abrir
+                </div>
+            `;
+
+            // Abrir en nueva pestaña
+            window.open('http://localhost:7001/', '_blank');
+
+            // Esperar 3 segundos y cerrar esta pestaña
+            setTimeout(() => {
+                window.close();
+            }, 3000);
+        }
+
+        // Auto-mostrar estado
+        window.onload = function() {
+            const demoKeys = Object.keys(localStorage).filter(k => k.startsWith('demo_'));
+            const statusDiv = document.getElementById('status');
+
+            if (demoKeys.length === 0 || (demoKeys.length === 2 && demoKeys.includes('demo_mode') && demoKeys.includes('demo_token'))) {
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        ✅ LocalStorage ya está limpio<br>
+                        Continúa con el Paso 2
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        ⚠️ Hay ${demoKeys.length} claves en LocalStorage<br>
+                        Comienza con el Paso 1
+                    </div>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

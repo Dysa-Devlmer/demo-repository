@@ -1,0 +1,647 @@
+/* DysaBot Widget Styles */
+#dysabot-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Floating Button */
+.dysabot-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.dysabot-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 25px rgba(139, 92, 246, 0.4);
+}
+
+.dysabot-button::before {
+  content: '🤖';
+  font-size: 24px;
+  transition: transform 0.3s ease;
+}
+
+.dysabot-button.pulsing::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+  animation: pulse 2s infinite;
+  z-index: -1;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+/* Chat Window */
+.dysabot-chat {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 350px;
+  height: 500px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9998;
+  transform: scale(0.8) translateY(20px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.dysabot-chat.open {
+  display: flex;
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+/* Chat Header */
+.dysabot-header {
+  background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+  color: white;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dysabot-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.dysabot-info h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.dysabot-info p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.dysabot-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+}
+
+.dysabot-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Messages Container */
+.dysabot-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+.dysabot-message {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+}
+
+.dysabot-message.bot {
+  align-items: flex-start;
+}
+
+.dysabot-message.user {
+  align-items: flex-end;
+  align-self: flex-end;
+}
+
+.dysabot-message-bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.dysabot-message.bot .dysabot-message-bubble {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dysabot-message.user .dysabot-message-bubble {
+  background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.dysabot-message-time {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* Quick Actions */
+.dysabot-quick-actions {
+  padding: 12px 16px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.dysabot-quick-action {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.dysabot-quick-action:hover {
+  background: #8B5CF6;
+  color: white;
+  border-color: #8B5CF6;
+}
+
+/* Input Container */
+.dysabot-input-container {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dysabot-input {
+  flex: 1;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-size: 14px;
+  outline: none;
+  resize: none;
+  max-height: 100px;
+  min-height: 40px;
+  transition: border-color 0.3s ease;
+}
+
+.dysabot-input:focus {
+  border-color: #8B5CF6;
+}
+
+.dysabot-send {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  font-size: 16px;
+}
+
+.dysabot-send:hover {
+  transform: scale(1.1);
+}
+
+.dysabot-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Typing Indicator */
+.dysabot-typing {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  max-width: 85%;
+  align-self: flex-start;
+}
+
+.dysabot-typing-dot {
+  width: 6px;
+  height: 6px;
+  background: #64748b;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.dysabot-typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dysabot-typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-10px); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .dysabot-chat {
+    width: calc(100vw - 40px);
+    height: calc(100vh - 120px);
+    bottom: 70px;
+    right: 20px;
+    left: 20px;
+  }
+  
+  #dysabot-widget {
+    bottom: 10px;
+    right: 10px;
+  }
+}
+
+/* Connection Status */
+.dysabot-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.dysabot-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.dysabot-status-dot.disconnected {
+  background: #ef4444;
+}
+
+/* Menu Items */
+.dysabot-menu-item {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dysabot-menu-item:hover {
+  border-color: #8B5CF6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+}
+
+.dysabot-menu-item h4 {
+  margin: 0 0 4px 0;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dysabot-menu-item p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.dysabot-menu-item .price {
+  color: #8B5CF6;
+  font-weight: 600;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* ====== ENHANCED FEATURES: IMAGES, FILES, GEOLOCATION ====== */
+
+/* Input Actions (Image, File, Location buttons) */
+.dysabot-input-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.dysabot-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.dysabot-action-btn:hover {
+  background: #e2e8f0;
+  transform: scale(1.1);
+}
+
+.dysabot-action-btn:active {
+  transform: scale(0.95);
+}
+
+/* Image Preview in Messages */
+.dysabot-image-preview {
+  position: relative;
+  max-width: 250px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dysabot-image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+.dysabot-upload-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.dysabot-upload-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.dysabot-upload-status.sent .dysabot-check {
+  color: #10b981;
+  font-weight: bold;
+}
+
+.dysabot-upload-status.error .dysabot-error {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.dysabot-file-name {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* File Preview in Messages */
+.dysabot-file-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+  min-width: 200px;
+  position: relative;
+}
+
+.dysabot-file-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.dysabot-file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dysabot-file-info .dysabot-file-name {
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 500;
+  margin: 0;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dysabot-file-size {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.dysabot-file-preview .dysabot-upload-status {
+  position: static;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Location Preview in Messages */
+.dysabot-location-preview {
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+  min-width: 200px;
+}
+
+.dysabot-location-preview a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+.dysabot-location-preview a:hover {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+
+.dysabot-location-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.dysabot-location-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dysabot-location-label {
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.dysabot-location-accuracy {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Drag & Drop Overlay */
+.dysabot-messages.drag-over::before {
+  content: '📤 Suelta aquí para enviar';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(139, 92, 246, 0.1);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #8B5CF6;
+  z-index: 10;
+  border: 3px dashed #8B5CF6;
+  border-radius: 8px;
+  margin: 8px;
+}
+
+/* Upload Progress */
+.dysabot-progress {
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+}
+
+/* Mobile Responsive for Enhanced Features */
+@media (max-width: 480px) {
+  .dysabot-image-preview {
+    max-width: 100%;
+  }
+
+  .dysabot-file-preview {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .dysabot-location-preview {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .dysabot-action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+}
+
+/* Accessibility */
+.dysabot-action-btn:focus,
+.dysabot-send:focus,
+.dysabot-input:focus {
+  outline: 2px solid #8B5CF6;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .dysabot-action-btn {
+    border: 1px solid #64748b;
+  }
+
+  .dysabot-file-preview,
+  .dysabot-location-preview {
+    border: 1px solid #e2e8f0;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .dysabot-button,
+  .dysabot-action-btn,
+  .dysabot-send,
+  .dysabot-quick-action {
+    transition: none;
+  }
+
+  .dysabot-button.pulsing::after {
+    animation: none;
+  }
+
+  .dysabot-upload-spinner {
+    animation: none;
+    border: 2px solid white;
+  }
+}

@@ -1,0 +1,335 @@
+version: '3.8'
+
+# =============================================================================
+# 🚀 CHATBOTDYSA ENTERPRISE+++++ PGBOUNCER CONFIGURATION
+# Advanced Connection Pooling for PostgreSQL in Fortune 500 Operations
+# =============================================================================
+
+services:
+  # PgBouncer - Enterprise Connection Pooling
+  pgbouncer:
+    image: pgbouncer/pgbouncer:latest
+    container_name: chatbotdysa-pgbouncer
+    ports:
+      - "6432:6432"                             # PgBouncer port
+    volumes:
+      - ./config/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./config/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+      - pgbouncer-logs:/var/log/pgbouncer
+    environment:
+      - DATABASES_HOST=${POSTGRES_HOST:-postgres-master}
+      - DATABASES_PORT=${POSTGRES_PORT:-5432}
+      - DATABASES_DBNAME=${POSTGRES_DB:-chatbotdysa_enterprise}
+      - POOL_MODE=transaction                   # Enterprise: Transaction-level pooling
+      - SERVER_RESET_QUERY=DISCARD ALL
+      - MAX_CLIENT_CONN=1000                    # Enterprise: High client connections
+      - DEFAULT_POOL_SIZE=50                    # Enterprise: Large pool size
+      - MIN_POOL_SIZE=10                        # Enterprise: Minimum pool size
+      - RESERVE_POOL_SIZE=10                    # Enterprise: Reserve connections
+      - MAX_DB_CONNECTIONS=100                  # Enterprise: Max database connections
+      - MAX_USER_CONNECTIONS=100                # Enterprise: Max user connections
+      - SERVER_LIFETIME=3600                    # Enterprise: Connection lifetime (1 hour)
+      - SERVER_IDLE_TIMEOUT=600                 # Enterprise: Idle timeout (10 minutes)
+      - LOG_CONNECTIONS=1                       # Enterprise: Log connections
+      - LOG_DISCONNECTIONS=1                    # Enterprise: Log disconnections
+      - LOG_POOLER_ERRORS=1                     # Enterprise: Log pooler errors
+      - STATS_PERIOD=60                         # Enterprise: Stats period (1 minute)
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    depends_on:
+      - postgres-master
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD-SHELL", "psql -h localhost -p 6432 -U chatbot_admin -d chatbotdysa_enterprise -c 'SELECT 1' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PgBouncer Replica - For Read-Only Connections
+  pgbouncer-replica:
+    image: pgbouncer/pgbouncer:latest
+    container_name: chatbotdysa-pgbouncer-replica
+    ports:
+      - "6433:6432"                             # Replica PgBouncer port
+    volumes:
+      - ./config/pgbouncer/pgbouncer-replica.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./config/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+      - pgbouncer-replica-logs:/var/log/pgbouncer
+    environment:
+      - DATABASES_HOST=${POSTGRES_REPLICA_HOST:-postgres-replica}
+      - DATABASES_PORT=${POSTGRES_PORT:-5432}
+      - DATABASES_DBNAME=${POSTGRES_DB:-chatbotdysa_enterprise}
+      - POOL_MODE=transaction
+      - SERVER_RESET_QUERY=DISCARD ALL
+      - MAX_CLIENT_CONN=500                     # Replica: Lower client connections
+      - DEFAULT_POOL_SIZE=30                    # Replica: Smaller pool size
+      - MIN_POOL_SIZE=5                         # Replica: Minimum pool size
+      - RESERVE_POOL_SIZE=5                     # Replica: Reserve connections
+      - MAX_DB_CONNECTIONS=50                   # Replica: Max database connections
+      - MAX_USER_CONNECTIONS=50                 # Replica: Max user connections
+      - SERVER_LIFETIME=3600
+      - SERVER_IDLE_TIMEOUT=600
+      - LOG_CONNECTIONS=1
+      - LOG_DISCONNECTIONS=1
+      - LOG_POOLER_ERRORS=1
+      - STATS_PERIOD=60
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    depends_on:
+      - postgres-replica
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.125'
+    healthcheck:
+      test: ["CMD-SHELL", "psql -h localhost -p 6432 -U chatbot_readonly -d chatbotdysa_enterprise -c 'SELECT 1' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL Master
+  postgres-master:
+    image: postgres:15-alpine
+    container_name: chatbotdysa-postgres-master
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-master-data:/var/lib/postgresql/data
+      - ./config/postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/postgresql/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - postgres-logs:/var/log/postgresql
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-chatbotdysa_enterprise}
+      - POSTGRES_USER=${POSTGRES_USER:-chatbot_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-enterprise_secure_password_2024}
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+      - PGDATA=/var/lib/postgresql/data
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c hba_file=/etc/postgresql/pg_hba.conf
+      -c log_destination=stderr
+      -c logging_collector=on
+      -c log_directory=/var/log/postgresql
+      -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatbot_admin -d chatbotdysa_enterprise"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL Replica (Read-Only)
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: chatbotdysa-postgres-replica
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql/data
+      - ./config/postgresql/postgresql-replica.conf:/etc/postgresql/postgresql.conf
+      - ./config/postgresql/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - postgres-replica-logs:/var/log/postgresql
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-chatbotdysa_enterprise}
+      - POSTGRES_USER=${POSTGRES_USER:-chatbot_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-enterprise_secure_password_2024}
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+      - PGDATA=/var/lib/postgresql/data
+      - PGUSER=postgres
+      - POSTGRES_MASTER_HOST=postgres-master
+      - POSTGRES_MASTER_PORT=5432
+    command: >
+      bash -c "
+        echo 'Setting up PostgreSQL replica...' &&
+        if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+          echo 'Initializing replica from master...' &&
+          pg_basebackup -h postgres-master -D /var/lib/postgresql/data -U replicator -W -v -P -R
+        fi &&
+        postgres
+        -c config_file=/etc/postgresql/postgresql.conf
+        -c hba_file=/etc/postgresql/pg_hba.conf
+        -c log_destination=stderr
+        -c logging_collector=on
+        -c log_directory=/var/log/postgresql
+        -c log_filename=postgresql-replica-%Y-%m-%d_%H%M%S.log
+      "
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    depends_on:
+      - postgres-master
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatbot_admin -d chatbotdysa_enterprise"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # PgBouncer Metrics Exporter for Prometheus
+  pgbouncer-exporter:
+    image: spreaker/prometheus-pgbouncer-exporter:latest
+    container_name: chatbotdysa-pgbouncer-exporter
+    ports:
+      - "9127:9127"
+    environment:
+      - PGBOUNCER_EXPORTER_HOST=0.0.0.0
+      - PGBOUNCER_EXPORTER_PORT=9127
+      - PGBOUNCER_HOST=pgbouncer
+      - PGBOUNCER_PORT=6432
+      - PGBOUNCER_USER=pgbouncer
+      - PGBOUNCER_PASS=pgbouncer_monitor_password
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    depends_on:
+      - pgbouncer
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # PostgreSQL Metrics Exporter for Prometheus
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: chatbotdysa-postgres-exporter
+    ports:
+      - "9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://monitoring:monitoring_password@pgbouncer:6432/chatbotdysa_enterprise?sslmode=disable
+      - PG_EXPORTER_INCLUDE_DATABASES=chatbotdysa_enterprise
+      - PG_EXPORTER_AUTO_DISCOVER_DATABASES=true
+      - PG_EXPORTER_EXCLUDE_DATABASES=template0,template1
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    depends_on:
+      - pgbouncer
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+
+  # Connection Pool Admin Interface
+  pgbouncer-admin:
+    image: nginx:alpine
+    container_name: chatbotdysa-pgbouncer-admin
+    ports:
+      - "8083:80"
+    volumes:
+      - ./config/pgbouncer/admin-ui:/usr/share/nginx/html
+      - ./config/nginx/pgbouncer-admin.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - chatbotdysa-network
+    restart: unless-stopped
+    depends_on:
+      - pgbouncer
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.1'
+
+networks:
+  chatbotdysa-network:
+    driver: bridge
+    name: chatbotdysa-enterprise-network
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  postgres-master-data:
+    driver: local
+    name: chatbotdysa-postgres-master-data
+  postgres-replica-data:
+    driver: local
+    name: chatbotdysa-postgres-replica-data
+  postgres-logs:
+    driver: local
+    name: chatbotdysa-postgres-logs
+  postgres-replica-logs:
+    driver: local
+    name: chatbotdysa-postgres-replica-logs
+  pgbouncer-logs:
+    driver: local
+    name: chatbotdysa-pgbouncer-logs
+  pgbouncer-replica-logs:
+    driver: local
+    name: chatbotdysa-pgbouncer-replica-logs
+
+# =============================================================================
+# ENTERPRISE CONNECTION POOLING ARCHITECTURE
+# =============================================================================
+#
+# This configuration provides:
+#
+# 1. MASTER DATABASE CONNECTIONS (Write Operations):
+#    - Direct connection: postgres-master:5432
+#    - Pooled connection: pgbouncer:6432
+#    - Max 1000 client connections → 100 database connections
+#
+# 2. REPLICA DATABASE CONNECTIONS (Read Operations):
+#    - Direct connection: postgres-replica:5433
+#    - Pooled connection: pgbouncer-replica:6433
+#    - Max 500 client connections → 50 database connections
+#
+# 3. MONITORING AND METRICS:
+#    - PgBouncer metrics: http://localhost:9127/metrics
+#    - PostgreSQL metrics: http://localhost:9187/metrics
+#    - Admin interface: http://localhost:8083
+#
+# 4. ENTERPRISE FEATURES:
+#    - Transaction-level pooling for optimal performance
+#    - Automatic connection recycling and health checks
+#    - Comprehensive logging and monitoring
+#    - High availability with master-replica setup
+#    - Resource limits and deployment constraints
+#
+# 5. USAGE IN APPLICATION:
+#    - Write operations: postgresql://user:pass@pgbouncer:6432/dbname
+#    - Read operations: postgresql://user:pass@pgbouncer-replica:6433/dbname
+#    - Monitoring: postgresql://monitoring:pass@pgbouncer:6432/dbname
+#
+# 6. SCALING RECOMMENDATIONS:
+#    - Horizontal: Add more PgBouncer instances behind load balancer
+#    - Vertical: Increase pool sizes based on application needs
+#    - Monitoring: Set up alerts for connection pool saturation
+#
+# =============================================================================

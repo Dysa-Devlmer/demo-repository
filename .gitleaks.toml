@@ -1,0 +1,67 @@
+title = "ChatBotDysa Enterprise++++ Fortune 10 Global Military Security Configuration"
+
+[extend]
+# Usar reglas por defecto de gitleaks como base
+useDefault = true
+
+[[rules]]
+description = "PostgreSQL Connection String"
+id = "postgres-connection"
+regex = '''postgres://[a-zA-Z0-9]+:[a-zA-Z0-9]+@[a-zA-Z0-9.-]+:[0-9]+/[a-zA-Z0-9_]+'''
+secretGroup = 1
+
+[[rules]]
+description = "Database Password in Environment"
+id = "db-password"
+regex = '''(?i)(db_pass|db_password|database_password)\\s*[:=]\\s*['\"]?([a-zA-Z0-9!@#$%^&*()_+\\-=\\[\\]{}|;:,.<>?]+)['\"]?'''
+secretGroup = 2
+
+[[rules]]
+description = "JWT Secret"
+id = "jwt-secret"
+regex = '''(?i)(jwt_secret|jwt_key|token_secret)\\s*[:=]\\s*['\"]?([a-zA-Z0-9!@#$%^&*()_+\\-=\\[\\]{}|;:,.<>?]{32,})['\"]?'''
+secretGroup = 2
+
+[[rules]]
+description = "API Keys"
+id = "api-key"
+regex = '''(?i)(api[_-]?key|apikey)\\s*[:=]\\s*['\"]?([a-zA-Z0-9]{20,})['\"]?'''
+secretGroup = 2
+
+[[rules]]
+description = "Redis Password"
+id = "redis-password"
+regex = '''(?i)(redis_password|redis_pass)\\s*[:=]\\s*['\"]?([a-zA-Z0-9!@#$%^&*()_+\\-=\\[\\]{}|;:,.<>?]+)['\"]?'''
+secretGroup = 2
+
+[[rules]]
+description = "Ollama API Keys"
+id = "ollama-key"
+regex = '''(?i)(ollama_key|ollama_token)\\s*[:=]\\s*['\"]?([a-zA-Z0-9]{20,})['\"]?'''
+secretGroup = 2
+
+[allowlist]
+description = "Archivos y patrones permitidos para desarrollo"
+files = [
+    '''(?i).*\\.(md|txt|json)$''',
+    '''package-lock\\.json$''',
+    '''yarn\\.lock$''',
+    '''\\.git/.*''',
+    '''node_modules/.*''',
+    '''dist/.*''',
+    '''\\.next/.*''',
+]
+
+regexes = [
+    '''example\\.com''',
+    '''localhost''',
+    '''127\\.0\\.0\\.1''',
+    '''postgres://postgres:supersecret@127\\.0\\.0\\.1:15432/chatbotdysa''',
+    '''chatbotdysa''',
+    '''supersecret''',
+    '''test-secret''',
+    '''demo-key''',
+    '''development-only''',
+    '''8001|8002|8003|8005''',
+    '''15432|16379|21434''',
+]

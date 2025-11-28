@@ -1,0 +1,174 @@
+# 📊 Enterprise Grafana Datasources Configuration
+# Fortune 10 Global Military Grade Data Sources
+# ChatBotDysa Enterprise Observability Stack
+
+apiVersion: 1
+
+datasources:
+  # ===== PROMETHEUS - PRIMARY METRICS SOURCE =====
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    uid: prometheus
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+      manageAlerts: true
+      prometheusType: "Prometheus"
+      prometheusVersion: "2.48.0"
+      cacheLevel: "High"
+      incrementalQuerying: true
+      disableRecordingRules: false
+      customQueryParameters: ""
+      httpHeaderName1: "X-ChatBotDysa-Source"
+    secureJsonData:
+      httpHeaderValue1: "Enterprise-Grafana"
+
+  # ===== POSTGRESQL - APPLICATION DATABASE =====
+  - name: PostgreSQL-ChatBotDysa
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: chatbotdysa
+    user: postgres
+    editable: true
+    uid: postgres-chatbotdysa
+    jsonData:
+      sslmode: "disable"
+      maxOpenConns: 100
+      maxIdleConns: 100
+      connMaxLifetime: 14400
+      postgresVersion: 1300
+      timescaledb: false
+    secureJsonData:
+      password: supersecret
+
+  # ===== REDIS - CACHE & SESSION STORE =====
+  - name: Redis-ChatBotDysa
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    editable: true
+    uid: redis-chatbotdysa
+    jsonData:
+      client: "standalone"
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
+    secureJsonData:
+      password: ""
+
+  # ===== JAEGER - DISTRIBUTED TRACING =====
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    uid: jaeger
+    jsonData:
+      tracesToLogs:
+        datasourceUid: "loki"
+        tags:
+          - "service"
+          - "hostname"
+        mappedTags:
+          - key: "service.name"
+            value: "service"
+        mapTagNamesEnabled: true
+        spanStartTimeShift: "1h"
+        spanEndTimeShift: "1h"
+
+  # ===== ELASTICSEARCH - LOGS & ANALYTICS =====
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch:9200
+    database: "[logs-]YYYY.MM.DD"
+    editable: true
+    uid: elasticsearch
+    jsonData:
+      interval: "Daily"
+      timeField: "@timestamp"
+      esVersion: "8.11.0"
+      maxConcurrentShardRequests: 5
+      includeFrozen: false
+      logMessageField: "message"
+      logLevelField: "level"
+    secureJsonData:
+      basicAuthPassword: "ChatBotDysa@Enterprise2024!"
+
+  # ===== ALERTMANAGER - ALERTING =====
+  - name: Alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    editable: true
+    uid: alertmanager
+    jsonData:
+      implementation: "prometheus"
+      handleGrafanaManagedAlerts: true
+
+  # ===== NODE EXPORTER - SYSTEM METRICS =====
+  - name: Node-Exporter
+    type: prometheus
+    access: proxy
+    url: http://node-exporter:9100
+    editable: true
+    uid: node-exporter
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+
+  # ===== POSTGRES EXPORTER - DATABASE METRICS =====
+  - name: Postgres-Exporter
+    type: prometheus
+    access: proxy
+    url: http://postgres-exporter:9187
+    editable: true
+    uid: postgres-exporter
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+
+  # ===== REDIS EXPORTER - CACHE METRICS =====
+  - name: Redis-Exporter
+    type: prometheus
+    access: proxy
+    url: http://redis-exporter:9121
+    editable: true
+    uid: redis-exporter
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+
+  # ===== BLACKBOX EXPORTER - ENDPOINT MONITORING =====
+  - name: Blackbox-Exporter
+    type: prometheus
+    access: proxy
+    url: http://blackbox-exporter:9115
+    editable: true
+    uid: blackbox-exporter
+    jsonData:
+      timeInterval: "30s"
+      queryTimeout: "60s"
+      httpMethod: "GET"
+
+  # ===== CADVISOR - CONTAINER METRICS =====
+  - name: cAdvisor
+    type: prometheus
+    access: proxy
+    url: http://cadvisor:8080
+    editable: true
+    uid: cadvisor
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "GET"

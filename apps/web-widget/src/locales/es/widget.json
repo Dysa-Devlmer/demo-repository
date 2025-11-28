@@ -1,0 +1,35 @@
+{
+  "aria": {
+    "openChat": "Abrir chat",
+    "closeChat": "Cerrar chat",
+    "sendMessage": "Enviar mensaje"
+  },
+  "ui": {
+    "title": "ChatBot Dysa",
+    "subtitle": "Asistente Virtual",
+    "online": "En línea",
+    "offline": "Sin conexión",
+    "placeholder": "Escribe tu mensaje...",
+    "typing": "Escribiendo..."
+  },
+  "greetings": {
+    "default": "¡Hola! ¿En qué puedo ayudarte hoy?"
+  },
+  "quickActions": {
+    "menu": "Ver menú",
+    "reservation": "Hacer reserva",
+    "info": "Información del restaurante",
+    "contact": "Contacto"
+  },
+  "fallbackResponses": {
+    "menu": "Nuestro menú incluye platillos tradicionales mexicanos. ¿Te gustaría ver nuestras especialidades?",
+    "reservation": "Para hacer una reserva, puedes llamarnos al teléfono del restaurante o déjanos tus datos.",
+    "schedule": "Estamos abiertos de lunes a domingo de 11:00 AM a 10:00 PM.",
+    "location": "Nos encontramos en el centro de la ciudad. ¿Necesitas la dirección exacta?",
+    "contact": "Puedes contactarnos por teléfono o visitarnos directamente en nuestro restaurante.",
+    "default": "Gracias por tu mensaje. En este momento no puedo conectarme con nuestro sistema, pero te responderemos pronto."
+  },
+  "orderActions": {
+    "order": "Quiero ordenar {itemName}"
+  }
+}

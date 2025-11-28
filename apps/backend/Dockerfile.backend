@@ -1,0 +1,66 @@
+# Dockerfile para ChatBotDysa Backend
+FROM node:20-alpine
+
+# Instalar dependencias necesarias
+RUN apk add --no-cache curl postgresql-client
+
+# Crear directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de configuración de la raíz
+COPY package*.json ./
+
+# Instalar dependencias
+RUN npm install
+
+# Copiar código fuente del backend
+COPY apps/backend ./apps/backend
+
+# Copiar archivos de configuración necesarios
+COPY .env ./
+
+# Construir el backend
+WORKDIR /app/apps/backend
+RUN npm install
+RUN npm run build
+
+# Exponer puerto
+EXPOSE 3000
+
+# Crear script de inicio que espera la base de datos
+WORKDIR /app
+RUN cat > start-backend.sh << 'EOF'
+#!/bin/sh
+echo "🚀 Iniciando ChatBotDysa Backend en Docker"
+
+# Esperar a que PostgreSQL esté listo
+until pg_isready -h postgres -p 5432 -U postgres; do
+  echo "⏳ Esperando PostgreSQL..."
+  sleep 2
+done
+
+echo "✅ PostgreSQL está listo"
+
+# Esperar a que Redis esté listo
+until echo "ping" | nc redis 6379 | grep -q "PONG"; do
+  echo "⏳ Esperando Redis..."
+  sleep 2
+done
+
+echo "✅ Redis está listo"
+
+# Verificar Ollama
+if curl -s http://ollama:11434/api/version > /dev/null; then
+  echo "✅ Ollama está listo"
+else
+  echo "⚠️ Ollama no responde, pero continuando..."
+fi
+
+echo "🎯 Iniciando Backend API..."
+cd /app/apps/backend && npm run start:prod
+EOF
+
+RUN chmod +x start-backend.sh
+
+# Comando de inicio
+CMD ["./start-backend.sh"]

@@ -1,0 +1,258 @@
+# 🔍 Enterprise Blackbox Exporter Configuration
+# Fortune 10 Global Military Grade Endpoint Monitoring
+# ChatBotDysa Enterprise Health Check Modules
+
+modules:
+  # ===== HTTP 2XX MODULE =====
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200, 201, 202, 204]
+      method: GET
+      headers:
+        Host: chatbotdysa.com
+        User-Agent: "ChatBotDysa-Enterprise-Monitor/1.0"
+        Accept: "application/json,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+      no_follow_redirects: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: false
+        ca_file: /etc/ssl/certs/ca-certificates.crt
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  # ===== HTTP POST MODULE =====
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200, 201, 202]
+      method: POST
+      headers:
+        Content-Type: "application/json"
+        User-Agent: "ChatBotDysa-Enterprise-Monitor/1.0"
+      body: '{"health": "check", "source": "monitoring"}'
+
+  # ===== HTTPS MODULE =====
+  http_https:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200, 201, 202, 204]
+      method: GET
+      fail_if_not_ssl: true
+      tls_config:
+        insecure_skip_verify: false
+        ca_file: /etc/ssl/certs/ca-certificates.crt
+        server_name: chatbotdysa.com
+
+  # ===== API HEALTH CHECK MODULE =====
+  http_api_health:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Accept: "application/json"
+        User-Agent: "ChatBotDysa-Enterprise-Health-Monitor/1.0"
+      fail_if_body_not_matches_regexp:
+        - '"status":\s*"healthy"'
+        - '"database":\s*"connected"'
+      fail_if_header_not_matches_regexp:
+        - header: "Content-Type"
+          regexp: "application/json.*"
+
+  # ===== TCP CONNECT MODULE =====
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  # ===== TCP CONNECT TLS MODULE =====
+  tcp_connect_tls:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+      tls: true
+      tls_config:
+        insecure_skip_verify: false
+        ca_file: /etc/ssl/certs/ca-certificates.crt
+
+  # ===== ICMP PING MODULE =====
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+      source_ip_address: "0.0.0.0"
+      payload_size: 56
+
+  # ===== DNS MODULE =====
+  dns_udp:
+    prober: dns
+    timeout: 5s
+    dns:
+      query_name: "chatbotdysa.com"
+      query_type: "A"
+      valid_rcodes:
+        - NOERROR
+      validate_answer_rrs:
+        fail_if_matches_regexp:
+          - ".*127.0.0.1"
+        fail_if_not_matches_regexp:
+          - ".*"
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  # ===== DNS OVER HTTPS MODULE =====
+  dns_https:
+    prober: dns
+    timeout: 5s
+    dns:
+      transport_protocol: "https"
+      query_name: "chatbotdysa.com"
+      query_type: "A"
+
+  # ===== SMTP MODULE =====
+  smtp_starttls:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^220.*"
+        - send: "EHLO prober"
+        - expect: "^250-STARTTLS"
+        - send: "STARTTLS"
+        - expect: "^220.*"
+        - starttls: true
+        - send: "EHLO prober"
+        - expect: "^250.*"
+        - send: "QUIT"
+
+  # ===== DATABASE CONNECTION MODULE =====
+  postgres_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  # ===== REDIS CONNECTION MODULE =====
+  redis_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+      query_response:
+        - send: "PING"
+        - expect: "PONG"
+
+  # ===== ENTERPRISE APPLICATION HEALTH =====
+  chatbotdysa_backend:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Accept: "application/json"
+        User-Agent: "ChatBotDysa-Enterprise-Backend-Monitor/1.0"
+      fail_if_body_not_matches_regexp:
+        - '"status":\s*"healthy"'
+        - '"uptime":\s*\d+'
+        - '"version":\s*".*"'
+
+  # ===== ADMIN PANEL HEALTH =====
+  chatbotdysa_admin:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        User-Agent: "ChatBotDysa-Enterprise-Admin-Monitor/1.0"
+      fail_if_body_not_matches_regexp:
+        - '<title>.*ChatBotDysa.*</title>'
+
+  # ===== WEB WIDGET HEALTH =====
+  chatbotdysa_widget:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        Accept: "application/javascript,text/javascript,*/*"
+        User-Agent: "ChatBotDysa-Enterprise-Widget-Monitor/1.0"
+
+  # ===== ENTERPRISE SSL CERTIFICATE CHECK =====
+  ssl_cert_check:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      fail_if_not_ssl: true
+      tls_config:
+        insecure_skip_verify: false
+        ca_file: /etc/ssl/certs/ca-certificates.crt
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  # ===== ENTERPRISE PERFORMANCE CHECK =====
+  http_performance:
+    prober: http
+    timeout: 30s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200]
+      method: GET
+      headers:
+        User-Agent: "ChatBotDysa-Enterprise-Performance-Monitor/1.0"
+      fail_if_body_not_matches_regexp:
+        - ".*"
+      preferred_ip_protocol: "ip4"
+      ip_protocol_fallback: true
+
+  # ===== ENTERPRISE WEBSOCKET CHECK =====
+  websocket_check:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1"]
+      valid_status_codes: [101]
+      method: GET
+      headers:
+        Connection: "Upgrade"
+        Upgrade: "websocket"
+        Sec-WebSocket-Version: "13"
+        Sec-WebSocket-Key: "dGhlIHNhbXBsZSBub25jZQ=="
+        User-Agent: "ChatBotDysa-Enterprise-WebSocket-Monitor/1.0"
+
+  # ===== ENTERPRISE API AUTHENTICATION =====
+  api_auth_check:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [401, 403]
+      method: GET
+      headers:
+        User-Agent: "ChatBotDysa-Enterprise-Auth-Monitor/1.0"
+      fail_if_body_not_matches_regexp:
+        - '.*[Uu]nauthorized.*|.*[Ff]orbidden.*|.*[Aa]uth.*'

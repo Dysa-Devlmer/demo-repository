@@ -1,0 +1,430 @@
+version: '3.8'
+
+# =============================================================================
+# 🚀 CHATBOTDYSA ENTERPRISE+++++ MONITORING & AUTO-SCALING
+# Complete Observability Stack for Fortune 500 Operations
+# =============================================================================
+
+services:
+  # Prometheus - Metrics Collection and Storage
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chatbotdysa-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./config/prometheus/rules:/etc/prometheus/rules
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'           # Enterprise: 30-day retention
+      - '--storage.tsdb.retention.size=50GB'          # Enterprise: 50GB storage limit
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'                      # Enterprise: Enable reload API
+      - '--web.enable-admin-api'                      # Enterprise: Enable admin API
+      - '--alertmanager.timeout=10s'                  # Enterprise: Alert timeout
+      - '--query.timeout=120s'                        # Enterprise: Query timeout
+      - '--query.max-concurrency=20'                  # Enterprise: Max concurrent queries
+      - '--query.max-samples=50000000'                # Enterprise: Max query samples
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Grafana - Visualization and Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chatbotdysa-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=enterprise_admin_2024
+      - GF_USERS_ALLOW_SIGN_UP=false                  # Enterprise: Disable self-registration
+      - GF_USERS_ALLOW_ORG_CREATE=false               # Enterprise: Disable org creation
+      - GF_USERS_AUTO_ASSIGN_ORG=true                 # Enterprise: Auto-assign to main org
+      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=Viewer          # Enterprise: Default role
+      - GF_AUTH_ANONYMOUS_ENABLED=false               # Enterprise: No anonymous access
+      - GF_ALERTING_ENABLED=true                      # Enterprise: Enable alerting
+      - GF_UNIFIED_ALERTING_ENABLED=true              # Enterprise: New alerting system
+      - GF_FEATURE_TOGGLES_ENABLE=ngalert             # Enterprise: Next-gen alerting
+      - GF_LOG_LEVEL=info                             # Enterprise: Info logging
+      - GF_METRICS_ENABLED=true                       # Enterprise: Enable metrics
+      - GF_SERVER_ROOT_URL=http://localhost:3000      # Enterprise: Root URL
+      - GF_SECURITY_COOKIE_SECURE=false               # Set to true in production with HTTPS
+      - GF_ANALYTICS_REPORTING_ENABLED=false          # Enterprise: Disable analytics
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # AlertManager - Alert Routing and Management
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: chatbotdysa-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'    # Enterprise: External URL
+      - '--web.route-prefix=/'                        # Enterprise: Route prefix
+      - '--cluster.listen-address=0.0.0.0:9094'       # Enterprise: Cluster listening
+      - '--log.level=info'                            # Enterprise: Info logging
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Node Exporter - System Metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: chatbotdysa-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /run/udev/data:/run/udev/data:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.systemd'                         # Enterprise: SystemD metrics
+      - '--collector.processes'                       # Enterprise: Process metrics
+      - '--collector.interrupts'                      # Enterprise: Interrupt metrics
+      - '--collector.tcpstat'                         # Enterprise: TCP stats
+      - '--collector.uname'                           # Enterprise: System info
+      - '--web.max-requests=40'                       # Enterprise: Max concurrent requests
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # cAdvisor - Container Metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: chatbotdysa-cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    command:
+      - '--housekeeping_interval=10s'                 # Enterprise: 10s housekeeping
+      - '--max_housekeeping_interval=15s'             # Enterprise: Max housekeeping
+      - '--event_storage_event_limit=default=0'       # Enterprise: No event limit
+      - '--event_storage_age_limit=default=0'         # Enterprise: No age limit
+      - '--store_container_labels=false'              # Enterprise: Optimize performance
+      - '--whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace'
+      - '--docker_only=true'                          # Enterprise: Docker only
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Jaeger - Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: chatbotdysa-jaeger
+    ports:
+      - "16686:16686"                                  # Jaeger UI
+      - "14268:14268"                                  # Jaeger HTTP collector
+      - "14250:14250"                                  # Jaeger gRPC collector
+      - "6831:6831/udp"                                # Jaeger agent UDP
+      - "6832:6832/udp"                                # Jaeger agent UDP
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411              # Enterprise: Zipkin compatibility
+      - COLLECTOR_OTLP_ENABLED=true                   # Enterprise: OTLP support
+      - SPAN_STORAGE_TYPE=memory                      # Enterprise: Memory storage
+      - MEMORY_MAX_TRACES=50000                       # Enterprise: Max traces in memory
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Loki - Log Aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: chatbotdysa-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki/loki.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Promtail - Log Collection
+  promtail:
+    image: grafana/promtail:latest
+    container_name: chatbotdysa-promtail
+    volumes:
+      - ./config/promtail/promtail.yml:/etc/promtail/config.yml
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    depends_on:
+      - loki
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # Elasticsearch - Advanced Log Analytics
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: chatbotdysa-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node                    # Enterprise: Single node setup
+      - cluster.name=chatbotdysa-logs                 # Enterprise: Cluster name
+      - node.name=chatbotdysa-elastic-node            # Enterprise: Node name
+      - bootstrap.memory_lock=true                    # Enterprise: Lock memory
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"                 # Enterprise: Java heap size
+      - xpack.security.enabled=false                 # Enterprise: Disable security for dev
+      - xpack.monitoring.collection.enabled=true     # Enterprise: Enable monitoring
+      - action.destructive_requires_name=true        # Enterprise: Require index names
+      - cluster.routing.allocation.disk.threshold_enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+
+  # Kibana - Elasticsearch Dashboard
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: chatbotdysa-kibana
+    ports:
+      - "5601:5601"
+    volumes:
+      - ./config/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200  # Enterprise: ES connection
+      - SERVER_NAME=chatbotdysa-kibana                 # Enterprise: Server name
+      - SERVER_HOST=0.0.0.0                           # Enterprise: Bind to all interfaces
+      - LOGGING_ROOT_LEVEL=info                       # Enterprise: Info logging
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+  # Auto-Scaler Service
+  autoscaler:
+    image: alpine:latest
+    container_name: chatbotdysa-autoscaler
+    volumes:
+      - ./scripts/autoscaler:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PROMETHEUS_URL=http://prometheus:9090
+      - SCALE_UP_THRESHOLD=80                         # Enterprise: CPU threshold for scale up
+      - SCALE_DOWN_THRESHOLD=20                       # Enterprise: CPU threshold for scale down
+      - MIN_REPLICAS=2                                # Enterprise: Minimum replicas
+      - MAX_REPLICAS=10                               # Enterprise: Maximum replicas
+      - SCALE_COOLDOWN=300                            # Enterprise: Cooldown period (5 minutes)
+    command: >
+      sh -c "
+        apk add --no-cache curl docker-cli jq &&
+        while true; do
+          /scripts/autoscale.sh
+          sleep 60
+        done
+      "
+    networks:
+      - chatbotdysa-monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+networks:
+  chatbotdysa-monitoring:
+    driver: bridge
+    name: chatbotdysa-monitoring-network
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+
+volumes:
+  prometheus-data:
+    driver: local
+    name: chatbotdysa-prometheus-data
+  grafana-data:
+    driver: local
+    name: chatbotdysa-grafana-data
+  alertmanager-data:
+    driver: local
+    name: chatbotdysa-alertmanager-data
+  loki-data:
+    driver: local
+    name: chatbotdysa-loki-data
+  elasticsearch-data:
+    driver: local
+    name: chatbotdysa-elasticsearch-data
+
+# =============================================================================
+# ENTERPRISE MONITORING ARCHITECTURE
+# =============================================================================
+#
+# This comprehensive monitoring stack provides:
+#
+# 1. METRICS COLLECTION & STORAGE:
+#    - Prometheus: Metrics collection and time-series storage
+#    - Node Exporter: System-level metrics
+#    - cAdvisor: Container-level metrics
+#    - Custom exporters: Application-specific metrics
+#
+# 2. VISUALIZATION & DASHBOARDS:
+#    - Grafana: Primary visualization platform
+#    - Pre-configured dashboards for all services
+#    - Real-time monitoring and historical analysis
+#
+# 3. ALERTING & NOTIFICATIONS:
+#    - AlertManager: Alert routing and management
+#    - Multi-channel notifications (email, Slack, PagerDuty)
+#    - Escalation policies and alert grouping
+#
+# 4. LOG MANAGEMENT:
+#    - Loki: Log aggregation and storage
+#    - Promtail: Log collection agent
+#    - Elasticsearch + Kibana: Advanced log analytics
+#
+# 5. DISTRIBUTED TRACING:
+#    - Jaeger: Request tracing across microservices
+#    - Performance bottleneck identification
+#    - Service dependency mapping
+#
+# 6. AUTO-SCALING:
+#    - Automated horizontal scaling based on metrics
+#    - CPU, memory, and custom metric-based scaling
+#    - Kubernetes-compatible scaling logic
+#
+# 7. ACCESS URLS:
+#    - Grafana: http://localhost:3000 (admin/enterprise_admin_2024)
+#    - Prometheus: http://localhost:9090
+#    - AlertManager: http://localhost:9093
+#    - Jaeger: http://localhost:16686
+#    - Kibana: http://localhost:5601
+#    - Node Exporter: http://localhost:9100/metrics
+#    - cAdvisor: http://localhost:8080
+#
+# 8. ENTERPRISE FEATURES:
+#    - High availability with data persistence
+#    - Resource limits and health checks
+#    - Security configurations and access controls
+#    - Comprehensive logging and audit trails
+#    - Performance optimization for production workloads
+#
+# =============================================================================

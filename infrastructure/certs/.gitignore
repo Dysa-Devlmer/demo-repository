@@ -1,0 +1,10 @@
+# Ignorar todos los certificados SSL
+*.key
+*.crt
+*.csr
+*.pem
+*.p12
+*.pfx
+
+# Mantener el README
+!README.md
