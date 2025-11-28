@@ -29,28 +29,28 @@ export class ReservationsController {
   }
 
   @Get(":id")
-  findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.reservationsService.findOne(id);
+  async findOne(@Param("id", ParseIntPipe) id: number) {
+    return await this.reservationsService.findOne(id);
   }
 
   @Put(":id")
-  update(
+  async update(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateReservationDto,
   ) {
-    return this.reservationsService.update(id, dto);
+    return await this.reservationsService.update(id, dto);
   }
 
   @Patch(":id/status")
-  updateStatus(
+  async updateStatus(
     @Param("id", ParseIntPipe) id: number,
     @Body("status") status: string,
   ) {
-    return this.reservationsService.updateStatus(id, status as ReservationStatus);
+    return await this.reservationsService.updateStatus(id, status as ReservationStatus);
   }
 
   @Delete(":id")
-  remove(@Param("id", ParseIntPipe) id: number) {
-    return this.reservationsService.remove(id);
+  async remove(@Param("id", ParseIntPipe) id: number) {
+    return await this.reservationsService.remove(id);
   }
 }

@@ -7,9 +7,25 @@ export class CreateReservationDto {
   @IsDateString()
   date: string;
 
+  @IsOptional()
+  @IsString()
+  time?: string;
+
   @IsInt()
   @Min(1)
   people: number;
+
+  @IsOptional()
+  @IsString()
+  section?: string;
+
+  @IsOptional()
+  @IsInt()
+  table_number?: number;
+
+  @IsOptional()
+  @IsString()
+  occasion?: string;
 
   @IsOptional()
   @IsEnum(["pending", "confirmed", "cancelled"])
@@ -21,5 +37,5 @@ export class CreateReservationDto {
 
   @IsOptional()
   @IsString()
-  specialRequests?: string;
+  special_requests?: string;
 }

@@ -36,8 +36,8 @@ export class MenuController {
   @ApiResponse({ status: 401, description: "No autorizado" })
   @RateLimit(RateLimitPresets.API_STRICT)
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  create(@Body() dto: CreateMenuItemDto) {
-    return this.menuService.create(dto);
+  async create(@Body() dto: CreateMenuItemDto) {
+    return await this.menuService.create(dto);
   }
 
   @Get()
@@ -49,8 +49,8 @@ export class MenuController {
     blockDurationMs: 5 * 1000, // Block for 5 seconds only
   })
   @CacheKey(CacheKeyBuilder.menu(), CacheTTL.MENU_ITEMS)
-  findAll() {
-    return this.menuService.findAll();
+  async findAll() {
+    return await this.menuService.findAll();
   }
 
   @Get(":id")
@@ -58,8 +58,8 @@ export class MenuController {
   @ApiResponse({ status: 200, description: "Item encontrado (cached 30min)" })
   @ApiResponse({ status: 404, description: "Item no encontrado" })
   @CacheKey((req) => CacheKeyBuilder.menu(req.params.id), CacheTTL.MENU_ITEMS)
-  findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.menuService.findOne(id);
+  async findOne(@Param("id", ParseIntPipe) id: number) {
+    return await this.menuService.findOne(id);
   }
 
   @Put(":id")
@@ -68,11 +68,11 @@ export class MenuController {
   @ApiResponse({ status: 404, description: "Item no encontrado" })
   @ApiResponse({ status: 401, description: "No autorizado" })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  update(
+  async update(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateMenuItemDto,
   ) {
-    return this.menuService.update(id, dto);
+    return await this.menuService.update(id, dto);
   }
 
   @Patch(":id")
@@ -81,11 +81,11 @@ export class MenuController {
   @ApiResponse({ status: 404, description: "Item no encontrado" })
   @ApiResponse({ status: 401, description: "No autorizado" })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  partialUpdate(
+  async partialUpdate(
     @Param("id", ParseIntPipe) id: number,
     @Body() dto: UpdateMenuItemDto,
   ) {
-    return this.menuService.update(id, dto);
+    return await this.menuService.update(id, dto);
   }
 
   @Patch(":id/toggle-availability")
@@ -93,8 +93,8 @@ export class MenuController {
   @ApiResponse({ status: 200, description: "Disponibilidad actualizada" })
   @ApiResponse({ status: 404, description: "Item no encontrado" })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  toggleAvailability(@Param("id", ParseIntPipe) id: number) {
-    return this.menuService.toggleAvailability(id);
+  async toggleAvailability(@Param("id", ParseIntPipe) id: number) {
+    return await this.menuService.toggleAvailability(id);
   }
 
   @Delete(":id")
@@ -103,8 +103,8 @@ export class MenuController {
   @ApiResponse({ status: 404, description: "Item no encontrado" })
   @ApiResponse({ status: 401, description: "No autorizado" })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  remove(@Param("id", ParseIntPipe) id: number) {
-    return this.menuService.remove(id);
+  async remove(@Param("id", ParseIntPipe) id: number) {
+    return await this.menuService.remove(id);
   }
 
   // TODO: Implementar después de la migración de soft delete

@@ -88,9 +88,13 @@ export class ReservationsService {
       customer_phone: customer.phone,
       customer_email: customer.email,
       party_size: dto.people,
+      time: dto.time || null,
+      section: dto.section || null,
+      table_number: dto.table_number || null,
+      occasion: dto.occasion || null,
       status: dto.status ?? ReservationStatus.PENDING,
       notes: dto.notes || "",
-      special_requests: dto.specialRequests || null,
+      special_requests: dto.special_requests || null,
     });
 
     const saved = await this.reservationsRepo.save(reservation);
@@ -218,8 +222,24 @@ export class ReservationsService {
       reservation.notes = dto.notes;
     }
 
-    if (dto.specialRequests !== undefined) {
-      reservation.special_requests = dto.specialRequests;
+    if (dto.special_requests !== undefined) {
+      reservation.special_requests = dto.special_requests;
+    }
+
+    if (dto.time !== undefined) {
+      reservation.time = dto.time;
+    }
+
+    if (dto.section !== undefined) {
+      reservation.section = dto.section;
+    }
+
+    if (dto.table_number !== undefined) {
+      reservation.table_number = dto.table_number;
+    }
+
+    if (dto.occasion !== undefined) {
+      reservation.occasion = dto.occasion;
     }
 
     const updated = await this.reservationsRepo.save(reservation);

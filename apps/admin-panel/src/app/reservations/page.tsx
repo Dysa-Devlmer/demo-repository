@@ -253,7 +253,12 @@ export default function ReservationsPage() {
       const reservationData = {
         customerId: formData.customerId,
         date: formData.date,
+        time: formData.time,
         people: formData.people,
+        section: formData.section,
+        table_number: formData.table_number,
+        special_requests: formData.special_requests,
+        occasion: formData.occasion,
         status: isEditing ? selectedReservation?.status : 'pending'
       };
 

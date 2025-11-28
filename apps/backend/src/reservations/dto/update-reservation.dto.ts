@@ -10,9 +10,25 @@ export class UpdateReservationDto {
   date?: string;
 
   @IsOptional()
+  @IsString()
+  time?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(1)
   people?: number;
+
+  @IsOptional()
+  @IsString()
+  section?: string;
+
+  @IsOptional()
+  @IsInt()
+  table_number?: number;
+
+  @IsOptional()
+  @IsString()
+  occasion?: string;
 
   @IsOptional()
   @IsEnum(["pending", "confirmed", "seated", "completed", "cancelled", "no_show"])
@@ -24,5 +40,5 @@ export class UpdateReservationDto {
 
   @IsOptional()
   @IsString()
-  specialRequests?: string;
+  special_requests?: string;
 }

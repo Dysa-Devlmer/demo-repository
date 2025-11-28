@@ -63,6 +63,18 @@ export class Reservation {
   @Column({ type: "int", name: "partySize" })
   party_size: number;
 
+  @Column({ nullable: true })
+  time?: string;
+
+  @Column({ nullable: true })
+  section?: string;
+
+  @Column({ type: "int", nullable: true })
+  table_number?: number;
+
+  @Column({ nullable: true })
+  occasion?: string;
+
   @Column({ name: "status" })
   status: string;
 
