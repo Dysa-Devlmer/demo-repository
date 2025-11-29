@@ -206,16 +206,17 @@ export class ConversationsService {
     };
 
     const message = new Message();
-    message.conversation = conversation;
-    message.conversation_id = conversation.id; // Explicit FK assignment
+    // IMPORTANT: Only set conversation_id, NOT the relation object
+    // TypeORM has conflicts when both are set - it may ignore the explicit column
+    message.conversation_id = conversation.id;
     message.content = data.content;
     message.role = roleMap[data.sender] as any;
     message.type = "text" as any;
     message.metadata = data.metadata;
 
+    this.logger.log(`Saving message with conversation_id: ${message.conversation_id}`);
     const saved = await this.messagesRepo.save(message);
-
-    this.logger.debug(`Message saved with conversation_id: ${saved.conversation_id}`);
+    this.logger.log(`Message saved - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
 
     // Update conversation stats
     conversation.message_count += 1;
