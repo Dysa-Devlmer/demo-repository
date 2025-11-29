@@ -32,6 +32,10 @@ export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
+  // Explicit FK column (CRITICAL: TypeORM needs both relation + column)
+  @Column({ name: "conversation_id", nullable: true })
+  conversation_id: number;
+
   @ManyToOne(() => Conversation, (conversation) => conversation.messages, {
     onDelete: "CASCADE",
   })

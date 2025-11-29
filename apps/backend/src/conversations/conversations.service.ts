@@ -52,9 +52,14 @@ export class ConversationsService {
         customer: { id: data.customerId },
         status: ConversationStatus.ACTIVE,
       },
+      relations: ["customer", "messages"],
     });
 
     if (activeConversation) {
+      // Update last activity time
+      activeConversation.last_activity = new Date();
+      await this.conversationsRepo.save(activeConversation);
+
       this.logger.log(
         `Returning existing active conversation ${activeConversation.session_id} for customer ${customer.name}`,
       );
@@ -206,7 +211,8 @@ export class ConversationsService {
     };
 
     const message = new Message();
-    message.conversation = conversation;
+    // CRITICAL FIX: Solo asignar conversation_id, NO conversation (evita conflicto TypeORM)
+    message.conversation_id = conversation.id;
     message.content = data.content;
     message.role = roleMap[data.sender] as any;
     message.type = "text" as any;
