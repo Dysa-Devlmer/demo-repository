@@ -32,6 +32,7 @@ export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
+  // Explicit FK column - required for QueryBuilder INSERT
   @Column({ name: "conversation_id", nullable: true })
   conversation_id: number;
 

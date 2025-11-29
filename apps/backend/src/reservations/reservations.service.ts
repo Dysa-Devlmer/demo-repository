@@ -81,21 +81,21 @@ export class ReservationsService {
     // Generate unique reservation code
     const reservationCode = this.generateReservationCode();
 
-    const reservation = this.reservationsRepo.create({
-      reservation_code: reservationCode,
-      reservation_date: reservationDate,
-      customer_name: customer.name,
-      customer_phone: customer.phone,
-      customer_email: customer.email,
-      party_size: dto.people,
-      time: dto.time || null,
-      section: dto.section || null,
-      table_number: dto.table_number || null,
-      occasion: dto.occasion || null,
-      status: dto.status ?? ReservationStatus.PENDING,
-      notes: dto.notes || "",
-      special_requests: dto.special_requests || null,
-    });
+    const reservation = new Reservation();
+    reservation.customer = customer;
+    reservation.reservation_code = reservationCode;
+    reservation.reservation_date = reservationDate;
+    reservation.customer_name = customer.name;
+    reservation.customer_phone = customer.phone || "";
+    reservation.customer_email = customer.email;
+    reservation.party_size = dto.people;
+    reservation.time = dto.time || undefined;
+    reservation.section = dto.section || undefined;
+    reservation.table_number = dto.table_number || undefined;
+    reservation.occasion = dto.occasion || undefined;
+    reservation.status = dto.status ?? ReservationStatus.PENDING;
+    reservation.notes = dto.notes || "";
+    reservation.special_requests = dto.special_requests || undefined;
 
     const saved = await this.reservationsRepo.save(reservation);
 

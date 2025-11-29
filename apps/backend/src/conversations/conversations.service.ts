@@ -52,9 +52,14 @@ export class ConversationsService {
         customer: { id: data.customerId },
         status: ConversationStatus.ACTIVE,
       },
+      relations: ["customer", "messages"],
     });
 
     if (activeConversation) {
+      // Update last activity time
+      activeConversation.last_activity = new Date();
+      await this.conversationsRepo.save(activeConversation);
+
       this.logger.log(
         `Returning existing active conversation ${activeConversation.session_id} for customer ${customer.name}`,
       );
@@ -209,7 +214,9 @@ export class ConversationsService {
 
     this.logger.log(`Inserting message with conversation_id: ${conversationId}`);
 
-    // Use QueryBuilder for direct INSERT - bypasses TypeORM relation conflicts
+    // CRITICAL FIX: Use QueryBuilder for direct INSERT
+    // This bypasses TypeORM's relation handling which ignores conversation_id
+    // when both @Column and @JoinColumn point to the same column
     const result = await this.messagesRepo
       .createQueryBuilder()
       .insert()
