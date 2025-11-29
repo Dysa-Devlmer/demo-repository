@@ -210,15 +210,29 @@ export class ConversationsService {
       customer: "user" as const,
     };
 
-    const message = new Message();
-    // CRITICAL FIX: Solo asignar conversation_id, NO conversation (evita conflicto TypeORM)
-    message.conversation_id = conversation.id;
-    message.content = data.content;
-    message.role = roleMap[data.sender] as any;
-    message.type = "text" as any;
-    message.metadata = data.metadata;
+    const role = roleMap[data.sender];
 
-    const saved = await this.messagesRepo.save(message);
+    this.logger.log(`Inserting message with conversation_id: ${conversationId}`);
+
+    // CRITICAL FIX: Use QueryBuilder for direct INSERT
+    // This bypasses TypeORM's relation handling which ignores conversation_id
+    // when both @Column and @JoinColumn point to the same column
+    const result = await this.messagesRepo
+      .createQueryBuilder()
+      .insert()
+      .into(Message)
+      .values({
+        conversation_id: conversationId,
+        content: data.content,
+        role: role as any,
+        type: "text" as any,
+        metadata: data.metadata,
+      })
+      .returning("*")
+      .execute();
+
+    const saved = result.raw[0] as Message;
+    this.logger.log(`Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
 
     // Update conversation stats
     conversation.message_count += 1;
