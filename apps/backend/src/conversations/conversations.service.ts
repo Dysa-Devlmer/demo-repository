@@ -205,18 +205,27 @@ export class ConversationsService {
       customer: "user" as const,
     };
 
-    const message = new Message();
-    // IMPORTANT: Only set conversation_id, NOT the relation object
-    // TypeORM has conflicts when both are set - it may ignore the explicit column
-    message.conversation_id = conversation.id;
-    message.content = data.content;
-    message.role = roleMap[data.sender] as any;
-    message.type = "text" as any;
-    message.metadata = data.metadata;
+    const role = roleMap[data.sender];
 
-    this.logger.log(`Saving message with conversation_id: ${message.conversation_id}`);
-    const saved = await this.messagesRepo.save(message);
-    this.logger.log(`Message saved - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
+    this.logger.log(`Inserting message with conversation_id: ${conversationId}`);
+
+    // Use QueryBuilder for direct INSERT - bypasses TypeORM relation conflicts
+    const result = await this.messagesRepo
+      .createQueryBuilder()
+      .insert()
+      .into(Message)
+      .values({
+        conversation_id: conversationId,
+        content: data.content,
+        role: role as any,
+        type: "text" as any,
+        metadata: data.metadata,
+      })
+      .returning("*")
+      .execute();
+
+    const saved = result.raw[0] as Message;
+    this.logger.log(`Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
 
     // Update conversation stats
     conversation.message_count += 1;
