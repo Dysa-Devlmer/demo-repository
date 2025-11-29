@@ -28,7 +28,7 @@ module.exports = {
         REDIS_HOST: '127.0.0.1',
         REDIS_PORT: 16379,
         JWT_SECRET: 'dysabot-jwt-secret-2024-super-secure-production-key-v2',
-        OLLAMA_URL: 'http://127.0.0.1:21434',
+        OLLAMA_URL: 'http://127.0.0.1:11434',
         OLLAMA_MODEL: 'llama3',
         WA_BUSINESS_PHONE_ID: '',
         WA_ACCESS_TOKEN: '',

@@ -25,7 +25,7 @@ describe('SettingsService - Unit Tests', () => {
           TWILIO_ACCOUNT_SID: 'AC1234567890abcdefghijklmnopqrstuvwx',
           TWILIO_AUTH_TOKEN: 'abcdef1234567890abcdef1234567890',
           TWILIO_PHONE_NUMBER: '+15551234567',
-          OLLAMA_URL: 'http://localhost:21434',
+          OLLAMA_URL: 'http://localhost:11434',
           OLLAMA_MODEL: 'phi3:mini',
           DATABASE_HOST: 'localhost',
           DATABASE_PORT: '15432',
@@ -165,7 +165,7 @@ describe('SettingsService - Unit Tests', () => {
       const result = await service.getSettings();
 
       expect(result.ollama).toEqual({
-        url: 'http://localhost:21434',
+        url: 'http://localhost:11434',
         model: 'phi3:mini',
         status: 'connected',
       });

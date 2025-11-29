@@ -43,7 +43,7 @@ describe('OllamaService - Unit Tests', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string, defaultValue?: string) => {
-              if (key === 'OLLAMA_URL') return 'http://localhost:21434';
+              if (key === 'OLLAMA_URL') return 'http://localhost:11434';
               if (key === 'OLLAMA_MODEL') return 'phi3:mini';
               return defaultValue;
             }),
@@ -66,13 +66,13 @@ describe('OllamaService - Unit Tests', () => {
     });
 
     it('should initialize with default configuration', () => {
-      expect(configService.get).toHaveBeenCalledWith('OLLAMA_URL', 'http://localhost:21434');
+      expect(configService.get).toHaveBeenCalledWith('OLLAMA_URL', 'http://localhost:11434');
       expect(configService.get).toHaveBeenCalledWith('OLLAMA_MODEL', 'phi3:mini');
     });
 
     it('should create axios instance with correct config', () => {
       expect(mockedAxios.create).toHaveBeenCalledWith({
-        baseURL: 'http://localhost:21434',
+        baseURL: 'http://localhost:11434',
         timeout: 120000,
         headers: {
           'Content-Type': 'application/json',
@@ -500,7 +500,7 @@ describe('OllamaService - Unit Tests', () => {
 
       expect(status).toEqual({
         service: 'Ollama AI Service',
-        baseUrl: 'http://localhost:21434',
+        baseUrl: 'http://localhost:11434',
         defaultModel: 'phi3:mini',
         timeout: 120000,
         status: 'initialized',
