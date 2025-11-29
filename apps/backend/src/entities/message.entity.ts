@@ -32,6 +32,9 @@ export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ name: "conversation_id", nullable: true })
+  conversation_id: number;
+
   @ManyToOne(() => Conversation, (conversation) => conversation.messages, {
     onDelete: "CASCADE",
   })

@@ -207,12 +207,15 @@ export class ConversationsService {
 
     const message = new Message();
     message.conversation = conversation;
+    message.conversation_id = conversation.id; // Explicit FK assignment
     message.content = data.content;
     message.role = roleMap[data.sender] as any;
     message.type = "text" as any;
     message.metadata = data.metadata;
 
     const saved = await this.messagesRepo.save(message);
+
+    this.logger.debug(`Message saved with conversation_id: ${saved.conversation_id}`);
 
     // Update conversation stats
     conversation.message_count += 1;
