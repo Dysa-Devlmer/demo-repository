@@ -220,7 +220,7 @@ export class WhatsAppController {
           // Send AI response back to WhatsApp
           result = await this.whatsappService.sendTextMessage(
             message.from,
-            aiResponse,
+            responseText,
           );
         } else {
           // Restaurant is CLOSED - Send closed message

@@ -114,7 +114,7 @@ export class OllamaService {
     );
     this.defaultModel = this.configService.get<string>(
       "OLLAMA_MODEL",
-      "llama3:8b",
+      "llama3.2:3b",
     );
 
     this.httpClient = axios.create({

@@ -37,7 +37,7 @@ export class HealthController {
         },
         ollama: {
           url: this.configService.get("OLLAMA_URL", "http://localhost:11434"),
-          model: this.configService.get("OLLAMA_MODEL", "llama3:8b"),
+          model: this.configService.get("OLLAMA_MODEL", "llama3.2:3b"),
         },
       },
     };
@@ -80,7 +80,7 @@ export class HealthController {
   @Get("health/ai")
   async getAiHealth() {
     const ollamaUrl = this.configService.get("OLLAMA_URL", "http://localhost:11434");
-    const ollamaModel = this.configService.get("OLLAMA_MODEL", "llama3:8b");
+    const ollamaModel = this.configService.get("OLLAMA_MODEL", "llama3.2:3b");
 
     let aiStatus = {
       service: "ollama",
