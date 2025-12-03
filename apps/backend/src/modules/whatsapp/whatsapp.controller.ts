@@ -77,6 +77,9 @@ export class WhatsAppController {
     );
   }
 
+  // Track processed message IDs to prevent duplicates (in-memory cache)
+  private processedMessageIds: Set<string> = new Set();
+
   @Post("webhook")
   async handleWebhook(@Body() webhookData: WebhookMessage) {
     try {
@@ -86,6 +89,21 @@ export class WhatsAppController {
       const messages = this.whatsappService.processWebhookMessage(webhookData);
 
       for (const message of messages) {
+        // ====================================
+        // DEDUPLICATION: Check if already processed
+        // ====================================
+        if (this.processedMessageIds.has(message.messageId)) {
+          this.logger.warn(`Message ${message.messageId} already processed, skipping duplicate`);
+          continue;
+        }
+        this.processedMessageIds.add(message.messageId);
+
+        // Clean up old IDs to prevent memory leak (keep last 1000)
+        if (this.processedMessageIds.size > 1000) {
+          const idsArray = Array.from(this.processedMessageIds);
+          this.processedMessageIds = new Set(idsArray.slice(-500));
+        }
+
         this.logger.log(
           `Processing message from ${message.from}: "${message.content}"`,
         );
@@ -148,10 +166,11 @@ export class WhatsAppController {
           const restaurantSpecialtiesStr = this.configService.get<string>("RESTAURANT_SPECIALTIES") || "Chatbot con IA,Atención automatizada";
           const restaurantSpecialties = restaurantSpecialtiesStr.split(",").map(s => s.trim());
 
-          // Get real data from database services
-          const [menuItems, categories] = await Promise.all([
+          // Get real data from database services and conversation history
+          const [menuItems, categories, conversationWithMessages] = await Promise.all([
             this.menuService.findAll(), // Get all menu items
             this.categoriesService.findAll(), // Get all categories
+            this.conversationsService.findOne(conversation.id), // Get conversation with messages
           ]);
 
           // Format menu items for the AI context
@@ -167,11 +186,20 @@ export class WhatsAppController {
           // Get categories with real names
           const categoryNames = categories.map(cat => cat.name);
 
-          this.logger.log(`Providing AI with ${formattedMenuItems.length} menu items and ${categoryNames.length} categories`);
+          // Format previous messages for AI context (last 10 messages to keep context manageable)
+          const previousMessages = (conversationWithMessages.messages || [])
+            .slice(-10) // Keep last 10 messages for context
+            .map(msg => ({
+              role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+              content: msg.content,
+            }));
+
+          this.logger.log(`Providing AI with ${formattedMenuItems.length} menu items, ${categoryNames.length} categories, and ${previousMessages.length} previous messages`);
 
           const aiResponse = await this.ollamaService.generateRestaurantResponse(
             message.content,
             {
+              customerName: customer?.name,
               restaurantInfo: {
                 name: restaurantName,
                 phone: restaurantPhone,
@@ -181,6 +209,7 @@ export class WhatsAppController {
               },
               menuItems: formattedMenuItems,
               categories: categoryNames,
+              previousMessages: previousMessages,
             },
           );
 
