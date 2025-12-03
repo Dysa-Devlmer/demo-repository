@@ -5,7 +5,7 @@ import {
   Logger,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, IsNull, Not, LessThan } from "typeorm";
+import { Repository, IsNull, Not, LessThan, DataSource } from "typeorm";
 import {
   Conversation,
   ConversationStatus,
@@ -25,6 +25,7 @@ export class ConversationsService {
     private readonly messagesRepo: Repository<Message>,
     @InjectRepository(Customer)
     private readonly customersRepo: Repository<Customer>,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -192,6 +193,9 @@ export class ConversationsService {
 
   /**
    * Add a message to a conversation
+   *
+   * CRITICAL FIX v5: This method uses direct SQL queries to avoid TypeORM's
+   * cascade behavior which was resetting conversation_id to NULL.
    */
   async addMessage(
     conversationId: number,
@@ -201,9 +205,9 @@ export class ConversationsService {
       metadata?: any;
     },
   ): Promise<Message> {
-    // DEBUG: This log confirms the NEW code is running (not old dist/)
-    this.logger.warn(`>>> [QUERYBUILDER FIX v2] addMessage called for conversation ${conversationId}`);
+    this.logger.log(`[FIX v5] addMessage called for conversation ${conversationId}`);
 
+    // Verify conversation exists
     const conversation = await this.findOne(conversationId);
 
     // Map sender to MessageRole
@@ -215,12 +219,8 @@ export class ConversationsService {
 
     const role = roleMap[data.sender];
 
-    this.logger.warn(`>>> [QUERYBUILDER FIX v2] Inserting message with conversation_id: ${conversationId}`);
-
     try {
-      // CRITICAL FIX: Use QueryBuilder for direct INSERT
-      // This bypasses TypeORM's relation handling which ignores conversation_id
-      // when both @Column and @JoinColumn point to the same column
+      // STEP 1: Insert message using QueryBuilder (bypasses TypeORM relation handling)
       const result = await this.messagesRepo
         .createQueryBuilder()
         .insert()
@@ -236,28 +236,31 @@ export class ConversationsService {
         .execute();
 
       const saved = result.raw[0] as Message;
-      this.logger.warn(`>>> [QUERYBUILDER FIX v2] Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
+      this.logger.log(`[FIX v5] Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
 
-      // Update conversation stats
-      conversation.message_count += 1;
-      conversation.last_activity = new Date();
+      // STEP 2: Update conversation stats using DIRECT SQL (avoids cascade: true issue)
+      // Using conversationsRepo.save() triggers cascade which resets conversation_id to NULL
+      const botIncrement = data.sender === "bot" ? 1 : 0;
+      const humanIncrement = data.sender === "human" ? 1 : 0;
 
-      if (data.sender === "bot") {
-        conversation.bot_messages += 1;
-      } else if (data.sender === "human") {
-        conversation.human_messages += 1;
-      }
-
-      await this.conversationsRepo.save(conversation);
+      await this.dataSource.query(
+        `UPDATE conversations
+         SET message_count = message_count + 1,
+             bot_messages = bot_messages + $1,
+             human_messages = human_messages + $2,
+             last_activity = NOW()
+         WHERE id = $3`,
+        [botIncrement, humanIncrement, conversationId]
+      );
 
       this.logger.log(
-        `Message added to conversation ${conversation.session_id} by ${data.sender}`,
+        `[FIX v5] Message added to conversation ${conversation.session_id} by ${data.sender}`,
       );
 
       return saved;
     } catch (error) {
-      this.logger.error(`>>> [QUERYBUILDER FIX v2] ERROR in addMessage: ${error.message}`);
-      this.logger.error(`>>> [QUERYBUILDER FIX v2] Stack: ${error.stack}`);
+      this.logger.error(`[FIX v5] ERROR in addMessage: ${error.message}`);
+      this.logger.error(`[FIX v5] Stack: ${error.stack}`);
       throw error;
     }
   }
