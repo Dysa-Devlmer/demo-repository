@@ -227,7 +227,7 @@ export class OllamaService {
         }
       }
 
-      // Configurar request con valores por defecto
+      // Configurar request con valores por defecto OPTIMIZADOS PARA VELOCIDAD
       const { model: _model, ...restRequest } = request;
       const ollamaRequest: OllamaGenerateRequest = {
         model: targetModel,
@@ -237,8 +237,8 @@ export class OllamaService {
           top_k: 40,
           top_p: 0.9,
           repeat_penalty: 1.1,
-          num_ctx: 2048,
-          num_predict: 400, // Aumentado para respuestas completas sin cortes
+          num_ctx: 1024,      // Reducido de 2048 - contexto más pequeño = más rápido
+          num_predict: 150,   // Reducido de 400 - respuestas cortas (3-4 líneas)
           ...request.options,
         },
         ...restRequest,
