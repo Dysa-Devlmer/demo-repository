@@ -201,6 +201,9 @@ export class ConversationsService {
       metadata?: any;
     },
   ): Promise<Message> {
+    // DEBUG: This log confirms the NEW code is running (not old dist/)
+    this.logger.warn(`>>> [QUERYBUILDER FIX v2] addMessage called for conversation ${conversationId}`);
+
     const conversation = await this.findOne(conversationId);
 
     // Map sender to MessageRole
@@ -212,45 +215,51 @@ export class ConversationsService {
 
     const role = roleMap[data.sender];
 
-    this.logger.log(`Inserting message with conversation_id: ${conversationId}`);
+    this.logger.warn(`>>> [QUERYBUILDER FIX v2] Inserting message with conversation_id: ${conversationId}`);
 
-    // CRITICAL FIX: Use QueryBuilder for direct INSERT
-    // This bypasses TypeORM's relation handling which ignores conversation_id
-    // when both @Column and @JoinColumn point to the same column
-    const result = await this.messagesRepo
-      .createQueryBuilder()
-      .insert()
-      .into(Message)
-      .values({
-        conversation_id: conversationId,
-        content: data.content,
-        role: role as any,
-        type: "text" as any,
-        metadata: data.metadata,
-      })
-      .returning("*")
-      .execute();
+    try {
+      // CRITICAL FIX: Use QueryBuilder for direct INSERT
+      // This bypasses TypeORM's relation handling which ignores conversation_id
+      // when both @Column and @JoinColumn point to the same column
+      const result = await this.messagesRepo
+        .createQueryBuilder()
+        .insert()
+        .into(Message)
+        .values({
+          conversation_id: conversationId,
+          content: data.content,
+          role: role as any,
+          type: "text" as any,
+          metadata: data.metadata,
+        })
+        .returning("*")
+        .execute();
 
-    const saved = result.raw[0] as Message;
-    this.logger.log(`Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
+      const saved = result.raw[0] as Message;
+      this.logger.warn(`>>> [QUERYBUILDER FIX v2] Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
 
-    // Update conversation stats
-    conversation.message_count += 1;
-    conversation.last_activity = new Date();
+      // Update conversation stats
+      conversation.message_count += 1;
+      conversation.last_activity = new Date();
 
-    if (data.sender === "bot") {
-      conversation.bot_messages += 1;
-    } else if (data.sender === "human") {
-      conversation.human_messages += 1;
+      if (data.sender === "bot") {
+        conversation.bot_messages += 1;
+      } else if (data.sender === "human") {
+        conversation.human_messages += 1;
+      }
+
+      await this.conversationsRepo.save(conversation);
+
+      this.logger.log(
+        `Message added to conversation ${conversation.session_id} by ${data.sender}`,
+      );
+
+      return saved;
+    } catch (error) {
+      this.logger.error(`>>> [QUERYBUILDER FIX v2] ERROR in addMessage: ${error.message}`);
+      this.logger.error(`>>> [QUERYBUILDER FIX v2] Stack: ${error.stack}`);
+      throw error;
     }
-
-    await this.conversationsRepo.save(conversation);
-
-    this.logger.log(
-      `Message added to conversation ${conversation.session_id} by ${data.sender}`,
-    );
-
-    return saved;
   }
 
   /**
