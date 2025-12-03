@@ -12,7 +12,7 @@ import { ConfigService } from "@nestjs/config";
 import { IsString, IsOptional, IsEnum } from "class-validator";
 import type { WebhookMessage } from "./whatsapp.service";
 import { WhatsAppService } from "./whatsapp.service";
-import { OllamaService } from "../ai/ollama.service";
+import { HybridAIService } from "../ai/hybrid-ai.service";
 import { WebSocketsGateway } from "../websockets/websockets.gateway";
 import { BusinessHoursService } from "./business-hours.service";
 import { MenuService } from "../../menu/menu.service";
@@ -41,7 +41,7 @@ export class WhatsAppController {
 
   constructor(
     private readonly whatsappService: WhatsAppService,
-    private readonly ollamaService: OllamaService,
+    private readonly hybridAIService: HybridAIService,
     private readonly websocketGateway: WebSocketsGateway,
     private readonly businessHoursService: BusinessHoursService,
     private readonly configService: ConfigService,
@@ -196,7 +196,8 @@ export class WhatsAppController {
 
           this.logger.log(`Providing AI with ${formattedMenuItems.length} menu items, ${categoryNames.length} categories, and ${previousMessages.length} previous messages`);
 
-          const aiResponse = await this.ollamaService.generateRestaurantResponse(
+          // Use HybridAIService for faster responses (OpenAI ~1-2s vs Ollama ~10-15s)
+          const aiResult = await this.hybridAIService.generateResponse(
             message.content,
             {
               customerName: customer?.name,
@@ -213,12 +214,17 @@ export class WhatsAppController {
             },
           );
 
-          responseText = aiResponse;
+          // Log response time and provider
+          this.logger.log(
+            `AI Response from ${aiResult.provider} in ${aiResult.responseTime}ms${aiResult.cached ? ' (cached)' : ''}`,
+          );
+
+          responseText = aiResult.content;
 
           // Send AI response back to WhatsApp
           result = await this.whatsappService.sendTextMessage(
             message.from,
-            aiResponse,
+            responseText,
           );
         } else {
           // Restaurant is CLOSED - Send closed message

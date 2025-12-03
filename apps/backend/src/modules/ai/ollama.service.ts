@@ -237,8 +237,8 @@ export class OllamaService {
           top_k: 40,
           top_p: 0.9,
           repeat_penalty: 1.1,
-          num_ctx: 2048,
-          num_predict: 400, // Aumentado para respuestas completas sin cortes
+          num_ctx: 1024, // Optimizado para respuestas más rápidas
+          num_predict: 150, // Respuestas concisas y rápidas
           ...request.options,
         },
         ...restRequest,
