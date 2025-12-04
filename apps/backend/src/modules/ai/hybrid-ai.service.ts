@@ -128,7 +128,7 @@ export class HybridAIService {
     const systemPrompt = this.buildAdaptiveSystemPrompt(context, features);
     const messages = this.buildMessages(systemPrompt, userMessage, context);
 
-    let response: AIResponse;
+    let response: AIResponse | null = null;
 
     // 3. Intentar OpenAI primero (más natural)
     if (this.useOpenAI && this.openai) {
@@ -145,7 +145,7 @@ export class HybridAIService {
         };
       } catch (error) {
         this.logger.warn('OpenAI failed, falling back to Ollama:', error instanceof Error ? error.message : 'Unknown error');
-        response = null as any;  // Continuará con Ollama
+        // response permanece null, continuará con Ollama
       }
     }
 
