@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OllamaService, RestaurantContext } from './ollama.service';
+import { LearningMemoryService, ExperienceFeatures } from './learning-memory.service';
 import OpenAI from 'openai';
 
 export interface AIResponse {
@@ -9,6 +10,8 @@ export interface AIResponse {
   tokensUsed?: number;
   responseTime: number;
   cached?: boolean;
+  experienceId?: number;  // ID de la experiencia para feedback posterior
+  features?: ExperienceFeatures;  // Features analizados del mensaje
 }
 
 export interface ConversationMessage {
@@ -31,6 +34,7 @@ export class HybridAIService {
   constructor(
     private readonly configService: ConfigService,
     private readonly ollamaService: OllamaService,
+    private readonly learningMemory: LearningMemoryService,
   ) {
     const openaiKey = this.configService.get<string>('OPENAI_API_KEY');
 
@@ -39,78 +43,187 @@ export class HybridAIService {
         apiKey: openaiKey,
       });
       this.useOpenAI = true;
-      this.logger.log('✅ HybridAI initialized with OpenAI GPT-4o-mini (primary) + Ollama (fallback)');
+      this.logger.log('✅ HybridAI initialized with OpenAI GPT-4o-mini (primary) + Ollama (fallback) + JARVIS Learning');
     } else {
       this.useOpenAI = false;
-      this.logger.warn('⚠️  OpenAI not configured, using Ollama only');
+      this.logger.warn('⚠️  OpenAI not configured, using Ollama only + JARVIS Learning');
     }
   }
 
   /**
    * Genera una respuesta inteligente usando el mejor proveedor disponible
+   * Con sistema de aprendizaje JARVIS integrado
    */
   async generateResponse(
     userMessage: string,
-    context: RestaurantContext,
+    context: RestaurantContext & {
+      conversationId?: number;
+      customerId?: number;
+      channel?: string;
+    },
   ): Promise<AIResponse> {
     const startTime = Date.now();
+
+    // 0. Analizar mensaje con JARVIS Learning
+    const features = this.learningMemory.analyzeMessage(userMessage);
+    this.logger.debug(`📊 JARVIS Analysis: intent=${features.intent}, sentiment=${features.sentiment.toFixed(2)}, complexity=${features.complexity}`);
 
     // 1. Verificar cache para preguntas frecuentes
     const cacheKey = this.getCacheKey(userMessage, context);
     const cached = this.getFromCache(cacheKey);
     if (cached) {
       this.logger.debug('📦 Response from cache');
+
+      // Guardar experiencia incluso para cache hits
+      const experience = await this.learningMemory.saveExperience({
+        userInput: userMessage,
+        botResponse: cached,
+        aiProvider: 'cache',
+        responseTimeMs: Date.now() - startTime,
+        fromCache: true,
+        conversationId: context.conversationId,
+        customerId: context.customerId,
+        channel: context.channel,
+      });
+
       return {
         content: cached,
         provider: 'openai',
         responseTime: Date.now() - startTime,
         cached: true,
+        experienceId: experience.id,
+        features,
       };
     }
 
-    // 2. Construir el prompt con RESTRICCIONES ESTRICTAS
+    // 1.5 Verificar si hay una respuesta sugerida del aprendizaje
+    const suggestedResponse = this.learningMemory.getSuggestedResponse(features);
+    if (suggestedResponse && features.complexity <= 5) {
+      this.logger.debug('🧠 Using JARVIS learned response');
+      // Guardar en cache la respuesta aprendida
+      this.saveToCache(cacheKey, suggestedResponse);
+
+      const experience = await this.learningMemory.saveExperience({
+        userInput: userMessage,
+        botResponse: suggestedResponse,
+        aiProvider: 'jarvis_learned',
+        responseTimeMs: Date.now() - startTime,
+        fromCache: false,
+        conversationId: context.conversationId,
+        customerId: context.customerId,
+        channel: context.channel,
+      });
+
+      return {
+        content: suggestedResponse,
+        provider: 'ollama',  // Reportamos como ollama para estadísticas
+        responseTime: Date.now() - startTime,
+        cached: false,
+        experienceId: experience.id,
+        features,
+      };
+    }
+
+    // 2. Construir el prompt con RESTRICCIONES ESTRICTAS + contexto de aprendizaje
     const systemPrompt = this.buildRestrictedSystemPrompt(context);
     const messages = this.buildMessages(systemPrompt, userMessage, context);
+
+    let response: AIResponse;
 
     // 3. Intentar OpenAI primero (más natural)
     if (this.useOpenAI && this.openai) {
       try {
-        const response = await this.generateWithOpenAI(messages);
+        const openaiResponse = await this.generateWithOpenAI(messages);
 
         // Guardar en cache si es exitoso
-        this.saveToCache(cacheKey, response.content);
+        this.saveToCache(cacheKey, openaiResponse.content);
 
-        return {
-          ...response,
+        response = {
+          ...openaiResponse,
           responseTime: Date.now() - startTime,
+          features,
         };
       } catch (error) {
         this.logger.warn('OpenAI failed, falling back to Ollama:', error instanceof Error ? error.message : 'Unknown error');
+        response = null as any;  // Continuará con Ollama
       }
     }
 
     // 4. Fallback a Ollama
-    try {
-      const content = await this.ollamaService.generateRestaurantResponse(
-        userMessage,
-        context,
-      );
+    if (!response) {
+      try {
+        const content = await this.ollamaService.generateRestaurantResponse(
+          userMessage,
+          context,
+        );
 
-      return {
-        content,
-        provider: 'ollama',
-        responseTime: Date.now() - startTime,
-      };
-    } catch (error) {
-      this.logger.error('Both AI providers failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
+        response = {
+          content,
+          provider: 'ollama',
+          responseTime: Date.now() - startTime,
+          features,
+        };
+      } catch (error) {
+        this.logger.error('Both AI providers failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
 
-      // 5. Fallback final: respuestas pre-programadas
-      return {
-        content: this.getFallbackResponse(userMessage, context),
-        provider: 'fallback',
-        responseTime: Date.now() - startTime,
-      };
+        // 5. Fallback final: respuestas pre-programadas
+        response = {
+          content: this.getFallbackResponse(userMessage, context),
+          provider: 'fallback',
+          responseTime: Date.now() - startTime,
+          features,
+        };
+      }
     }
+
+    // 6. Guardar experiencia para aprendizaje JARVIS
+    try {
+      const experience = await this.learningMemory.saveExperience({
+        userInput: userMessage,
+        botResponse: response.content,
+        aiProvider: response.provider,
+        responseTimeMs: response.responseTime,
+        tokensUsed: response.tokensUsed,
+        fromCache: false,
+        conversationId: context.conversationId,
+        customerId: context.customerId,
+        channel: context.channel,
+      });
+
+      response.experienceId = experience.id;
+      this.logger.debug(`🧠 JARVIS Experience saved: #${experience.id}`);
+    } catch (error) {
+      this.logger.warn('Failed to save learning experience:', error instanceof Error ? error.message : 'Unknown error');
+    }
+
+    return response;
+  }
+
+  /**
+   * Registra feedback para una experiencia (para aprendizaje)
+   */
+  async recordFeedback(experienceId: number, feedback: {
+    qualityScore?: number;
+    positiveContinuation?: boolean;
+    escalatedToHuman?: boolean;
+    resultedInAction?: boolean;
+    actionType?: string;
+  }): Promise<void> {
+    await this.learningMemory.recordFeedback(experienceId, feedback);
+  }
+
+  /**
+   * Obtiene insights del sistema de aprendizaje
+   */
+  async getLearningInsights() {
+    return this.learningMemory.getInsights();
+  }
+
+  /**
+   * Obtiene estadísticas del sistema de aprendizaje
+   */
+  async getLearningStats() {
+    return this.learningMemory.getStats();
   }
 
   /**
@@ -343,9 +456,11 @@ RECUERDA: Eres el asistente del restaurante, no un asistente general de IA.`;
   /**
    * Obtiene estadísticas del servicio
    */
-  getStats() {
+  async getStats() {
+    const learningStats = await this.learningMemory.getStats();
+
     return {
-      service: 'Hybrid AI Service',
+      service: 'Hybrid AI Service + JARVIS Learning',
       primaryProvider: this.useOpenAI ? 'OpenAI GPT-4o-mini' : 'Ollama only',
       fallbackProvider: 'Ollama',
       emergencyFallback: 'Pre-programmed responses',
@@ -353,6 +468,7 @@ RECUERDA: Eres el asistente del restaurante, no un asistente general de IA.`;
       cacheExpiration: `${this.cacheExpiration / 60000} minutes`,
       openaiConfigured: this.useOpenAI,
       model: this.openaiModel,
+      learning: learningStats,
     };
   }
 
