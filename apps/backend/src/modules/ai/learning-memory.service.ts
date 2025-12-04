@@ -26,6 +26,12 @@ export interface ExperienceFeatures {
   contextCategory: string;
   hourOfDay: number;
   dayOfWeek: number;
+  // Nuevos campos para adaptación humana
+  communicationStyle: 'formal' | 'informal' | 'neutral';
+  usesEmojis: boolean;
+  messageLength: 'short' | 'medium' | 'long';
+  politenessLevel: 'very_polite' | 'polite' | 'casual' | 'direct';
+  language: 'spanish' | 'english' | 'mixed';
 }
 
 export interface QLearningState {
@@ -72,6 +78,7 @@ export class LearningMemoryService {
 
   /**
    * Analiza el mensaje del usuario y extrae features para aprendizaje
+   * Incluye detección de estilo de comunicación para respuestas más humanas
    */
   analyzeMessage(message: string): ExperienceFeatures {
     const words = message.toLowerCase().split(/\s+/);
@@ -86,7 +93,121 @@ export class LearningMemoryService {
       contextCategory: this.detectCategory(message),
       hourOfDay: now.getHours(),
       dayOfWeek: now.getDay(),
+      // Análisis de estilo para respuestas adaptativas
+      communicationStyle: this.detectCommunicationStyle(message),
+      usesEmojis: this.detectEmojis(message),
+      messageLength: this.detectMessageLength(message),
+      politenessLevel: this.detectPoliteness(message),
+      language: this.detectLanguage(message),
     };
+  }
+
+  /**
+   * Detecta el estilo de comunicación (formal vs informal)
+   */
+  private detectCommunicationStyle(message: string): 'formal' | 'informal' | 'neutral' {
+    const lower = message.toLowerCase();
+
+    // Indicadores de formalidad
+    const formalIndicators = [
+      'usted', 'estimado', 'cordialmente', 'atentamente', 'por favor',
+      'sería tan amable', 'podría', 'quisiera', 'le agradecería',
+      'buenos días', 'buenas tardes', 'buenas noches', 'disculpe',
+    ];
+
+    // Indicadores de informalidad
+    const informalIndicators = [
+      'hola', 'hey', 'que tal', 'como estas', 'wena', 'oye', 'mira',
+      'porfa', 'plis', 'dale', 'va', 'oka', 'ok', 'sip', 'nop',
+      'jaja', 'jeje', 'xd', 'lol', 'bro', 'wey', 'tío', 'crack',
+    ];
+
+    let formalScore = 0;
+    let informalScore = 0;
+
+    formalIndicators.forEach(word => {
+      if (lower.includes(word)) formalScore++;
+    });
+
+    informalIndicators.forEach(word => {
+      if (lower.includes(word)) informalScore++;
+    });
+
+    // Mayúsculas excesivas = informal/entusiasta
+    const capsRatio = (message.match(/[A-Z]/g) || []).length / message.length;
+    if (capsRatio > 0.5) informalScore += 2;
+
+    if (formalScore > informalScore + 1) return 'formal';
+    if (informalScore > formalScore + 1) return 'informal';
+    return 'neutral';
+  }
+
+  /**
+   * Detecta si el mensaje usa emojis
+   */
+  private detectEmojis(message: string): boolean {
+    const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]/u;
+    return emojiRegex.test(message);
+  }
+
+  /**
+   * Detecta la longitud del mensaje
+   */
+  private detectMessageLength(message: string): 'short' | 'medium' | 'long' {
+    const words = message.split(/\s+/).length;
+    if (words <= 5) return 'short';
+    if (words <= 20) return 'medium';
+    return 'long';
+  }
+
+  /**
+   * Detecta el nivel de cortesía
+   */
+  private detectPoliteness(message: string): 'very_polite' | 'polite' | 'casual' | 'direct' {
+    const lower = message.toLowerCase();
+
+    const veryPoliteWords = ['por favor', 'sería tan amable', 'le agradecería', 'disculpe', 'perdone'];
+    const politeWords = ['gracias', 'buenos días', 'buenas', 'podría', 'quisiera'];
+    const casualWords = ['hola', 'hey', 'oye', 'dale', 'va'];
+
+    for (const word of veryPoliteWords) {
+      if (lower.includes(word)) return 'very_polite';
+    }
+
+    for (const word of politeWords) {
+      if (lower.includes(word)) return 'polite';
+    }
+
+    for (const word of casualWords) {
+      if (lower.includes(word)) return 'casual';
+    }
+
+    return 'direct';
+  }
+
+  /**
+   * Detecta el idioma predominante
+   */
+  private detectLanguage(message: string): 'spanish' | 'english' | 'mixed' {
+    const lower = message.toLowerCase();
+
+    const spanishWords = ['hola', 'gracias', 'por favor', 'quiero', 'menú', 'mesa', 'reserva', 'pedido'];
+    const englishWords = ['hello', 'thanks', 'please', 'want', 'menu', 'table', 'order', 'book'];
+
+    let spanishCount = 0;
+    let englishCount = 0;
+
+    spanishWords.forEach(word => {
+      if (lower.includes(word)) spanishCount++;
+    });
+
+    englishWords.forEach(word => {
+      if (lower.includes(word)) englishCount++;
+    });
+
+    if (spanishCount > 0 && englishCount > 0) return 'mixed';
+    if (englishCount > spanishCount) return 'english';
+    return 'spanish';
   }
 
   /**

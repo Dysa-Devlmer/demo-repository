@@ -124,8 +124,8 @@ export class HybridAIService {
       };
     }
 
-    // 2. Construir el prompt con RESTRICCIONES ESTRICTAS + contexto de aprendizaje
-    const systemPrompt = this.buildRestrictedSystemPrompt(context);
+    // 2. Construir el prompt con RESTRICCIONES ESTRICTAS + adaptación al estilo del cliente
+    const systemPrompt = this.buildAdaptiveSystemPrompt(context, features);
     const messages = this.buildMessages(systemPrompt, userMessage, context);
 
     let response: AIResponse;
@@ -227,68 +227,138 @@ export class HybridAIService {
   }
 
   /**
-   * Construye un prompt con restricciones ESTRICTAS para que solo hable del restaurante
+   * Construye un prompt ADAPTATIVO que se ajusta al estilo del cliente
+   * El bot "espejeará" la forma de comunicarse del cliente para ser más humano
    */
-  private buildRestrictedSystemPrompt(context: RestaurantContext): string {
+  private buildAdaptiveSystemPrompt(context: RestaurantContext, features: ExperienceFeatures): string {
     const restaurantName = context.restaurantInfo?.name || 'nuestro restaurante';
 
-    return `Eres ChefBot Dysa 👨‍🍳, el asistente virtual EXCLUSIVO de ${restaurantName}.
+    // Determinar el estilo de respuesta basado en cómo escribe el cliente
+    let styleInstructions = '';
+    let greetingStyle = '';
+    let emojiStyle = '';
 
-🚫 RESTRICCIONES ABSOLUTAS:
-1. SOLO puedes hablar sobre ${restaurantName}: menú, reservas, pedidos, horarios, ubicación, especialidades
-2. NO tienes acceso a internet ni información externa
-3. NO respondas preguntas sobre otros restaurantes, noticias, clima, deportes, etc.
-4. SI te preguntan algo fuera del restaurante, responde: "Lo siento, solo puedo ayudarte con información sobre ${restaurantName}. ¿Te gustaría conocer nuestro menú, hacer una reserva o realizar un pedido?"
+    // Adaptar formalidad
+    if (features.communicationStyle === 'formal') {
+      styleInstructions = `
+🎭 ESTILO ADAPTATIVO - FORMAL:
+- Usa "usted" siempre, nunca "tú"
+- Mantén un tono profesional y respetuoso
+- Evita expresiones coloquiales
+- Sé cortés y educado en cada respuesta`;
+      greetingStyle = 'Buenos días/tardes, es un placer atenderle';
+    } else if (features.communicationStyle === 'informal') {
+      styleInstructions = `
+🎭 ESTILO ADAPTATIVO - AMIGABLE:
+- Puedes usar "tú" y expresiones cercanas
+- Sé amigable y relajado, como un amigo
+- Puedes usar expresiones como "dale", "perfecto", "genial"
+- Mantén la calidez pero siendo profesional`;
+      greetingStyle = '¡Hola! ¿Qué tal?';
+    } else {
+      styleInstructions = `
+🎭 ESTILO ADAPTATIVO - NEUTRO:
+- Equilibra formalidad con cercanía
+- Sé natural y cálido
+- Adapta tu tono según la conversación`;
+      greetingStyle = '¡Hola! Bienvenido';
+    }
 
-✅ PUEDES AYUDAR CON:
-- 🍽️ Consultar menú, precios, ingredientes, platos del día
-- 📅 Hacer, modificar o cancelar reservas
-- 🛵 Tomar pedidos para delivery o takeaway
-- ℹ️ Información del restaurante (horarios, ubicación, teléfono)
-- 🎁 Promociones y especialidades actuales
-- ❓ Preguntas sobre métodos de pago, políticas de cancelación
+    // Adaptar uso de emojis
+    if (features.usesEmojis) {
+      emojiStyle = '- USA emojis en tus respuestas para ser más expresivo 🍽️😊👍';
+    } else {
+      emojiStyle = '- Usa pocos o ningún emoji, mantén respuestas limpias';
+    }
+
+    // Adaptar longitud de respuesta
+    let lengthStyle = '';
+    if (features.messageLength === 'short') {
+      lengthStyle = '- El cliente escribe corto, responde BREVE (1-2 oraciones máximo)';
+    } else if (features.messageLength === 'long') {
+      lengthStyle = '- El cliente detalla mucho, puedes dar respuestas más completas';
+    } else {
+      lengthStyle = '- Respuestas de longitud moderada (2-3 oraciones)';
+    }
+
+    // Adaptar según sentimiento
+    let sentimentStyle = '';
+    if (features.sentiment < -0.2) {
+      sentimentStyle = `
+⚠️ CLIENTE POSIBLEMENTE MOLESTO:
+- Muestra empatía y comprensión
+- Ofrece soluciones, no excusas
+- Mantén la calma y sé extra amable`;
+    } else if (features.sentiment > 0.3) {
+      sentimentStyle = `
+😊 CLIENTE CONTENTO:
+- Comparte su entusiasmo
+- Refuerza su buena experiencia`;
+    }
+
+    return `Eres el asistente virtual de ${restaurantName}. Tu trabajo es ayudar a los clientes de forma NATURAL y HUMANA.
+
+${styleInstructions}
+${sentimentStyle}
+
+📝 REGLAS DE COMUNICACIÓN:
+${emojiStyle}
+${lengthStyle}
+- ESPEJA el estilo del cliente: si es breve, sé breve; si detalla, detalla
+- Responde como un humano real, no como un robot
+- Si el cliente usa mayúsculas o signos de exclamación, muestra entusiasmo también
 
 📋 INFORMACIÓN DEL RESTAURANTE:
 ${context.restaurantInfo ? `
 - Nombre: ${context.restaurantInfo.name}
+- Teléfono: ${context.restaurantInfo.phone || '+56965419765'}
+- Horarios: ${context.restaurantInfo.hours || '24/7'}
 - Dirección: ${context.restaurantInfo.address || 'Consultar'}
-- Teléfono: ${context.restaurantInfo.phone || 'Consultar'}
-- Horarios: ${context.restaurantInfo.hours || 'Consultar'}
-- Especialidades: ${context.restaurantInfo.specialties?.join(', ') || 'Consultar menú'}
-` : 'Información no disponible'}
+` : ''}
 
 ${context.menuItems && context.menuItems.length > 0 ? `
-🍽️ MENÚ DISPONIBLE (${context.menuItems.length} items):
-${context.menuItems.map(item =>
-  `- ${item.name}: $${item.price} - ${item.description || item.category}${item.available === false ? ' (No disponible)' : ''}`
+🍽️ MENÚ (${context.menuItems.length} productos):
+${context.menuItems.slice(0, 15).map(item =>
+  `- ${item.name}: $${item.price}${item.available === false ? ' (Agotado)' : ''}`
 ).join('\n')}
 ` : ''}
 
-👤 CONTEXTO DEL CLIENTE:
-${context.customerName ? `Nombre: ${context.customerName}` : 'Cliente nuevo'}
-${context.reservations && context.reservations.length > 0 ? `
-Reservas activas: ${context.reservations.length}
-${context.reservations.map(r =>
-  `- ${r.reservation_code}: ${r.reservation_date} para ${r.party_size} personas (${r.status})`
-).join('\n')}
-` : ''}
+${context.customerName ? `👤 Cliente: ${context.customerName}` : ''}
 
-🎯 ESTILO DE RESPUESTA:
-- Natural, cálido y profesional (como un mesero experto)
-- Usa emojis apropiados pero sin exagerar
-- Respuestas concisas (2-3 oraciones máximo)
-- Si no sabes algo del restaurante, sé honesto y ofrece contactar al personal
-- Termina con una pregunta amigable para continuar la conversación
-- NUNCA inventes información que no tengas
+🎯 PRIORIDADES:
+1. Entiende qué quiere el cliente
+2. Responde de forma útil y natural
+3. Si no sabes algo, admítelo honestamente
+4. Ofrece ayuda adicional solo si es relevante
 
-🚫 LO QUE NUNCA DEBES HACER:
-- Hablar de temas fuera del restaurante
-- Inventar platos o precios que no están en el menú
-- Dar información sobre otros restaurantes
-- Responder preguntas generales de internet
-- Hacer recomendaciones basadas en información externa
+⚠️ RESTRICCIONES:
+- Solo habla del restaurante, menú, pedidos y reservas
+- No inventes información
+- Si preguntan algo fuera del tema, redirige amablemente
 
-RECUERDA: Eres el asistente del restaurante, no un asistente general de IA.`;
+IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante, no como una IA.`;
+  }
+
+  /**
+   * Construye un prompt con restricciones ESTRICTAS (versión legacy)
+   */
+  private buildRestrictedSystemPrompt(context: RestaurantContext): string {
+    // Usar el método adaptativo con features por defecto
+    return this.buildAdaptiveSystemPrompt(context, {
+      wordCount: 10,
+      sentiment: 0,
+      complexity: 5,
+      keywords: [],
+      intent: 'general',
+      contextCategory: 'general',
+      hourOfDay: new Date().getHours(),
+      dayOfWeek: new Date().getDay(),
+      communicationStyle: 'neutral',
+      usesEmojis: true,
+      messageLength: 'medium',
+      politenessLevel: 'polite',
+      language: 'spanish',
+    });
   }
 
   /**
