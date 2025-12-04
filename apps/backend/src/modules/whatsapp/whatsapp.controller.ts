@@ -196,7 +196,7 @@ export class WhatsAppController {
 
           this.logger.log(`Providing AI with ${formattedMenuItems.length} menu items, ${categoryNames.length} categories, and ${previousMessages.length} previous messages`);
 
-          // Use HybridAIService: OpenAI (fast, ~1-2s) -> Ollama (fallback) -> Cached responses
+          // Use HybridAIService with JARVIS Learning: OpenAI -> Ollama -> Learned responses -> Fallback
           const aiResult = await this.hybridAiService.generateResponse(
             message.content,
             {
@@ -211,11 +211,30 @@ export class WhatsAppController {
               menuItems: formattedMenuItems,
               categories: categoryNames,
               previousMessages: previousMessages,
+              // JARVIS Learning context
+              conversationId: conversation?.id,
+              customerId: customer?.id,
+              channel: 'whatsapp',
             },
           );
 
-          this.logger.log(`AI Response from ${aiResult.provider} in ${aiResult.responseTime}ms${aiResult.cached ? ' (cached)' : ''}`);
+          this.logger.log(`AI Response from ${aiResult.provider} in ${aiResult.responseTime}ms${aiResult.cached ? ' (cached)' : ''}${aiResult.experienceId ? ` [JARVIS #${aiResult.experienceId}]` : ''}`);
+          if (aiResult.features) {
+            this.logger.debug(`JARVIS Features: intent=${aiResult.features.intent}, sentiment=${aiResult.features.sentiment.toFixed(2)}`);
+          }
           responseText = aiResult.content;
+
+          // Track positive continuation for JARVIS learning (if previous experience exists)
+          if (previousMessages.length > 0 && aiResult.experienceId) {
+            // The fact that the customer continued the conversation is positive feedback
+            try {
+              await this.hybridAiService.recordFeedback(aiResult.experienceId - 1, {
+                positiveContinuation: true,
+              });
+            } catch (e) {
+              // Ignore feedback errors
+            }
+          }
 
           // Send AI response back to WhatsApp
           result = await this.whatsappService.sendTextMessage(

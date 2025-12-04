@@ -26,6 +26,9 @@ export { SettingHistory } from "../entities/setting-history.entity";
 // Analytics & Monitoring
 export { DashboardSnapshot } from "../entities/dashboard-snapshot.entity";
 
+// AI Learning (JARVIS)
+export { LearningExperience } from "../entities/learning-experience.entity";
+
 // Enterprise Authentication & Authorization
 export { User } from "../auth/entities/user.entity";
 export { Role } from "../auth/entities/role.entity";
