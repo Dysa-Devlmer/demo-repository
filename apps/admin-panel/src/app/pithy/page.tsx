@@ -491,11 +491,15 @@ export default function PithyPage() {
                   <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">Palabras Clave</p>
                     <div className="flex flex-wrap gap-1">
-                      {analysisResult.keywords.map((keyword, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {keyword}
-                        </Badge>
-                      ))}
+                      {analysisResult.keywords.length > 0 ? (
+                        analysisResult.keywords.map((keyword, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {translateValue('keywords', keyword)}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">Sin palabras clave detectadas</span>
+                      )}
                     </div>
                   </div>
 

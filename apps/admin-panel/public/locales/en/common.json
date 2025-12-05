@@ -430,6 +430,20 @@
       "medium": "Medium",
       "long": "Long"
     },
+    "keywords": {
+      "menu": "Menu",
+      "order": "Order",
+      "reservation": "Reservation",
+      "price": "Price",
+      "hours": "Hours",
+      "location": "Location",
+      "promotion": "Promotion",
+      "greeting": "Greeting",
+      "thanks": "Thanks",
+      "help": "Help",
+      "delivery": "Delivery",
+      "feedback": "Feedback"
+    },
     "noData": "Not enough learning data yet",
     "startLearning": "The bot will start learning with each conversation"
   },
