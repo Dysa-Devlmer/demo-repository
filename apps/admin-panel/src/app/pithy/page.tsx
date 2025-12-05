@@ -123,8 +123,8 @@ export default function PithyPage() {
     try {
       setAnalyzing(true);
       const response = await apiService.pithy.analyzeMessage(analyzeText);
-      // Transform API response to ensure all fields have default values
-      const apiData = response.data || {};
+      // API returns data inside features object
+      const apiData = response.data?.features || response.data || {};
       const transformedResult: AnalysisResult = {
         wordCount: apiData.wordCount ?? 0,
         sentiment: apiData.sentiment ?? 0,
