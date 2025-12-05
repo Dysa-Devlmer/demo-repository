@@ -123,7 +123,22 @@ export default function JarvisPage() {
     try {
       setAnalyzing(true);
       const response = await apiService.jarvis.analyzeMessage(analyzeText);
-      setAnalysisResult(response.data);
+      // Transform API response to ensure all fields have default values
+      const apiData = response.data || {};
+      const transformedResult: AnalysisResult = {
+        wordCount: apiData.wordCount ?? 0,
+        sentiment: apiData.sentiment ?? 0,
+        complexity: apiData.complexity ?? 5,
+        keywords: apiData.keywords ?? [],
+        intent: apiData.intent ?? 'unknown',
+        contextCategory: apiData.contextCategory ?? 'general',
+        communicationStyle: apiData.communicationStyle ?? 'neutral',
+        usesEmojis: apiData.usesEmojis ?? false,
+        messageLength: apiData.messageLength ?? 'short',
+        politenessLevel: apiData.politenessLevel ?? 'neutral',
+        language: apiData.language ?? 'es',
+      };
+      setAnalysisResult(transformedResult);
     } catch (error) {
       console.error('Error analyzing message:', error);
     } finally {
