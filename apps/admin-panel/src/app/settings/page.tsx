@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import MainLayout from "@/components/layout/main-layout";
-import { apiService } from "@/lib/api";
+import { apiService, getBaseUrl } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -253,9 +253,8 @@ export default function SettingsPage() {
       return;
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
     try {
-      const response = await fetch(`${API_URL}/api/settings/test/${service}`, {
+      const response = await fetch(`${getBaseUrl()}/settings/test/${service}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,10 +309,9 @@ export default function SettingsPage() {
       return;
     }
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
     try {
       const endpoint = type === 'text' ? 'test-message' : 'test-menu';
-      const response = await fetch(`${API_URL}/api/settings/whatsapp/${endpoint}`, {
+      const response = await fetch(`${getBaseUrl()}/settings/whatsapp/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

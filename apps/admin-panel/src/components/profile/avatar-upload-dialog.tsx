@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { getBaseUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -74,7 +75,6 @@ export function AvatarUploadDialog({
 
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
@@ -85,7 +85,7 @@ export function AvatarUploadDialog({
       const formData = new FormData();
       formData.append('avatar', selectedFile);
 
-      const response = await fetch(`${API_URL}/api/users/me/avatar`, {
+      const response = await fetch(`${getBaseUrl()}/users/me/avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

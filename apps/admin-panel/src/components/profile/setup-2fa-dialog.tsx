@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getBaseUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -59,14 +60,13 @@ export function Setup2FADialog({ open, onOpenChange }: Setup2FADialogProps) {
   const handleInit = async () => {
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_URL}/api/auth/2fa/enable`, {
+      const response = await fetch(`${getBaseUrl()}/auth/2fa/enable`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -132,14 +132,13 @@ export function Setup2FADialog({ open, onOpenChange }: Setup2FADialogProps) {
 
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_URL}/api/auth/2fa/verify-setup`, {
+      const response = await fetch(`${getBaseUrl()}/auth/2fa/verify-setup`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
