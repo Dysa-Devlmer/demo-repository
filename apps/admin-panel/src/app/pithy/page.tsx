@@ -146,6 +146,14 @@ export default function PithyPage() {
     }
   };
 
+  // Helper function to translate analysis values
+  const translateValue = (category: string, value: string): string => {
+    const key = `pithy.${category}.${value}`;
+    const translated = t(key);
+    // If translation key not found (returns the key), show original value capitalized
+    return translated === key ? value.charAt(0).toUpperCase() + value.slice(1) : translated;
+  };
+
   // Colors for charts
   const COLORS = ['#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
 
@@ -440,17 +448,17 @@ export default function PithyPage() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Intención</p>
-                      <Badge variant="default">{analysisResult.intent}</Badge>
+                      <Badge variant="default">{translateValue('intents', analysisResult.intent)}</Badge>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Estilo de Comunicación</p>
-                      <Badge variant="outline">{analysisResult.communicationStyle}</Badge>
+                      <Badge variant="outline">{translateValue('communication', analysisResult.communicationStyle)}</Badge>
                     </div>
 
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Nivel de Cortesía</p>
-                      <Badge variant="outline">{analysisResult.politenessLevel}</Badge>
+                      <Badge variant="outline">{translateValue('politeness', analysisResult.politenessLevel)}</Badge>
                     </div>
 
                     <div className="space-y-1">
@@ -476,7 +484,7 @@ export default function PithyPage() {
 
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Idioma</p>
-                      <Badge variant="secondary">{analysisResult.language}</Badge>
+                      <Badge variant="secondary">{translateValue('languages', analysisResult.language)}</Badge>
                     </div>
                   </div>
 
@@ -496,7 +504,7 @@ export default function PithyPage() {
                       Palabras: <strong>{analysisResult.wordCount}</strong>
                     </span>
                     <span className="text-muted-foreground">
-                      Longitud: <strong>{analysisResult.messageLength}</strong>
+                      Longitud: <strong>{translateValue('messageLength', analysisResult.messageLength)}</strong>
                     </span>
                     <span className="text-muted-foreground">
                       Emojis: <strong>{analysisResult.usesEmojis ? 'Sí' : 'No'}</strong>

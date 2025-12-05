@@ -396,6 +396,39 @@
       "negative": "Negative",
       "neutral": "Neutral"
     },
+    "intents": {
+      "greeting": "Greeting",
+      "menu": "Menu",
+      "order": "Order",
+      "reservation": "Reservation",
+      "help": "Help",
+      "feedback": "Feedback",
+      "complaint": "Complaint",
+      "question": "Question",
+      "thanks": "Thanks",
+      "goodbye": "Goodbye",
+      "general": "General",
+      "unknown": "Unknown"
+    },
+    "politeness": {
+      "polite": "Polite",
+      "neutral": "Neutral",
+      "casual": "Casual",
+      "formal": "Formal",
+      "rude": "Rude"
+    },
+    "languages": {
+      "es": "Spanish",
+      "en": "English",
+      "spanish": "Spanish",
+      "english": "English",
+      "unknown": "Unknown"
+    },
+    "messageLength": {
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long"
+    },
     "noData": "Not enough learning data yet",
     "startLearning": "The bot will start learning with each conversation"
   },
