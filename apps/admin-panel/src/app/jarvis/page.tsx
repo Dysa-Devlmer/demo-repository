@@ -87,7 +87,25 @@ export default function JarvisPage() {
     try {
       setLoading(true);
       const response = await apiService.jarvis.getStats();
-      setStats(response.data);
+      // Transform API response to match expected interface
+      const apiData = response.data;
+      const learning = apiData.learning || {};
+
+      const transformedStats: JarvisStats = {
+        totalExperiences: learning.totalExperiences || 0,
+        averageSentiment: learning.averageSentiment || 0,
+        averageComplexity: learning.averageComplexity || 5,
+        averageReward: learning.averageReward || 0,
+        uniqueIntents: learning.uniqueIntents || [],
+        qTableSize: learning.qTableSize || 0,
+        successRate: learning.successRate || 0,
+        sentimentDistribution: learning.sentimentDistribution || { positive: 0, negative: 0, neutral: 0 },
+        complexityDistribution: learning.complexityDistribution || {},
+        intentDistribution: learning.intentDistribution || {},
+        hourlyDistribution: learning.hourlyDistribution || {},
+      };
+
+      setStats(transformedStats);
     } catch (error) {
       console.error('Error fetching JARVIS stats:', error);
     } finally {
