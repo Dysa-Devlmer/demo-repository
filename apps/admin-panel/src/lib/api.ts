@@ -305,8 +305,8 @@ export const apiService = {
     setModel: (model: string) => api.post('/ai/model', { model }),
   },
 
-  // JARVIS Learning System
-  jarvis: {
+  // Pithy Learning System
+  pithy: {
     getStats: () => smartApiCall(() => api.get('/ai/jarvis/stats'), {
       totalExperiences: 0,
       averageSentiment: 0,

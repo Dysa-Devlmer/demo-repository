@@ -43,7 +43,7 @@ import {
 import { apiService } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 
-interface JarvisStats {
+interface PithyStats {
   totalExperiences: number;
   averageSentiment: number;
   averageComplexity: number;
@@ -75,9 +75,9 @@ interface AnalysisResult {
   language: string;
 }
 
-export default function JarvisPage() {
+export default function PithyPage() {
   const { t } = useTranslation();
-  const [stats, setStats] = useState<JarvisStats | null>(null);
+  const [stats, setStats] = useState<PithyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [analyzeText, setAnalyzeText] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -86,12 +86,12 @@ export default function JarvisPage() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await apiService.jarvis.getStats();
+      const response = await apiService.pithy.getStats();
       // Transform API response to match expected interface
       const apiData = response.data;
       const learning = apiData.learning || {};
 
-      const transformedStats: JarvisStats = {
+      const transformedStats: PithyStats = {
         totalExperiences: learning.totalExperiences || 0,
         averageSentiment: learning.averageSentiment || 0,
         averageComplexity: learning.averageComplexity || 5,
@@ -122,7 +122,7 @@ export default function JarvisPage() {
 
     try {
       setAnalyzing(true);
-      const response = await apiService.jarvis.analyzeMessage(analyzeText);
+      const response = await apiService.pithy.analyzeMessage(analyzeText);
       setAnalysisResult(response.data);
     } catch (error) {
       console.error('Error analyzing message:', error);
@@ -136,9 +136,9 @@ export default function JarvisPage() {
 
   // Prepare sentiment data for pie chart
   const sentimentData = stats ? [
-    { name: t('jarvis.sentiment.positive'), value: stats.sentimentDistribution.positive, color: '#10B981' },
-    { name: t('jarvis.sentiment.neutral'), value: stats.sentimentDistribution.neutral, color: '#F59E0B' },
-    { name: t('jarvis.sentiment.negative'), value: stats.sentimentDistribution.negative, color: '#EF4444' },
+    { name: t('pithy.sentiment.positive'), value: stats.sentimentDistribution.positive, color: '#10B981' },
+    { name: t('pithy.sentiment.neutral'), value: stats.sentimentDistribution.neutral, color: '#F59E0B' },
+    { name: t('pithy.sentiment.negative'), value: stats.sentimentDistribution.negative, color: '#EF4444' },
   ] : [];
 
   // Prepare intent data for bar chart
@@ -159,7 +159,7 @@ export default function JarvisPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Sparkles className="h-12 w-12 animate-pulse mx-auto mb-4 text-purple-500" />
-            <p>{t('jarvis.loading')}</p>
+            <p>{t('pithy.loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -172,9 +172,9 @@ export default function JarvisPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-purple-500" />
-            {t('jarvis.title')}
+            {t('pithy.title')}
           </h1>
-          <p className="text-muted-foreground">{t('jarvis.subtitle')}</p>
+          <p className="text-muted-foreground">{t('pithy.subtitle')}</p>
         </div>
         <Button onClick={fetchStats} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -187,7 +187,7 @@ export default function JarvisPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t('jarvis.stats.totalExperiences')}
+              {t('pithy.stats.totalExperiences')}
             </CardTitle>
             <Brain className="h-4 w-4 text-purple-500" />
           </CardHeader>
@@ -202,7 +202,7 @@ export default function JarvisPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t('jarvis.stats.averageSentiment')}
+              {t('pithy.stats.averageSentiment')}
             </CardTitle>
             <Activity className="h-4 w-4 text-green-500" />
           </CardHeader>
@@ -222,7 +222,7 @@ export default function JarvisPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t('jarvis.stats.qTableSize')}
+              {t('pithy.stats.qTableSize')}
             </CardTitle>
             <Target className="h-4 w-4 text-blue-500" />
           </CardHeader>
@@ -237,7 +237,7 @@ export default function JarvisPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {t('jarvis.stats.successRate')}
+              {t('pithy.stats.successRate')}
             </CardTitle>
             <Zap className="h-4 w-4 text-yellow-500" />
           </CardHeader>
@@ -295,8 +295,8 @@ export default function JarvisPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                     <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
-                    <p>{t('jarvis.noData')}</p>
-                    <p className="text-sm">{t('jarvis.startLearning')}</p>
+                    <p>{t('pithy.noData')}</p>
+                    <p className="text-sm">{t('pithy.startLearning')}</p>
                   </div>
                 )}
               </CardContent>
@@ -325,7 +325,7 @@ export default function JarvisPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                     <Target className="h-12 w-12 mb-2 opacity-50" />
-                    <p>{t('jarvis.noData')}</p>
+                    <p>{t('pithy.noData')}</p>
                   </div>
                 )}
               </CardContent>
@@ -360,7 +360,7 @@ export default function JarvisPage() {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                     <Clock className="h-12 w-12 mb-2 opacity-50" />
-                    <p>{t('jarvis.noData')}</p>
+                    <p>{t('pithy.noData')}</p>
                   </div>
                 )}
               </CardContent>
@@ -371,7 +371,7 @@ export default function JarvisPage() {
           {stats && stats.uniqueIntents.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>{t('jarvis.stats.uniqueIntents')}</CardTitle>
+                <CardTitle>{t('pithy.stats.uniqueIntents')}</CardTitle>
                 <CardDescription>Categorías de intención aprendidas</CardDescription>
               </CardHeader>
               <CardContent>
@@ -392,7 +392,7 @@ export default function JarvisPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Send className="h-4 w-4" />
-                {t('jarvis.analyze.title')}
+                {t('pithy.analyze.title')}
               </CardTitle>
               <CardDescription>
                 Prueba cómo Pithy analiza un mensaje de cliente
@@ -401,7 +401,7 @@ export default function JarvisPage() {
             <CardContent className="space-y-4">
               <div className="flex gap-2">
                 <Input
-                  placeholder={t('jarvis.analyze.placeholder')}
+                  placeholder={t('pithy.analyze.placeholder')}
                   value={analyzeText}
                   onChange={(e) => setAnalyzeText(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
@@ -412,7 +412,7 @@ export default function JarvisPage() {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      {t('jarvis.analyze.button')}
+                      {t('pithy.analyze.button')}
                     </>
                   )}
                 </Button>
@@ -420,7 +420,7 @@ export default function JarvisPage() {
 
               {analysisResult && (
                 <div className="border rounded-lg p-4 space-y-4 bg-muted/50">
-                  <h4 className="font-semibold">{t('jarvis.analyze.results')}</h4>
+                  <h4 className="font-semibold">{t('pithy.analyze.results')}</h4>
 
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <div className="space-y-1">
@@ -532,14 +532,14 @@ export default function JarvisPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-4 w-4" />
-                  {t('jarvis.qlearning.title')}
+                  {t('pithy.qlearning.title')}
                 </CardTitle>
                 <CardDescription>Parámetros del algoritmo de aprendizaje</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>{t('jarvis.qlearning.explorationRate')}</span>
+                    <span>{t('pithy.qlearning.explorationRate')}</span>
                     <span className="font-medium">10%</span>
                   </div>
                   <Progress value={10} />
@@ -547,7 +547,7 @@ export default function JarvisPage() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>{t('jarvis.qlearning.learningRate')}</span>
+                    <span>{t('pithy.qlearning.learningRate')}</span>
                     <span className="font-medium">10%</span>
                   </div>
                   <Progress value={10} />
@@ -555,7 +555,7 @@ export default function JarvisPage() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>{t('jarvis.qlearning.discountFactor')}</span>
+                    <span>{t('pithy.qlearning.discountFactor')}</span>
                     <span className="font-medium">95%</span>
                   </div>
                   <Progress value={95} />
@@ -568,7 +568,7 @@ export default function JarvisPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4" />
-                  {t('jarvis.stats.learningProgress')}
+                  {t('pithy.stats.learningProgress')}
                 </CardTitle>
                 <CardDescription>Progreso del sistema de aprendizaje</CardDescription>
               </CardHeader>
