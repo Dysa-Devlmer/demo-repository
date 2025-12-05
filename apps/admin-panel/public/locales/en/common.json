@@ -8,6 +8,7 @@
     "customers": "Customers",
     "reservations": "Reservations",
     "analytics": "Analytics",
+    "jarvisLearning": "JARVIS Learning",
     "reports": "Reports",
     "users": "Users",
     "aiChat": "AI Chat",
@@ -351,6 +352,52 @@
     "welcomeMessage": "Hello! I'm your AI assistant for ChatBotDysa. I can help you with data analysis, menu suggestions, marketing strategies, order management and much more. How can I help you today?",
     "errorSendingMessage": "Could not send message. Please try again.",
     "defaultSystemPrompt": "You are a helpful assistant for ChatBotDysa restaurant. Help administrators with questions about management, orders, reservations and customers."
+  },
+  "jarvis": {
+    "title": "JARVIS Learning System",
+    "subtitle": "Intelligent learning system for your chatbot",
+    "loading": "Loading JARVIS statistics...",
+    "stats": {
+      "title": "Learning Statistics",
+      "totalExperiences": "Total Experiences",
+      "averageSentiment": "Average Sentiment",
+      "uniqueIntents": "Unique Intents",
+      "qTableSize": "Q-Table Size",
+      "successRate": "Success Rate",
+      "learningProgress": "Learning Progress"
+    },
+    "insights": {
+      "title": "Bot Insights",
+      "topPatterns": "Most Common Patterns",
+      "sentimentTrend": "Sentiment Trend",
+      "peakHours": "Peak Hours",
+      "commonIntents": "Common Intents"
+    },
+    "analyze": {
+      "title": "Analyze Message",
+      "placeholder": "Type a message to analyze...",
+      "button": "Analyze",
+      "results": "Analysis Results"
+    },
+    "qlearning": {
+      "title": "Q-Learning Status",
+      "explorationRate": "Exploration Rate",
+      "learningRate": "Learning Rate",
+      "discountFactor": "Discount Factor"
+    },
+    "communication": {
+      "title": "Communication Styles",
+      "formal": "Formal",
+      "informal": "Informal",
+      "neutral": "Neutral"
+    },
+    "sentiment": {
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral"
+    },
+    "noData": "Not enough learning data yet",
+    "startLearning": "The bot will start learning with each conversation"
   },
   "analytics": {
     "title": "Analytics and Reports",

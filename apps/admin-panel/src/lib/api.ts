@@ -299,6 +299,35 @@ export const apiService = {
     setModel: (model: string) => api.post('/ai/model', { model }),
   },
 
+  // JARVIS Learning System
+  jarvis: {
+    getStats: () => smartApiCall(() => api.get('/ai/jarvis/stats'), {
+      totalExperiences: 0,
+      averageSentiment: 0,
+      averageComplexity: 5,
+      averageReward: 0,
+      uniqueIntents: [],
+      qTableSize: 0,
+      sentimentDistribution: { positive: 0, negative: 0, neutral: 0 },
+      complexityDistribution: {},
+      intentDistribution: {},
+      hourlyDistribution: {},
+      successRate: 0
+    }),
+    getInsights: () => smartApiCall(() => api.get('/ai/jarvis/insights'), {
+      topPatterns: [],
+      sentimentTrend: [],
+      peakHours: [],
+      commonIntents: [],
+      communicationStyles: { formal: 0, informal: 0, neutral: 0 }
+    }),
+    analyzeMessage: (message: string) => api.post('/ai/jarvis/analyze', { message }),
+    recordFeedback: (experienceId: number, isPositive: boolean, feedbackText?: string) =>
+      api.post('/ai/jarvis/feedback', { experienceId, isPositive, feedbackText }),
+    exportQTable: () => api.get('/ai/jarvis/q-table'),
+    importQTable: (qTable: any) => api.post('/ai/jarvis/q-table', qTable),
+  },
+
   // Users management with fallback
   users: {
     getAll: (params?: any) => smartApiCall(() => api.get('/users', { params }), [

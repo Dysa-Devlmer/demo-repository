@@ -8,6 +8,7 @@
     "customers": "Clientes",
     "reservations": "Reservas",
     "analytics": "Analytics",
+    "jarvisLearning": "JARVIS Learning",
     "reports": "Reportes",
     "users": "Usuarios",
     "aiChat": "AI Chat",
@@ -402,6 +403,52 @@
     "welcomeMessage": "¡Hola! Soy tu asistente de IA para ChatBotDysa. Puedo ayudarte con análisis de datos, sugerencias para el menú, estrategias de marketing, gestión de pedidos y mucho más. ¿En qué puedo ayudarte hoy?",
     "errorSendingMessage": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
     "defaultSystemPrompt": "Eres un asistente útil para el restaurante ChatBotDysa. Ayuda a los administradores con preguntas sobre gestión, pedidos, reservas y clientes."
+  },
+  "jarvis": {
+    "title": "JARVIS Learning System",
+    "subtitle": "Sistema de aprendizaje inteligente para tu chatbot",
+    "loading": "Cargando estadísticas de JARVIS...",
+    "stats": {
+      "title": "Estadísticas de Aprendizaje",
+      "totalExperiences": "Total Experiencias",
+      "averageSentiment": "Sentimiento Promedio",
+      "uniqueIntents": "Intenciones Únicas",
+      "qTableSize": "Tamaño Q-Table",
+      "successRate": "Tasa de Éxito",
+      "learningProgress": "Progreso de Aprendizaje"
+    },
+    "insights": {
+      "title": "Insights del Bot",
+      "topPatterns": "Patrones Más Comunes",
+      "sentimentTrend": "Tendencia de Sentimiento",
+      "peakHours": "Horas Pico",
+      "commonIntents": "Intenciones Comunes"
+    },
+    "analyze": {
+      "title": "Analizar Mensaje",
+      "placeholder": "Escribe un mensaje para analizar...",
+      "button": "Analizar",
+      "results": "Resultados del Análisis"
+    },
+    "qlearning": {
+      "title": "Q-Learning Status",
+      "explorationRate": "Tasa de Exploración",
+      "learningRate": "Tasa de Aprendizaje",
+      "discountFactor": "Factor de Descuento"
+    },
+    "communication": {
+      "title": "Estilos de Comunicación",
+      "formal": "Formal",
+      "informal": "Informal",
+      "neutral": "Neutral"
+    },
+    "sentiment": {
+      "positive": "Positivo",
+      "negative": "Negativo",
+      "neutral": "Neutral"
+    },
+    "noData": "No hay suficientes datos de aprendizaje todavía",
+    "startLearning": "El bot comenzará a aprender con cada conversación"
   },
   "analytics": {
     "title": "Analytics y Reportes",

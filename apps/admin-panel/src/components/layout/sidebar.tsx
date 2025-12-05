@@ -17,7 +17,8 @@ import {
   Brain,
   Shield,
   FileText,
-  Layers
+  Layers,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LanguageSelector from "@/components/ui/language-selector";
@@ -32,6 +33,7 @@ const navigationKeys = [
   { key: "customers", href: "/customers", icon: Users },
   { key: "reservations", href: "/reservations", icon: Calendar },
   { key: "analytics", href: "/analytics", icon: TrendingUp },
+  { key: "jarvisLearning", href: "/jarvis", icon: Sparkles },
   { key: "reports", href: "/reports", icon: FileText },
   { key: "users", href: "/users", icon: Shield },
   { key: "aiChat", href: "/ai-chat", icon: Brain },
