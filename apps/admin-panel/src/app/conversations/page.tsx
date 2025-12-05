@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Phone, Users, Clock, Plus, Filter, Search, TrendingUp, AlertCircle } from 'lucide-react';
+import { MessageSquare, Phone, Users, Clock, Plus, Filter, Search, TrendingUp, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { apiService } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import useDemoMode from '@/hooks/useDemoMode';
+import useWebSocket from '@/hooks/useWebSocket';
 import MainLayout from '@/components/layout/main-layout';
 
 interface Conversation {
@@ -47,6 +48,57 @@ export default function ConversationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [channelFilter, setChannelFilter] = useState<string>('all');
+  const [newMessageAlert, setNewMessageAlert] = useState(false);
+
+  // WebSocket for real-time updates
+  const handleWhatsAppMessage = useCallback((data: any) => {
+    console.log('📱 Real-time WhatsApp message:', data);
+    setNewMessageAlert(true);
+
+    // Update or add conversation to the list
+    setConversations(prev => {
+      const existingIndex = prev.findIndex(c =>
+        c.id === String(data.conversationId) ||
+        c.customerPhone === data.from
+      );
+
+      if (existingIndex >= 0) {
+        // Update existing conversation
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          lastMessage: data.message,
+          lastActivity: 'Ahora',
+          messageCount: updated[existingIndex].messageCount + 1,
+          status: 'active',
+        };
+        // Move to top
+        const [item] = updated.splice(existingIndex, 1);
+        return [item, ...updated];
+      } else {
+        // Add new conversation at top
+        const newConv: Conversation = {
+          id: String(data.conversationId || Date.now()),
+          customerName: data.from || 'Cliente WhatsApp',
+          customerPhone: data.from,
+          channel: 'whatsapp',
+          status: 'active',
+          lastMessage: data.message,
+          lastActivity: 'Ahora',
+          messageCount: 1,
+        };
+        return [newConv, ...prev];
+      }
+    });
+
+    // Clear alert after 3 seconds
+    setTimeout(() => setNewMessageAlert(false), 3000);
+  }, []);
+
+  const { isConnected } = useWebSocket({
+    autoConnect: !isDemoMode,
+    onWhatsAppMessage: handleWhatsAppMessage,
+  });
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -222,12 +274,39 @@ export default function ConversationsPage() {
   return (
     <MainLayout>
       <div className="container mx-auto p-6 space-y-6">
+        {/* Real-time Alert */}
+        {newMessageAlert && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2 animate-pulse">
+            <MessageSquare className="h-5 w-5 text-green-600" />
+            <span className="text-green-800 font-medium">Nuevo mensaje recibido en tiempo real</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{t('conversations.title')}</h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 flex items-center gap-2">
               {t('conversations.activeChats')}
+              {!isDemoMode && (
+                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                  isConnected
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {isConnected ? (
+                    <>
+                      <Wifi className="h-3 w-3" />
+                      Tiempo real
+                    </>
+                  ) : (
+                    <>
+                      <WifiOff className="h-3 w-3" />
+                      Conectando...
+                    </>
+                  )}
+                </span>
+              )}
             </p>
           </div>
           <Button onClick={() => router.push('/conversations/new')} size="lg">
