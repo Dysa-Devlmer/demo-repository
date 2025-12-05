@@ -3,9 +3,15 @@ import axios from 'axios';
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
 
+// Ensure we don't double up on /api
+const getBaseUrl = () => {
+  const base = API_BASE_URL.replace(/\/+$/, ''); // Remove trailing slashes
+  return base.endsWith('/api') ? base : `${base}/api`;
+};
+
 // Create axios instance
 export const api = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: getBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
