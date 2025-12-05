@@ -8,7 +8,7 @@
     "customers": "Clientes",
     "reservations": "Reservas",
     "analytics": "Analytics",
-    "jarvisLearning": "Pithy Learning",
+    "pithyLearning": "Pithy Learning",
     "reports": "Reportes",
     "users": "Usuarios",
     "aiChat": "AI Chat",
@@ -404,7 +404,7 @@
     "errorSendingMessage": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
     "defaultSystemPrompt": "Eres un asistente útil para el restaurante ChatBotDysa. Ayuda a los administradores con preguntas sobre gestión, pedidos, reservas y clientes."
   },
-  "jarvis": {
+  "pithy": {
     "title": "Pithy Learning System",
     "subtitle": "Sistema de aprendizaje inteligente para tu chatbot",
     "loading": "Cargando estadísticas de Pithy...",

@@ -33,7 +33,7 @@ const navigationKeys = [
   { key: "customers", href: "/customers", icon: Users },
   { key: "reservations", href: "/reservations", icon: Calendar },
   { key: "analytics", href: "/analytics", icon: TrendingUp },
-  { key: "jarvisLearning", href: "/jarvis", icon: Sparkles },
+  { key: "pithyLearning", href: "/pithy", icon: Sparkles },
   { key: "reports", href: "/reports", icon: FileText },
   { key: "users", href: "/users", icon: Shield },
   { key: "aiChat", href: "/ai-chat", icon: Brain },
