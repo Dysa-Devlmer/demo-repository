@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getBaseUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -105,14 +106,13 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
     // Enviar al backend
     setLoading(true);
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_URL}/api/auth/change-password`, {
+      const response = await fetch(`${getBaseUrl()}/auth/change-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

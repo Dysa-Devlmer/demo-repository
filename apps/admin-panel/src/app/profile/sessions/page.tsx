@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getBaseUrl } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,14 +59,13 @@ export default function SessionsPage() {
   const loadSessions = async () => {
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_URL}/api/auth/sessions`, {
+      const response = await fetch(`${getBaseUrl()}/auth/sessions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -130,14 +130,13 @@ export default function SessionsPage() {
   const handleRevokeSession = async (sessionId: string) => {
     try {
       setRevoking(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_URL}/api/auth/sessions/${sessionId}`, {
+      const response = await fetch(`${getBaseUrl()}/auth/sessions/${sessionId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -177,14 +176,13 @@ export default function SessionsPage() {
   const handleRevokeAll = async () => {
     try {
       setRevoking(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_URL}/api/auth/sessions/revoke-all`, {
+      const response = await fetch(`${getBaseUrl()}/auth/sessions/revoke-all`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

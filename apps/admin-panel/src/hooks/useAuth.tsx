@@ -87,8 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Real authentication with backend
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
+      // Remove trailing slash and check if already ends with /api
+      const baseUrl = API_URL.replace(/\/+$/, '');
+      const loginUrl = baseUrl.endsWith('/api') ? `${baseUrl}/auth/login` : `${baseUrl}/api/auth/login`;
 
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

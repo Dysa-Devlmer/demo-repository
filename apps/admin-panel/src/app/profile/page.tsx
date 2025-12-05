@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { getBaseUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,14 +41,13 @@ export default function ProfilePage() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
         const token = localStorage.getItem('auth_token');
 
         if (!token) {
           throw new Error('No auth token found');
         }
 
-        const response = await fetch(`${API_URL}/api/users/me`, {
+        const response = await fetch(`${getBaseUrl()}/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -118,14 +118,13 @@ export default function ProfilePage() {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
       const token = localStorage.getItem('auth_token');
 
       if (!token) {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${API_URL}/api/users/me`, {
+      const response = await fetch(`${getBaseUrl()}/users/me`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,

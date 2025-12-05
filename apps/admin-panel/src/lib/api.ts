@@ -3,8 +3,8 @@ import axios from 'axios';
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005';
 
-// Ensure we don't double up on /api
-const getBaseUrl = () => {
+// Ensure we don't double up on /api - EXPORTED for use in other files
+export const getBaseUrl = () => {
   const base = API_BASE_URL.replace(/\/+$/, ''); // Remove trailing slashes
   return base.endsWith('/api') ? base : `${base}/api`;
 };
