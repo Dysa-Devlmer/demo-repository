@@ -415,7 +415,8 @@
       "neutral": "Neutral",
       "casual": "Casual",
       "formal": "Formal",
-      "rude": "Rude"
+      "rude": "Rude",
+      "direct": "Direct"
     },
     "languages": {
       "es": "Spanish",

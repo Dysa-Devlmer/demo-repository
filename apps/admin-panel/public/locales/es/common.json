@@ -466,7 +466,8 @@
       "neutral": "Neutral",
       "casual": "Casual",
       "formal": "Formal",
-      "rude": "Grosero"
+      "rude": "Grosero",
+      "direct": "Directo"
     },
     "languages": {
       "es": "Español",
