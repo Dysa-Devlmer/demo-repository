@@ -89,7 +89,7 @@ export default function JarvisPage() {
       const response = await apiService.jarvis.getStats();
       setStats(response.data);
     } catch (error) {
-      console.error('Error fetching JARVIS stats:', error);
+      console.error('Error fetching Pithy stats:', error);
     } finally {
       setLoading(false);
     }
@@ -377,7 +377,7 @@ export default function JarvisPage() {
                 {t('jarvis.analyze.title')}
               </CardTitle>
               <CardDescription>
-                Prueba cómo JARVIS analiza un mensaje de cliente
+                Prueba cómo Pithy analiza un mensaje de cliente
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

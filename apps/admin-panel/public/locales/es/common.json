@@ -8,7 +8,7 @@
     "customers": "Clientes",
     "reservations": "Reservas",
     "analytics": "Analytics",
-    "jarvisLearning": "JARVIS Learning",
+    "jarvisLearning": "Pithy Learning",
     "reports": "Reportes",
     "users": "Usuarios",
     "aiChat": "AI Chat",
@@ -405,9 +405,9 @@
     "defaultSystemPrompt": "Eres un asistente útil para el restaurante ChatBotDysa. Ayuda a los administradores con preguntas sobre gestión, pedidos, reservas y clientes."
   },
   "jarvis": {
-    "title": "JARVIS Learning System",
+    "title": "Pithy Learning System",
     "subtitle": "Sistema de aprendizaje inteligente para tu chatbot",
-    "loading": "Cargando estadísticas de JARVIS...",
+    "loading": "Cargando estadísticas de Pithy...",
     "stats": {
       "title": "Estadísticas de Aprendizaje",
       "totalExperiences": "Total Experiencias",
