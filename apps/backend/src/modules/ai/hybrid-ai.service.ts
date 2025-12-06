@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OllamaService, RestaurantContext } from './ollama.service';
 import { LearningMemoryService, ExperienceFeatures } from './learning-memory.service';
+import { CustomerMemoryService } from './customer-memory.service';
 import OpenAI from 'openai';
 
 export interface AIResponse {
@@ -12,6 +13,7 @@ export interface AIResponse {
   cached?: boolean;
   experienceId?: number;  // ID de la experiencia para feedback posterior
   features?: ExperienceFeatures;  // Features analizados del mensaje
+  memoriesUsed?: number;  // Cantidad de memorias del cliente usadas
 }
 
 export interface ConversationMessage {
@@ -35,6 +37,7 @@ export class HybridAIService {
     private readonly configService: ConfigService,
     private readonly ollamaService: OllamaService,
     private readonly learningMemory: LearningMemoryService,
+    private readonly customerMemory: CustomerMemoryService,
   ) {
     const openaiKey = this.configService.get<string>('OPENAI_API_KEY');
 
@@ -43,16 +46,16 @@ export class HybridAIService {
         apiKey: openaiKey,
       });
       this.useOpenAI = true;
-      this.logger.log('✅ HybridAI initialized with OpenAI GPT-4o-mini (primary) + Ollama (fallback) + JARVIS Learning');
+      this.logger.log('✅ HybridAI initialized with OpenAI GPT-4o-mini (primary) + Ollama (fallback) + JARVIS Learning + Customer Memory');
     } else {
       this.useOpenAI = false;
-      this.logger.warn('⚠️  OpenAI not configured, using Ollama only + JARVIS Learning');
+      this.logger.warn('⚠️  OpenAI not configured, using Ollama only + JARVIS Learning + Customer Memory');
     }
   }
 
   /**
    * Genera una respuesta inteligente usando el mejor proveedor disponible
-   * Con sistema de aprendizaje JARVIS integrado
+   * Con sistema de aprendizaje JARVIS integrado + Memoria del Cliente
    */
   async generateResponse(
     userMessage: string,
@@ -63,10 +66,21 @@ export class HybridAIService {
     },
   ): Promise<AIResponse> {
     const startTime = Date.now();
+    let memoriesUsed = 0;
 
     // 0. Analizar mensaje con JARVIS Learning
     const features = this.learningMemory.analyzeMessage(userMessage);
     this.logger.debug(`📊 JARVIS Analysis: intent=${features.intent}, sentiment=${features.sentiment.toFixed(2)}, complexity=${features.complexity}`);
+
+    // 0.5 Procesar y guardar memorias del mensaje (en background)
+    if (context.customerId) {
+      this.customerMemory.processAndSaveMemories(
+        context.customerId,
+        userMessage,
+        context.conversationId,
+        context.customerName,
+      ).catch(err => this.logger.warn('Failed to save memories:', err.message));
+    }
 
     // 1. Verificar cache para preguntas frecuentes
     const cacheKey = this.getCacheKey(userMessage, context);
@@ -124,8 +138,23 @@ export class HybridAIService {
       };
     }
 
-    // 2. Construir el prompt con RESTRICCIONES ESTRICTAS + adaptación al estilo del cliente
-    const systemPrompt = this.buildAdaptiveSystemPrompt(context, features);
+    // 2. Obtener memorias del cliente para personalización
+    let customerMemoryContext = '';
+    if (context.customerId) {
+      try {
+        customerMemoryContext = await this.customerMemory.generateContextSummary(context.customerId);
+        const memories = await this.customerMemory.getRelevantMemories(context.customerId, features.intent);
+        memoriesUsed = memories.length;
+        if (memoriesUsed > 0) {
+          this.logger.debug(`🧠 Using ${memoriesUsed} customer memories for personalization`);
+        }
+      } catch (err) {
+        this.logger.warn('Failed to load customer memories:', err instanceof Error ? err.message : 'Unknown error');
+      }
+    }
+
+    // 3. Construir el prompt con RESTRICCIONES ESTRICTAS + adaptación al estilo del cliente + memorias
+    const systemPrompt = this.buildAdaptiveSystemPrompt(context, features, customerMemoryContext);
     const messages = this.buildMessages(systemPrompt, userMessage, context);
 
     let response: AIResponse | null = null;
@@ -196,6 +225,9 @@ export class HybridAIService {
       this.logger.warn('Failed to save learning experience:', error instanceof Error ? error.message : 'Unknown error');
     }
 
+    // Agregar cantidad de memorias usadas
+    response.memoriesUsed = memoriesUsed;
+
     return response;
   }
 
@@ -229,8 +261,13 @@ export class HybridAIService {
   /**
    * Construye un prompt ADAPTATIVO que se ajusta al estilo del cliente
    * El bot "espejeará" la forma de comunicarse del cliente para ser más humano
+   * Incluye memorias del cliente para personalización
    */
-  private buildAdaptiveSystemPrompt(context: RestaurantContext, features: ExperienceFeatures): string {
+  private buildAdaptiveSystemPrompt(
+    context: RestaurantContext,
+    features: ExperienceFeatures,
+    customerMemoryContext: string = '',
+  ): string {
     const restaurantName = context.restaurantInfo?.name || 'nuestro restaurante';
 
     // Determinar el estilo de respuesta basado en cómo escribe el cliente
@@ -325,6 +362,10 @@ ${context.menuItems.slice(0, 15).map(item =>
 
 ${context.customerName ? `👤 Cliente: ${context.customerName}` : ''}
 
+${customerMemoryContext ? `
+🧠 ${customerMemoryContext}
+` : ''}
+
 🎯 PRIORIDADES:
 1. Entiende qué quiere el cliente
 2. Responde de forma útil y natural
@@ -358,7 +399,28 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
       messageLength: 'medium',
       politenessLevel: 'polite',
       language: 'spanish',
-    });
+    }, '');
+  }
+
+  /**
+   * Obtiene el perfil de memoria de un cliente
+   */
+  async getCustomerProfile(customerId: number) {
+    return this.customerMemory.getCustomerProfile(customerId);
+  }
+
+  /**
+   * Guarda un pedido en la memoria del cliente
+   */
+  async saveOrderToMemory(customerId: number, orderItems: string[], conversationId?: number) {
+    return this.customerMemory.saveOrderToMemory(customerId, orderItems, conversationId);
+  }
+
+  /**
+   * Obtiene estadísticas de memoria de clientes
+   */
+  async getCustomerMemoryStats() {
+    return this.customerMemory.getStats();
   }
 
   /**
@@ -528,9 +590,10 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
    */
   async getStats() {
     const learningStats = await this.learningMemory.getStats();
+    const memoryStats = await this.customerMemory.getStats();
 
     return {
-      service: 'Hybrid AI Service + JARVIS Learning',
+      service: 'Hybrid AI Service + JARVIS Learning + Customer Memory',
       primaryProvider: this.useOpenAI ? 'OpenAI GPT-4o-mini' : 'Ollama only',
       fallbackProvider: 'Ollama',
       emergencyFallback: 'Pre-programmed responses',
@@ -539,6 +602,7 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
       openaiConfigured: this.useOpenAI,
       model: this.openaiModel,
       learning: learningStats,
+      customerMemory: memoryStats,
     };
   }
 

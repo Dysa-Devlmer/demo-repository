@@ -105,16 +105,36 @@ export class OllamaService {
   private readonly httpClient: AxiosInstance;
   private readonly baseUrl: string;
   private readonly defaultModel: string;
-  private readonly timeout: number = 90000; // 90 segundos para respuestas completas del chatbot
+  private readonly timeout: number;
+
+  // Modelos preferidos en orden de prioridad (igual que Chatbot-Devlmer)
+  private readonly preferredModels = [
+    'llama3.2',      // Rápido y eficiente (recomendado)
+    'llama3.2:1b',   // Más ligero aún
+    'phi3:mini',     // Muy rápido para pruebas
+    'llama3.1',
+    'llama3',
+    'mistral',
+    'qwen2.5',       // Excelente para español
+    'gemma2',
+  ];
 
   constructor(private configService: ConfigService) {
     this.baseUrl = this.configService.get<string>(
       "OLLAMA_URL",
       "http://localhost:11434",
     );
+
+    // Modelo por defecto optimizado (igual que Chatbot-Devlmer)
     this.defaultModel = this.configService.get<string>(
       "OLLAMA_MODEL",
-      "llama3.2:3b",
+      "llama3.2",  // Cambiado de llama3.2:3b a llama3.2 (más rápido)
+    );
+
+    // Timeout reducido para respuestas más rápidas
+    this.timeout = this.configService.get<number>(
+      "OLLAMA_TIMEOUT",
+      30000,  // Reducido de 90s a 30s
     );
 
     this.httpClient = axios.create({
@@ -164,6 +184,39 @@ export class OllamaService {
       const err = error instanceof Error ? error : new Error(String(error));
       this.logger.warn("Ollama is not running or not accessible:", err.message);
       return false;
+    }
+  }
+
+  /**
+   * Selecciona automáticamente el mejor modelo disponible
+   * (igual que Chatbot-Devlmer)
+   */
+  async selectBestModel(): Promise<string> {
+    try {
+      const availableModels = await this.listModels();
+
+      // Buscar el primer modelo preferido que esté disponible
+      for (const preferred of this.preferredModels) {
+        const found = availableModels.find(m =>
+          m.toLowerCase().startsWith(preferred.toLowerCase())
+        );
+        if (found) {
+          this.logger.log(`🎯 Selected best available model: ${found}`);
+          return found;
+        }
+      }
+
+      // Si ninguno preferido está disponible, usar el primero
+      if (availableModels.length > 0) {
+        this.logger.warn(`⚠️ No preferred model found, using: ${availableModels[0]}`);
+        return availableModels[0];
+      }
+
+      // Fallback al modelo por defecto
+      return this.defaultModel;
+    } catch (error) {
+      this.logger.warn('Could not select best model, using default');
+      return this.defaultModel;
     }
   }
 
@@ -227,18 +280,17 @@ export class OllamaService {
         }
       }
 
-      // Configurar request con valores por defecto
+      // Configurar request con valores optimizados (igual que Chatbot-Devlmer)
       const { model: _model, ...restRequest } = request;
       const ollamaRequest: OllamaGenerateRequest = {
         model: targetModel,
         stream: false,
         options: {
-          temperature: 0.7,
-          top_k: 40,
-          top_p: 0.9,
-          repeat_penalty: 1.1,
-          num_ctx: 1024, // Optimizado para respuestas más rápidas
-          num_predict: 150, // Respuestas concisas y rápidas
+          // Parámetros simplificados como Chatbot-Devlmer para máxima velocidad
+          temperature: 0.7,  // Creatividad moderada
+          top_p: 0.9,        // Diversidad de tokens
+          top_k: 40,         // Limita candidatos
+          // Sin repeat_penalty, num_ctx, num_predict para más velocidad
           ...request.options,
         },
         ...restRequest,
