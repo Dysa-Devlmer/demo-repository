@@ -211,6 +211,7 @@ export class ConversationsController {
     @Body() updateDto: {
       status?: string;
       agent_id?: string;
+      mode?: 'auto' | 'manual' | 'hybrid';
       metadata?: any;
     }
   ) {

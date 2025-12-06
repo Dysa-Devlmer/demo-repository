@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical, User, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical, User, CheckCircle, Check, CheckCheck, Clock, AlertCircle, Bot, UserCheck, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useTranslation } from '@/hooks/useTranslation';
 import useDemoMode from '@/hooks/useDemoMode';
 import MainLayout from '@/components/layout/main-layout';
@@ -25,6 +38,7 @@ interface Message {
   sender: 'customer' | 'agent' | 'bot';
   timestamp: string;
   delivered: boolean;
+  delivery_status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
 }
 
 interface ConversationDetails {
@@ -36,6 +50,7 @@ interface ConversationDetails {
   assignedAgent?: string;
   startedAt: string;
   messages: Message[];
+  mode?: 'auto' | 'manual' | 'hybrid';
 }
 
 export default function ConversationDetailsPage() {
@@ -63,6 +78,7 @@ export default function ConversationDetailsPage() {
           status: "active",
           assignedAgent: "Juan Pérez",
           startedAt: "2025-01-20T19:30:00Z",
+          mode: "auto",
           messages: [
             {
               id: "1",
@@ -122,13 +138,15 @@ export default function ConversationDetailsPage() {
           status: backendData.status as 'active' | 'waiting' | 'closed',
           assignedAgent: backendData.agent_id || undefined,
           startedAt: backendData.created_at,
+          mode: backendData.mode || 'auto',
           messages: (backendData.messages || []).map((msg: any) => ({
             id: msg.id.toString(),
             content: msg.content,
             sender: msg.role === 'user' ? 'customer' :
                     msg.role === 'bot' ? 'bot' : 'agent',
             timestamp: msg.created_at,
-            delivered: true,
+            delivered: msg.is_delivered ?? true,
+            delivery_status: msg.delivery_status || (msg.role === 'user' ? 'delivered' : 'sent'),
           })),
         };
 
@@ -257,6 +275,39 @@ export default function ConversationDetailsPage() {
   };
 
   const [assigningAgent, setAssigningAgent] = useState(false);
+  const [changingMode, setChangingMode] = useState(false);
+
+  const handleModeChange = async (newMode: 'auto' | 'manual' | 'hybrid') => {
+    if (!conversation || changingMode) return;
+
+    setChangingMode(true);
+
+    try {
+      if (isDemoMode) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setConversation({
+          ...conversation,
+          mode: newMode,
+        });
+        setChangingMode(false);
+        return;
+      }
+
+      await apiService.conversations.update(parseInt(conversationId), {
+        mode: newMode,
+      });
+
+      setConversation({
+        ...conversation,
+        mode: newMode,
+      });
+    } catch (error) {
+      console.error('Error changing mode:', error);
+      alert('Error al cambiar el modo. Por favor intenta de nuevo.');
+    } finally {
+      setChangingMode(false);
+    }
+  };
 
   const handleAssignAgent = async () => {
     if (!conversation) return;
@@ -391,6 +442,38 @@ export default function ConversationDetailsPage() {
     });
   };
 
+  // Get mode icon and label
+  const getModeInfo = (mode?: string) => {
+    switch (mode) {
+      case 'auto':
+        return { icon: <Bot className="h-3 w-3" />, label: 'Auto', color: 'text-green-600', description: 'Bot responde automáticamente' };
+      case 'manual':
+        return { icon: <UserCheck className="h-3 w-3" />, label: 'Manual', color: 'text-orange-600', description: 'Solo agente humano responde' };
+      case 'hybrid':
+        return { icon: <Zap className="h-3 w-3" />, label: 'Híbrido', color: 'text-blue-600', description: 'Bot + agente pueden responder' };
+      default:
+        return { icon: <Bot className="h-3 w-3" />, label: 'Auto', color: 'text-green-600', description: 'Bot responde automáticamente' };
+    }
+  };
+
+  // Render delivery status icon (WhatsApp-style check marks)
+  const renderDeliveryStatus = (status?: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="h-3 w-3 opacity-60" title="Enviando..." />;
+      case 'sent':
+        return <Check className="h-3 w-3 opacity-70" title="Enviado" />;
+      case 'delivered':
+        return <CheckCheck className="h-3 w-3 opacity-70" title="Entregado" />;
+      case 'read':
+        return <CheckCheck className="h-3 w-3 text-blue-400" title="Leído" />;
+      case 'failed':
+        return <AlertCircle className="h-3 w-3 text-red-400" title="Error al enviar" />;
+      default:
+        return <Check className="h-3 w-3 opacity-50" />;
+    }
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -457,6 +540,49 @@ export default function ConversationDetailsPage() {
               {conversation.assignedAgent}
             </Badge>
           )}
+          {/* Mode Selector */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="ml-2">
+                  <Select
+                    value={conversation.mode || 'auto'}
+                    onValueChange={(value) => handleModeChange(value as 'auto' | 'manual' | 'hybrid')}
+                    disabled={changingMode}
+                  >
+                    <SelectTrigger className="w-[120px] h-8 text-xs">
+                      <SelectValue>
+                        <span className={`flex items-center gap-1 ${getModeInfo(conversation.mode).color}`}>
+                          {getModeInfo(conversation.mode).icon}
+                          {getModeInfo(conversation.mode).label}
+                        </span>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">
+                        <span className="flex items-center gap-2 text-green-600">
+                          <Bot className="h-3 w-3" /> Auto
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="manual">
+                        <span className="flex items-center gap-2 text-orange-600">
+                          <UserCheck className="h-3 w-3" /> Manual
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="hybrid">
+                        <span className="flex items-center gap-2 text-blue-600">
+                          <Zap className="h-3 w-3" /> Híbrido
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{getModeInfo(conversation.mode).description}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -505,15 +631,19 @@ export default function ConversationDetailsPage() {
                 }`}
               >
                 <p className="text-sm">{message.content}</p>
-                <div className="mt-1 flex items-center justify-between">
+                <div className="mt-1 flex items-center justify-between gap-2">
                   <span className="text-xs opacity-70">
                     {formatTime(message.timestamp)}
                   </span>
-                  {message.sender !== 'customer' && (
-                    <span className="text-xs opacity-70">
-                      {message.sender === 'bot' ? t('conversations.bot') : t('conversations.agent')}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {message.sender !== 'customer' && (
+                      <span className="text-xs opacity-70">
+                        {message.sender === 'bot' ? t('conversations.bot') : t('conversations.agent')}
+                      </span>
+                    )}
+                    {/* Delivery status icon for outgoing messages */}
+                    {message.sender !== 'customer' && renderDeliveryStatus(message.delivery_status)}
+                  </div>
                 </div>
               </div>
             </div>
