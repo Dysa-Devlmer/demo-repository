@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical, User, CheckCircle, Check, CheckCheck, Clock, AlertCircle, Bot, UserCheck, Zap } from 'lucide-react';
+import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical, User, CheckCircle, Check, CheckCheck, Clock, AlertCircle, Bot, UserCheck, Zap, Image, Mic, Video, FileText, MapPin, Sticker, Contact } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,6 +39,20 @@ interface Message {
   timestamp: string;
   delivered: boolean;
   delivery_status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  type?: 'text' | 'image' | 'audio' | 'video' | 'document' | 'location' | 'sticker' | 'contacts';
+  media?: {
+    media_id?: string;
+    mime_type?: string;
+    caption?: string;
+    filename?: string;
+    is_voice?: boolean;
+  };
+  location?: {
+    latitude: number;
+    longitude: number;
+    name?: string;
+    address?: string;
+  };
 }
 
 interface ConversationDetails {
@@ -147,6 +161,9 @@ export default function ConversationDetailsPage() {
             timestamp: msg.created_at,
             delivered: msg.is_delivered ?? true,
             delivery_status: msg.delivery_status || (msg.role === 'user' ? 'delivered' : 'sent'),
+            type: msg.metadata?.message_type || msg.type || 'text',
+            media: msg.metadata?.media,
+            location: msg.metadata?.location,
           })),
         };
 
@@ -456,6 +473,76 @@ export default function ConversationDetailsPage() {
     }
   };
 
+  // Render message type icon
+  const renderMessageTypeIcon = (type?: string) => {
+    switch (type) {
+      case 'image':
+        return <Image className="h-4 w-4 mr-1 inline" />;
+      case 'audio':
+        return <Mic className="h-4 w-4 mr-1 inline" />;
+      case 'video':
+        return <Video className="h-4 w-4 mr-1 inline" />;
+      case 'document':
+        return <FileText className="h-4 w-4 mr-1 inline" />;
+      case 'location':
+        return <MapPin className="h-4 w-4 mr-1 inline" />;
+      case 'sticker':
+        return <Sticker className="h-4 w-4 mr-1 inline" />;
+      case 'contacts':
+        return <Contact className="h-4 w-4 mr-1 inline" />;
+      default:
+        return null;
+    }
+  };
+
+  // Render message content with media support
+  const renderMessageContent = (message: Message) => {
+    const typeIcon = renderMessageTypeIcon(message.type);
+
+    // Special rendering for location
+    if (message.type === 'location' && message.location) {
+      return (
+        <div className="space-y-1">
+          <p className="text-sm">
+            {typeIcon}
+            {message.location.name || message.location.address || 'Ubicación compartida'}
+          </p>
+          <a
+            href={`https://maps.google.com/?q=${message.location.latitude},${message.location.longitude}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs underline opacity-80 hover:opacity-100"
+          >
+            Ver en Google Maps
+          </a>
+        </div>
+      );
+    }
+
+    // Special rendering for media types
+    if (message.type && ['image', 'audio', 'video', 'document', 'sticker'].includes(message.type)) {
+      return (
+        <div className="space-y-1">
+          <p className="text-sm">
+            {typeIcon}
+            {message.content}
+          </p>
+          {message.media?.filename && (
+            <p className="text-xs opacity-70">
+              Archivo: {message.media.filename}
+            </p>
+          )}
+          {message.media?.is_voice && (
+            <p className="text-xs opacity-70">Nota de voz</p>
+          )}
+        </div>
+      );
+    }
+
+    // Default text rendering
+    return <p className="text-sm">{message.content}</p>;
+  };
+
   // Render delivery status icon (WhatsApp-style check marks)
   const renderDeliveryStatus = (status?: string) => {
     switch (status) {
@@ -630,7 +717,7 @@ export default function ConversationDetailsPage() {
                     : 'bg-primary text-primary-foreground'
                 }`}
               >
-                <p className="text-sm">{message.content}</p>
+                {renderMessageContent(message)}
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <span className="text-xs opacity-70">
                     {formatTime(message.timestamp)}
