@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical, User, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -144,8 +144,14 @@ export default function ConversationDetailsPage() {
     fetchConversation();
   }, [conversationId, isDemoMode]);
 
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [lastWhatsAppStatus, setLastWhatsAppStatus] = useState<boolean | null>(null);
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !conversation) return;
+    if (!newMessage.trim() || !conversation || sendingMessage) return;
+
+    setSendingMessage(true);
+    setLastWhatsAppStatus(null);
 
     try {
       // In demo mode, add locally
@@ -164,6 +170,7 @@ export default function ConversationDetailsPage() {
         });
 
         setNewMessage('');
+        setSendingMessage(false);
         return;
       }
 
@@ -173,13 +180,20 @@ export default function ConversationDetailsPage() {
         newMessage
       );
 
+      // Check if WhatsApp was sent
+      const whatsappSent = response.data?.whatsapp_sent || response.data?.data?.whatsapp_sent;
+      setLastWhatsAppStatus(whatsappSent);
+
+      // Show WhatsApp status for 3 seconds
+      setTimeout(() => setLastWhatsAppStatus(null), 3000);
+
       // Add the message sent by agent and AI response to the conversation
       const agentMessage: Message = {
         id: Date.now().toString(),
         content: newMessage,
         sender: 'agent',
         timestamp: new Date().toISOString(),
-        delivered: true,
+        delivered: whatsappSent ?? true,
       };
 
       const messages = [agentMessage];
@@ -205,6 +219,8 @@ export default function ConversationDetailsPage() {
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Error al enviar el mensaje. Por favor intenta de nuevo.');
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -240,35 +256,41 @@ export default function ConversationDetailsPage() {
     }
   };
 
+  const [assigningAgent, setAssigningAgent] = useState(false);
+
   const handleAssignAgent = async () => {
     if (!conversation) return;
 
-    const agentName = prompt('Ingresa el nombre o ID del agente a asignar:');
-    if (!agentName) return;
+    const agentName = prompt('Ingresa el nombre del agente a asignar:');
+    if (!agentName || !agentName.trim()) return;
+
+    setAssigningAgent(true);
 
     try {
       if (isDemoMode) {
+        // Simular delay
+        await new Promise(resolve => setTimeout(resolve, 500));
         setConversation({
           ...conversation,
-          assignedAgent: agentName,
+          assignedAgent: agentName.trim(),
         });
-        alert(`Agente "${agentName}" asignado exitosamente (modo demo)`);
+        setAssigningAgent(false);
         return;
       }
 
       await apiService.conversations.update(parseInt(conversationId), {
-        agent_id: agentName,
+        agent_id: agentName.trim(),
       });
 
       setConversation({
         ...conversation,
-        assignedAgent: agentName,
+        assignedAgent: agentName.trim(),
       });
-
-      alert(`Agente "${agentName}" asignado exitosamente`);
     } catch (error) {
       console.error('Error assigning agent:', error);
       alert('Error al asignar agente. Por favor intenta de nuevo.');
+    } finally {
+      setAssigningAgent(false);
     }
   };
 
@@ -429,6 +451,12 @@ export default function ConversationDetailsPage() {
             {conversation.status === 'active' ? t('conversations.active') :
              conversation.status === 'waiting' ? t('conversations.waiting') : t('conversations.closed')}
           </Badge>
+          {conversation.assignedAgent && (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <User className="h-3 w-3 mr-1" />
+              {conversation.assignedAgent}
+            </Badge>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -440,8 +468,8 @@ export default function ConversationDetailsPage() {
             <DropdownMenuItem onClick={handleCloseConversation}>
               {t('conversations.closeConversation') || 'Cerrar conversación'}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleAssignAgent}>
-              {t('conversations.assignAgent') || 'Asignar agente'}
+            <DropdownMenuItem onClick={handleAssignAgent} disabled={assigningAgent}>
+              {assigningAgent ? 'Asignando...' : (conversation.assignedAgent ? `Reasignar agente (actual: ${conversation.assignedAgent})` : (t('conversations.assignAgent') || 'Asignar agente'))}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleViewHistory}>
               {t('conversations.viewHistory') || 'Ver historial'}
@@ -495,15 +523,40 @@ export default function ConversationDetailsPage() {
 
       {/* Message Input */}
       <div className="border-t p-3 sm:p-4">
+        {/* WhatsApp status indicator */}
+        {lastWhatsAppStatus !== null && (
+          <div className={`mb-2 text-xs flex items-center gap-1 ${lastWhatsAppStatus ? 'text-green-600' : 'text-yellow-600'}`}>
+            {lastWhatsAppStatus ? (
+              <>
+                <CheckCircle className="h-3 w-3" />
+                Mensaje enviado por WhatsApp
+              </>
+            ) : (
+              <>
+                <MessageSquare className="h-3 w-3" />
+                Mensaje guardado (WhatsApp no configurado)
+              </>
+            )}
+          </div>
+        )}
         <div className="flex gap-2">
           <Input
             placeholder={t('conversations.typeResponse')}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+            onKeyPress={(e) => e.key === 'Enter' && !sendingMessage && sendMessage()}
+            disabled={sendingMessage}
           />
-          <Button onClick={sendMessage} title={t('conversations.sendMessage')}>
-            <Send className="h-4 w-4" />
+          <Button
+            onClick={sendMessage}
+            title={t('conversations.sendMessage')}
+            disabled={sendingMessage || !newMessage.trim()}
+          >
+            {sendingMessage ? (
+              <span className="animate-spin">⏳</span>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
