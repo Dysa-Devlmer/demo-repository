@@ -59,6 +59,9 @@ import { LeadsModule } from "./modules/leads/leads.module";
 // Categories Module (Professional Category Management)
 import { CategoriesModule } from "./categories/categories.module";
 
+// Quick Replies Module
+import { QuickRepliesModule } from "./modules/quick-replies/quick-replies.module";
+
 @Module({
   imports: [
     // Configuration
@@ -110,6 +113,7 @@ import { CategoriesModule } from "./categories/categories.module";
     ConversationsModule,
     ReportsModule,
     LeadsModule,
+    QuickRepliesModule,
 
     // Dashboard with Historical Snapshots
     DashboardModule,

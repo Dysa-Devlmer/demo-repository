@@ -577,6 +577,49 @@ export const apiService = {
     reorder: (orderUpdates: Array<{ id: number; display_order: number }>) =>
       api.patch('/categories/reorder', orderUpdates),
   },
+
+  // Quick Replies management
+  quickReplies: {
+    // Get all quick replies with optional filters
+    getAll: (params?: { category?: string; search?: string; active_only?: boolean }) =>
+      smartApiCall(
+        () => api.get('/quick-replies', { params }),
+        [
+          { id: 1, title: 'Saludo', content: '¡Hola {nombre}! Bienvenido/a a ChatBotDysa.', category: 'greeting', shortcut: '/saludo' },
+          { id: 2, title: 'Despedida', content: '¡Gracias por contactarnos! ¡Que tengas un excelente día!', category: 'farewell', shortcut: '/despedida' },
+          { id: 3, title: 'Horario', content: 'Nuestro horario es de Lunes a Viernes de 9:00 a 18:00 hrs.', category: 'info', shortcut: '/horario' },
+          { id: 4, title: 'En espera', content: 'Gracias por tu paciencia. Un agente te atenderá en breve.', category: 'support', shortcut: '/espera' },
+        ]
+      ),
+
+    // Get quick reply by ID
+    getById: (id: number) =>
+      api.get(`/quick-replies/${id}`),
+
+    // Get quick reply by shortcut
+    getByShortcut: (shortcut: string) =>
+      api.get(`/quick-replies/shortcut/${shortcut}`),
+
+    // Get available categories
+    getCategories: () =>
+      api.get('/quick-replies/categories'),
+
+    // Create new quick reply
+    create: (data: any) =>
+      api.post('/quick-replies', data),
+
+    // Update quick reply
+    update: (id: number, data: any) =>
+      api.put(`/quick-replies/${id}`, data),
+
+    // Use quick reply (increments usage count and returns processed content)
+    use: (id: number, variables?: Record<string, string>) =>
+      api.post(`/quick-replies/${id}/use`, variables || {}),
+
+    // Delete quick reply
+    delete: (id: number) =>
+      api.delete(`/quick-replies/${id}`),
+  },
 };
 
 export default apiService;

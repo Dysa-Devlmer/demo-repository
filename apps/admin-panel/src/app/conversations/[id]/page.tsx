@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical, User, CheckCircle, Check, CheckCheck, Clock, AlertCircle, Bot, UserCheck, Zap, Image, Mic, Video, FileText, MapPin, Sticker, Contact } from 'lucide-react';
+import { ArrowLeft, Send, Phone, MessageSquare, MoreVertical, User, CheckCircle, Check, CheckCheck, Clock, AlertCircle, Bot, UserCheck, Zap, Image, Mic, Video, FileText, MapPin, Sticker, Contact, MessageCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -293,6 +293,38 @@ export default function ConversationDetailsPage() {
 
   const [assigningAgent, setAssigningAgent] = useState(false);
   const [changingMode, setChangingMode] = useState(false);
+  const [quickReplies, setQuickReplies] = useState<Array<{
+    id: number;
+    title: string;
+    content: string;
+    shortcut?: string;
+    category: string;
+  }>>([]);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+
+  // Load quick replies
+  useEffect(() => {
+    const loadQuickReplies = async () => {
+      try {
+        const response = await apiService.quickReplies.getAll();
+        setQuickReplies(response.data || response || []);
+      } catch (error) {
+        console.error('Error loading quick replies:', error);
+      }
+    };
+    loadQuickReplies();
+  }, []);
+
+  // Handle quick reply selection
+  const handleQuickReplySelect = (reply: { id: number; content: string }) => {
+    // Replace variables with placeholders or customer name
+    let processedContent = reply.content;
+    if (conversation?.customerName) {
+      processedContent = processedContent.replace(/\{nombre\}/gi, conversation.customerName);
+    }
+    setNewMessage(processedContent);
+    setShowQuickReplies(false);
+  };
 
   const handleModeChange = async (newMode: 'auto' | 'manual' | 'hybrid') => {
     if (!conversation || changingMode) return;
@@ -756,7 +788,42 @@ export default function ConversationDetailsPage() {
             )}
           </div>
         )}
+
+        {/* Quick Replies Dropdown */}
+        {showQuickReplies && quickReplies.length > 0 && (
+          <div className="mb-2 bg-muted rounded-lg p-2 max-h-40 overflow-y-auto">
+            <div className="text-xs font-medium text-muted-foreground mb-2">Respuestas Rápidas</div>
+            <div className="space-y-1">
+              {quickReplies.map((reply) => (
+                <button
+                  key={reply.id}
+                  onClick={() => handleQuickReplySelect(reply)}
+                  className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-background transition-colors flex items-center justify-between group"
+                >
+                  <span className="truncate flex-1">{reply.title}</span>
+                  {reply.shortcut && (
+                    <span className="text-xs text-muted-foreground ml-2 opacity-0 group-hover:opacity-100">
+                      {reply.shortcut}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2">
+          {/* Quick Replies Button */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowQuickReplies(!showQuickReplies)}
+            title="Respuestas rápidas"
+            className={showQuickReplies ? 'bg-muted' : ''}
+          >
+            <MessageCircle className="h-4 w-4" />
+          </Button>
+
           <Input
             placeholder={t('conversations.typeResponse')}
             value={newMessage}
