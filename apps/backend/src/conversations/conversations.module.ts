@@ -7,12 +7,14 @@ import { Message } from '../entities/message.entity';
 import { Customer } from '../entities/customer.entity';
 import { CommonModule } from '../common/common.module';
 import { AiModule } from '../modules/ai/ai.module';
+import { WhatsAppModule } from '../modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Conversation, Message, Customer]),
     CommonModule,
-    AiModule
+    AiModule,
+    WhatsAppModule
   ],
   controllers: [ConversationsController],
   providers: [ConversationsService],

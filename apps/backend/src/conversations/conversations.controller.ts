@@ -11,19 +11,24 @@ import {
   ParseIntPipe,
   HttpStatus,
   HttpException,
-  NotFoundException
+  NotFoundException,
+  Logger
 } from '@nestjs/common';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { ConversationsService } from './conversations.service';
 import { OllamaService } from '../modules/ai/ollama.service';
+import { WhatsAppService } from '../modules/whatsapp/whatsapp.service';
 import { ConversationChannel } from '../entities/conversation.entity';
 
 @Controller('conversations')
 @UseGuards(AuthGuard)
 export class ConversationsController {
+  private readonly logger = new Logger(ConversationsController.name);
+
   constructor(
     private readonly conversationsService: ConversationsService,
-    private readonly ollamaService: OllamaService
+    private readonly ollamaService: OllamaService,
+    private readonly whatsappService: WhatsAppService
   ) {}
 
   @Get()
@@ -98,22 +103,55 @@ export class ConversationsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() messageDto: {
       message: string;
-      sender: 'customer' | 'bot' | 'human';
+      sender?: 'customer' | 'bot' | 'human' | 'agent';
     }
   ) {
     try {
-      // Guardar el mensaje del usuario
-      const userMessage = await this.conversationsService.addMessage(id, {
+      // Default sender to 'human' (agent) if not specified
+      const sender = messageDto.sender || 'human';
+
+      // Obtener la conversación para saber el teléfono del cliente
+      const conversation = await this.conversationsService.findOne(id);
+
+      // Guardar el mensaje en la base de datos
+      const savedMessage = await this.conversationsService.addMessage(id, {
         content: messageDto.message,
-        sender: messageDto.sender,
+        sender: sender,
       });
 
-      // Si el mensaje es del cliente, generar respuesta de AI
       let aiResponse: any = null;
-      if (messageDto.sender === 'customer') {
-        // Obtener la conversación completa con historial
-        const conversation = await this.conversationsService.findOne(id);
+      let whatsappSent = false;
 
+      // Si el mensaje es del agente (human/agent), enviarlo por WhatsApp al cliente
+      if (sender === 'human' || sender === 'agent') {
+        const customerPhone = conversation.customer?.phone || conversation.customer?.whatsapp_phone;
+
+        if (customerPhone && conversation.channel === ConversationChannel.WHATSAPP) {
+          try {
+            // Formatear número (remover espacios y asegurar formato correcto)
+            const formattedPhone = customerPhone.replace(/[\s\-\(\)]/g, '').replace(/^\+/, '');
+
+            this.logger.log(`📤 Enviando mensaje de agente a WhatsApp: ${formattedPhone}`);
+
+            const result = await this.whatsappService.sendTextMessage(formattedPhone, messageDto.message);
+            whatsappSent = result.success;
+
+            if (result.success) {
+              this.logger.log(`✅ Mensaje enviado a WhatsApp exitosamente: ${result.messageId}`);
+            } else {
+              this.logger.warn(`⚠️ Error enviando a WhatsApp: ${result.error}`);
+            }
+          } catch (whatsappError) {
+            this.logger.error('Error enviando mensaje por WhatsApp:', whatsappError);
+            // No fallar la operación, solo loguear
+          }
+        } else {
+          this.logger.debug(`Canal no es WhatsApp o no hay teléfono: channel=${conversation.channel}, phone=${customerPhone}`);
+        }
+      }
+
+      // Si el mensaje es del cliente, generar respuesta de AI
+      if (sender === 'customer') {
         // Preparar contexto para Ollama
         const previousMessages = conversation.messages
           .slice(-5) // Últimos 5 mensajes para contexto
@@ -148,13 +186,15 @@ export class ConversationsController {
       return {
         success: true,
         data: {
-          user_message: userMessage,
+          message: savedMessage,
           ai_response: aiResponse?.content,
-          message_id: aiResponse?.id
+          whatsapp_sent: whatsappSent,
+          message_id: savedMessage?.id
         }
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al procesar el mensaje';
+      this.logger.error('Error en addMessage:', errorMessage);
       throw new HttpException(
         {
           success: false,
