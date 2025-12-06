@@ -27,6 +27,14 @@ export enum MessageRole {
   SYSTEM = "system",
 }
 
+export enum MessageDeliveryStatus {
+  PENDING = "pending",   // Mensaje creado, aún no enviado
+  SENT = "sent",         // Enviado al servidor de WhatsApp
+  DELIVERED = "delivered", // Entregado al dispositivo del usuario
+  READ = "read",         // Leído por el usuario
+  FAILED = "failed",     // Error al enviar
+}
+
 @Entity("messages")
 export class Message {
   @PrimaryGeneratedColumn()
@@ -89,6 +97,19 @@ export class Message {
 
   @Column({ default: false })
   is_delivered: boolean;
+
+  @Column({
+    type: "enum",
+    enum: MessageDeliveryStatus,
+    default: MessageDeliveryStatus.PENDING,
+  })
+  delivery_status: MessageDeliveryStatus;
+
+  @Column({ nullable: true })
+  delivered_at?: Date;
+
+  @Column({ nullable: true })
+  read_at?: Date;
 
   @Column({ nullable: true })
   error_message?: string;

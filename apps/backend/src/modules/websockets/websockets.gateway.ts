@@ -373,6 +373,33 @@ export class WebSocketsGateway
     });
   }
 
+  /**
+   * Notify about message delivery status updates (sent, delivered, read, failed)
+   */
+  notifyMessageStatusUpdate(statusData: {
+    messageId: number;
+    whatsappMessageId: string;
+    status: "sent" | "delivered" | "read" | "failed";
+    timestamp: string;
+    conversationId: number;
+  }) {
+    this.emitToAdmins("message-status-update", {
+      ...statusData,
+      receivedAt: new Date(),
+    });
+
+    // Also emit to the specific conversation room if someone is watching
+    this.emitToRoom(
+      `conversation-${statusData.conversationId}`,
+      "message-status-update",
+      statusData,
+    );
+
+    this.logger.debug(
+      `Message status update: ${statusData.whatsappMessageId} -> ${statusData.status}`,
+    );
+  }
+
   notifyVoiceCall(callData: any) {
     this.emitToAdmins("voice-call", {
       ...callData,

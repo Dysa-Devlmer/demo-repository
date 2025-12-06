@@ -10,6 +10,7 @@ import {
   Conversation,
   ConversationStatus,
   ConversationChannel,
+  ConversationMode,
 } from "../entities/conversation.entity";
 import { Message } from "../entities/message.entity";
 import { Customer } from "../entities/customer.entity";
@@ -532,6 +533,7 @@ export class ConversationsService {
     updateDto: {
       status?: string;
       agent_id?: string;
+      mode?: string;
       metadata?: any;
     },
   ): Promise<Conversation> {
@@ -549,9 +551,26 @@ export class ConversationsService {
       conversation.status = updateDto.status as ConversationStatus;
     }
 
+    // Update mode if provided (auto, manual, hybrid)
+    if (updateDto.mode) {
+      conversation.mode = updateDto.mode as ConversationMode;
+      this.logger.log(`Conversation ${id} mode changed to ${updateDto.mode}`);
+
+      // If switching to manual, log that agent will handle responses
+      if (updateDto.mode === ConversationMode.MANUAL) {
+        this.logger.log(`Conversation ${id} now requires human agent responses`);
+      }
+    }
+
     // Update agent_id if provided (including empty string to unassign)
     if (updateDto.agent_id !== undefined) {
       conversation.agent_id = updateDto.agent_id || undefined;
+
+      // If agent is assigned and mode is auto, switch to hybrid
+      if (updateDto.agent_id && conversation.mode === ConversationMode.AUTO) {
+        conversation.mode = ConversationMode.HYBRID;
+        this.logger.log(`Conversation ${id} mode auto-switched to HYBRID due to agent assignment`);
+      }
     }
 
     // Merge metadata if provided
@@ -591,6 +610,78 @@ export class ConversationsService {
     this.logger.warn(
       `Conversation ${conversation.session_id} permanently deleted`,
     );
+  }
+
+  /**
+   * Update message delivery status based on WhatsApp webhook status updates
+   */
+  async updateMessageDeliveryStatus(
+    whatsappMessageId: string,
+    status: 'sent' | 'delivered' | 'read' | 'failed',
+    timestamp?: Date,
+  ): Promise<Message | null> {
+    // Find message by WhatsApp message ID stored in metadata
+    const message = await this.messagesRepo
+      .createQueryBuilder('message')
+      .where("message.metadata->>'whatsapp_message_id' = :messageId", {
+        messageId: whatsappMessageId,
+      })
+      .getOne();
+
+    if (!message) {
+      this.logger.debug(`Message with WhatsApp ID ${whatsappMessageId} not found`);
+      return null;
+    }
+
+    // Map WhatsApp status to our enum
+    const statusMap: Record<string, string> = {
+      sent: 'sent',
+      delivered: 'delivered',
+      read: 'read',
+      failed: 'failed',
+    };
+
+    const deliveryStatus = statusMap[status] || 'pending';
+    const now = timestamp || new Date();
+
+    // Update using query builder to avoid TypeORM cascade issues
+    await this.messagesRepo
+      .createQueryBuilder()
+      .update(Message)
+      .set({
+        delivery_status: deliveryStatus as any,
+        is_delivered: status === 'delivered' || status === 'read',
+        is_read: status === 'read',
+        delivered_at: status === 'delivered' ? now : message.delivered_at,
+        read_at: status === 'read' ? now : message.read_at,
+      })
+      .where('id = :id', { id: message.id })
+      .execute();
+
+    this.logger.log(
+      `Message ${message.id} delivery status updated to ${status}`,
+    );
+
+    // Return updated message
+    return this.messagesRepo.findOne({ where: { id: message.id } });
+  }
+
+  /**
+   * Get messages by delivery status
+   */
+  async getMessagesByDeliveryStatus(
+    conversationId: number,
+    status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed',
+  ): Promise<Message[]> {
+    return this.messagesRepo.find({
+      where: {
+        conversation_id: conversationId,
+        delivery_status: status as any,
+      },
+      order: {
+        created_at: 'ASC',
+      },
+    });
   }
 
   /**

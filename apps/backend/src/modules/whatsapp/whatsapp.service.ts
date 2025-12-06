@@ -432,6 +432,41 @@ export class WhatsAppService {
     }));
   }
 
+  /**
+   * Process status updates from WhatsApp webhook
+   * Returns array of status updates for messages (sent, delivered, read, failed)
+   */
+  processStatusUpdates(webhookData: WebhookMessage): Array<{
+    messageId: string;
+    status: "sent" | "delivered" | "read" | "failed";
+    timestamp: Date;
+    recipientId: string;
+  }> {
+    const statusUpdates: Array<{
+      messageId: string;
+      status: "sent" | "delivered" | "read" | "failed";
+      timestamp: Date;
+      recipientId: string;
+    }> = [];
+
+    for (const entry of webhookData.entry) {
+      for (const change of entry.changes) {
+        if (change.value.statuses) {
+          for (const status of change.value.statuses) {
+            statusUpdates.push({
+              messageId: status.id,
+              status: status.status,
+              timestamp: new Date(parseInt(status.timestamp) * 1000),
+              recipientId: status.recipient_id,
+            });
+          }
+        }
+      }
+    }
+
+    return statusUpdates;
+  }
+
   processWebhookMessage(webhookData: WebhookMessage): Array<{
     from: string;
     messageId: string;

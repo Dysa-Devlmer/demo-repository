@@ -21,7 +21,7 @@ import { ReservationsService } from "../../reservations/reservations.service";
 import { OrdersService } from "../../orders/orders.service";
 import { ConversationsService } from "../../conversations/conversations.service";
 import { CustomersService } from "../../customers/customers.service";
-import { ConversationChannel } from "../../entities/conversation.entity";
+import { ConversationChannel, ConversationMode } from "../../entities/conversation.entity";
 
 export class SendMessageDto {
   @IsString()
@@ -84,6 +84,35 @@ export class WhatsAppController {
   async handleWebhook(@Body() webhookData: WebhookMessage) {
     try {
       this.logger.log("Received WhatsApp webhook");
+
+      // ====================================
+      // PROCESS STATUS UPDATES (sent, delivered, read, failed)
+      // ====================================
+      const statusUpdates = this.whatsappService.processStatusUpdates(webhookData);
+
+      for (const statusUpdate of statusUpdates) {
+        this.logger.log(
+          `Status update: ${statusUpdate.messageId} -> ${statusUpdate.status}`,
+        );
+
+        // Update message delivery status in database
+        const updatedMessage = await this.conversationsService.updateMessageDeliveryStatus(
+          statusUpdate.messageId,
+          statusUpdate.status,
+          statusUpdate.timestamp,
+        );
+
+        if (updatedMessage) {
+          // Notify frontend via WebSocket about status update
+          this.websocketGateway.notifyMessageStatusUpdate({
+            messageId: updatedMessage.id,
+            whatsappMessageId: statusUpdate.messageId,
+            status: statusUpdate.status,
+            timestamp: statusUpdate.timestamp.toISOString(),
+            conversationId: updatedMessage.conversation_id,
+          });
+        }
+      }
 
       // Process incoming messages
       const messages = this.whatsappService.processWebhookMessage(webhookData);
@@ -153,6 +182,28 @@ export class WhatsAppController {
 
         let responseText: string;
         let result: { success: boolean; messageId?: string; error?: string };
+
+        // ====================================
+        // CHECK CONVERSATION MODE
+        // ====================================
+        // If mode is MANUAL, bot should NOT respond - wait for human agent
+        if (conversation?.mode === ConversationMode.MANUAL) {
+          this.logger.log(`Conversation ${conversation.session_id} is in MANUAL mode - waiting for human agent`);
+
+          // Notify admin panel that a message needs attention
+          this.websocketGateway.notifyWhatsAppMessage({
+            from: message.from,
+            message: message.content,
+            response: '[Esperando respuesta del agente]',
+            timestamp: message.timestamp,
+            success: true,
+            conversationId: conversation?.id,
+            customerId: customer?.id,
+            needsAttention: true,
+          });
+
+          continue; // Skip bot response, go to next message
+        }
 
         if (isOpen) {
           // Business is OPEN - Generate AI response with ChatBotDysa context

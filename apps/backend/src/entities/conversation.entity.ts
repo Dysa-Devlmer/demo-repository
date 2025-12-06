@@ -24,6 +24,12 @@ export enum ConversationChannel {
   PHONE = "phone",
 }
 
+export enum ConversationMode {
+  AUTO = "auto",      // Bot responde automáticamente
+  MANUAL = "manual",  // Solo agente humano responde
+  HYBRID = "hybrid",  // Bot responde, pero agente puede intervenir
+}
+
 @Entity("conversations")
 export class Conversation {
   @PrimaryGeneratedColumn()
@@ -52,6 +58,13 @@ export class Conversation {
     default: ConversationStatus.ACTIVE,
   })
   status: ConversationStatus;
+
+  @Column({
+    type: "enum",
+    enum: ConversationMode,
+    default: ConversationMode.AUTO,
+  })
+  mode: ConversationMode;
 
   @Column({ nullable: true })
   subject?: string;
