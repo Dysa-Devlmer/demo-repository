@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConversationsController } from './conversations.controller';
 import { ConversationsService } from './conversations.service';
@@ -14,7 +14,7 @@ import { WhatsAppModule } from '../modules/whatsapp/whatsapp.module';
     TypeOrmModule.forFeature([Conversation, Message, Customer]),
     CommonModule,
     AiModule,
-    WhatsAppModule
+    forwardRef(() => WhatsAppModule),
   ],
   controllers: [ConversationsController],
   providers: [ConversationsService],

@@ -202,7 +202,7 @@ export class ConversationsService {
     conversationId: number,
     data: {
       content: string;
-      sender: "bot" | "human" | "customer";
+      sender: "bot" | "human" | "customer" | "agent";
       metadata?: any;
     },
   ): Promise<Message> {
@@ -215,6 +215,7 @@ export class ConversationsService {
     const roleMap = {
       bot: "bot" as const,
       human: "agent" as const,
+      agent: "agent" as const,
       customer: "user" as const,
     };
 
