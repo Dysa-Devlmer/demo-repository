@@ -162,16 +162,27 @@ export class WhatsAppController {
           });
           this.logger.log(`Conversation: ${conversation.session_id} (ID: ${conversation.id})`);
 
-          // Save incoming customer message
+          // Save incoming customer message with media info if present
           await this.conversationsService.addMessage(conversation.id, {
             content: message.content,
             sender: 'customer',
             metadata: {
               whatsapp_message_id: message.messageId,
               timestamp: message.timestamp,
+              message_type: message.type,
+              media: message.mediaData ? {
+                media_id: message.mediaData.mediaId,
+                mime_type: message.mediaData.mimeType,
+                caption: message.mediaData.caption,
+                filename: message.mediaData.filename,
+                is_voice: message.mediaData.isVoice,
+                is_animated: message.mediaData.isAnimated,
+              } : undefined,
+              location: message.locationData,
+              interaction: message.interactionData,
             },
           });
-          this.logger.log(`Customer message saved to conversation ${conversation.session_id}`);
+          this.logger.log(`Customer message (${message.type}) saved to conversation ${conversation.session_id}`);
         } catch (dbError) {
           this.logger.error(`Error saving to database: ${dbError.message}`);
           // Continue processing even if DB save fails

@@ -82,6 +82,47 @@ export interface WebhookMessage {
           text?: {
             body: string;
           };
+          image?: {
+            id: string;
+            mime_type: string;
+            sha256: string;
+            caption?: string;
+          };
+          audio?: {
+            id: string;
+            mime_type: string;
+            sha256: string;
+            voice?: boolean;
+          };
+          video?: {
+            id: string;
+            mime_type: string;
+            sha256: string;
+            caption?: string;
+          };
+          document?: {
+            id: string;
+            mime_type: string;
+            sha256: string;
+            filename?: string;
+            caption?: string;
+          };
+          location?: {
+            latitude: number;
+            longitude: number;
+            name?: string;
+            address?: string;
+          };
+          sticker?: {
+            id: string;
+            mime_type: string;
+            sha256: string;
+            animated?: boolean;
+          };
+          contacts?: Array<{
+            name: { formatted_name: string };
+            phones?: Array<{ phone: string; type: string }>;
+          }>;
           interactive?: {
             type: string;
             list_reply?: {
@@ -474,6 +515,20 @@ export class WhatsAppService {
     type: string;
     content: string;
     interactionData?: any;
+    mediaData?: {
+      mediaId: string;
+      mimeType: string;
+      caption?: string;
+      filename?: string;
+      isVoice?: boolean;
+      isAnimated?: boolean;
+    };
+    locationData?: {
+      latitude: number;
+      longitude: number;
+      name?: string;
+      address?: string;
+    };
   }> {
     const processedMessages: Array<{
       from: string;
@@ -482,6 +537,20 @@ export class WhatsAppService {
       type: string;
       content: string;
       interactionData?: any;
+      mediaData?: {
+        mediaId: string;
+        mimeType: string;
+        caption?: string;
+        filename?: string;
+        isVoice?: boolean;
+        isAnimated?: boolean;
+      };
+      locationData?: {
+        latitude: number;
+        longitude: number;
+        name?: string;
+        address?: string;
+      };
     }> = [];
 
     for (const entry of webhookData.entry) {
@@ -490,11 +559,79 @@ export class WhatsAppService {
           for (const message of change.value.messages) {
             let content = "";
             let interactionData: any = undefined;
+            let mediaData: any = undefined;
+            let locationData: any = undefined;
 
             switch (message.type) {
               case "text":
                 content = message.text?.body || "";
                 break;
+
+              case "image":
+                content = message.image?.caption || "[Imagen recibida]";
+                mediaData = {
+                  mediaId: message.image?.id,
+                  mimeType: message.image?.mime_type,
+                  caption: message.image?.caption,
+                };
+                break;
+
+              case "audio":
+                content = message.audio?.voice ? "[Nota de voz]" : "[Audio recibido]";
+                mediaData = {
+                  mediaId: message.audio?.id,
+                  mimeType: message.audio?.mime_type,
+                  isVoice: message.audio?.voice,
+                };
+                break;
+
+              case "video":
+                content = message.video?.caption || "[Video recibido]";
+                mediaData = {
+                  mediaId: message.video?.id,
+                  mimeType: message.video?.mime_type,
+                  caption: message.video?.caption,
+                };
+                break;
+
+              case "document":
+                content = message.document?.caption || `[Documento: ${message.document?.filename || 'archivo'}]`;
+                mediaData = {
+                  mediaId: message.document?.id,
+                  mimeType: message.document?.mime_type,
+                  caption: message.document?.caption,
+                  filename: message.document?.filename,
+                };
+                break;
+
+              case "sticker":
+                content = "[Sticker]";
+                mediaData = {
+                  mediaId: message.sticker?.id,
+                  mimeType: message.sticker?.mime_type,
+                  isAnimated: message.sticker?.animated,
+                };
+                break;
+
+              case "location":
+                content = message.location?.name || message.location?.address || "[Ubicación compartida]";
+                locationData = {
+                  latitude: message.location?.latitude,
+                  longitude: message.location?.longitude,
+                  name: message.location?.name,
+                  address: message.location?.address,
+                };
+                break;
+
+              case "contacts":
+                const contactNames = message.contacts?.map(c => c.name.formatted_name).join(", ");
+                content = `[Contacto: ${contactNames || 'compartido'}]`;
+                interactionData = {
+                  type: "contacts",
+                  contacts: message.contacts,
+                };
+                break;
+
               case "interactive":
                 if (message.interactive?.list_reply) {
                   content = message.interactive.list_reply.title;
@@ -512,6 +649,7 @@ export class WhatsAppService {
                   };
                 }
                 break;
+
               case "button":
                 content = message.button?.text || "";
                 interactionData = {
@@ -519,6 +657,9 @@ export class WhatsAppService {
                   payload: message.button?.payload,
                 };
                 break;
+
+              default:
+                content = `[Mensaje tipo: ${message.type}]`;
             }
 
             processedMessages.push({
@@ -528,6 +669,8 @@ export class WhatsAppService {
               type: message.type,
               content,
               interactionData,
+              mediaData,
+              locationData,
             });
           }
         }
@@ -535,6 +678,60 @@ export class WhatsAppService {
     }
 
     return processedMessages;
+  }
+
+  /**
+   * Download media from WhatsApp
+   * Step 1: Get media URL using mediaId
+   * Step 2: Download the file from that URL
+   */
+  async downloadMedia(mediaId: string): Promise<{
+    success: boolean;
+    buffer?: Buffer;
+    mimeType?: string;
+    error?: string;
+  }> {
+    try {
+      // Step 1: Get media URL
+      const mediaResponse = await this.httpClient.get(`/${mediaId}`);
+      const mediaUrl = mediaResponse.data?.url;
+
+      if (!mediaUrl) {
+        return { success: false, error: "Media URL not found" };
+      }
+
+      this.logger.log(`Downloading media from: ${mediaUrl.substring(0, 50)}...`);
+
+      // Step 2: Download the file (requires auth header)
+      const downloadResponse = await axios.get(mediaUrl, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+        responseType: 'arraybuffer',
+      });
+
+      return {
+        success: true,
+        buffer: Buffer.from(downloadResponse.data),
+        mimeType: downloadResponse.headers['content-type'] || mediaResponse.data?.mime_type,
+      };
+    } catch (error) {
+      this.logger.error(`Failed to download media ${mediaId}:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get media URL (without downloading)
+   */
+  async getMediaUrl(mediaId: string): Promise<string | null> {
+    try {
+      const response = await this.httpClient.get(`/${mediaId}`);
+      return response.data?.url || null;
+    } catch (error) {
+      this.logger.error(`Failed to get media URL for ${mediaId}:`, error.message);
+      return null;
+    }
   }
 
   async markAsRead(messageId: string): Promise<boolean> {
