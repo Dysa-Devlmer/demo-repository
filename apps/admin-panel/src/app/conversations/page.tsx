@@ -39,6 +39,60 @@ interface ConversationStats {
   avgResponseTime: string;
 }
 
+// Backend response types
+interface BackendConversation {
+  id: number;
+  session_id: string;
+  customer: {
+    id: number;
+    name: string;
+    phone: string;
+    whatsapp_phone?: string;
+  };
+  channel: string;
+  status: string;
+  last_activity: string;
+  message_count: number;
+  messages?: Array<{
+    id: number;
+    content: string;
+    role: string;
+  }>;
+}
+
+// Transform backend data to frontend format
+const mapBackendToFrontend = (data: BackendConversation): Conversation => {
+  const lastMessage = data.messages && data.messages.length > 0
+    ? data.messages[0].content
+    : 'Sin mensajes';
+
+  // Format last activity
+  const formatLastActivity = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'Ahora';
+    if (diffMins < 60) return `Hace ${diffMins} min`;
+    if (diffHours < 24) return `Hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+    return `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+  };
+
+  return {
+    id: String(data.id),
+    customerName: data.customer?.name || 'Cliente WhatsApp',
+    customerPhone: data.customer?.phone || data.customer?.whatsapp_phone || '',
+    channel: data.channel as 'whatsapp' | 'phone' | 'web',
+    status: data.status as 'active' | 'waiting' | 'closed',
+    lastMessage: lastMessage.length > 100 ? lastMessage.substring(0, 100) + '...' : lastMessage,
+    lastActivity: formatLastActivity(data.last_activity),
+    messageCount: data.message_count || 0,
+  };
+};
+
 export default function ConversationsPage() {
   const router = useRouter();
   const { t, isLoading: translationsLoading } = useTranslation();
@@ -117,7 +171,23 @@ export default function ConversationsPage() {
 
       try {
         const response = await apiService.conversations.getAll();
-        setConversations(response.data);
+        console.log('API Response:', response);
+
+        // Extract data from response (handle nested structure)
+        let rawData = response.data;
+        if (rawData && typeof rawData === 'object' && 'data' in rawData) {
+          rawData = rawData.data;
+        }
+
+        // Map backend data to frontend format
+        if (Array.isArray(rawData)) {
+          const mappedConversations = rawData.map((conv: BackendConversation) => mapBackendToFrontend(conv));
+          console.log('Mapped conversations:', mappedConversations);
+          setConversations(mappedConversations);
+        } else {
+          console.warn('Unexpected data format:', rawData);
+          setConversations([]);
+        }
       } catch (error) {
         console.error('Error loading conversations:', error);
         // Datos de demostración mejorados
