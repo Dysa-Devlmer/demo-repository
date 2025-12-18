@@ -105,7 +105,7 @@ export class OllamaService {
   private readonly httpClient: AxiosInstance;
   private readonly baseUrl: string;
   private readonly defaultModel: string;
-  private readonly timeout: number = 90000; // 90 segundos para respuestas completas del chatbot
+  private readonly timeout: number = 30000; // 30 segundos - optimizado para respuestas rápidas
 
   constructor(private configService: ConfigService) {
     this.baseUrl = this.configService.get<string>(
@@ -229,6 +229,7 @@ export class OllamaService {
 
       // Configurar request con valores por defecto
       const { model: _model, ...restRequest } = request;
+      // Parámetros optimizados para velocidad (como Chatbot-Devlmer)
       const ollamaRequest: OllamaGenerateRequest = {
         model: targetModel,
         stream: false,
@@ -236,9 +237,6 @@ export class OllamaService {
           temperature: 0.7,
           top_k: 40,
           top_p: 0.9,
-          repeat_penalty: 1.1,
-          num_ctx: 1024, // Optimizado para respuestas más rápidas
-          num_predict: 150, // Respuestas concisas y rápidas
           ...request.options,
         },
         ...restRequest,

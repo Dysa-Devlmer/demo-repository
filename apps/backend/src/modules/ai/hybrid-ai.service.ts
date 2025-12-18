@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OllamaService, RestaurantContext } from './ollama.service';
 import { LearningMemoryService, ExperienceFeatures } from './learning-memory.service';
+import { CustomerMemoryService } from './customer-memory.service';
 import OpenAI from 'openai';
 
 export interface AIResponse {
@@ -12,6 +13,7 @@ export interface AIResponse {
   cached?: boolean;
   experienceId?: number;  // ID de la experiencia para feedback posterior
   features?: ExperienceFeatures;  // Features analizados del mensaje
+  memoriesUsed?: number;  // Número de memorias del cliente usadas
 }
 
 export interface ConversationMessage {
@@ -35,6 +37,7 @@ export class HybridAIService {
     private readonly configService: ConfigService,
     private readonly ollamaService: OllamaService,
     private readonly learningMemory: LearningMemoryService,
+    private readonly customerMemory: CustomerMemoryService,
   ) {
     const openaiKey = this.configService.get<string>('OPENAI_API_KEY');
 
@@ -52,7 +55,7 @@ export class HybridAIService {
 
   /**
    * Genera una respuesta inteligente usando el mejor proveedor disponible
-   * Con sistema de aprendizaje JARVIS integrado
+   * Con sistema de aprendizaje JARVIS + memoria del cliente integrado
    */
   async generateResponse(
     userMessage: string,
@@ -63,10 +66,30 @@ export class HybridAIService {
     },
   ): Promise<AIResponse> {
     const startTime = Date.now();
+    let memoriesUsed = 0;
 
     // 0. Analizar mensaje con JARVIS Learning
     const features = this.learningMemory.analyzeMessage(userMessage);
     this.logger.debug(`📊 JARVIS Analysis: intent=${features.intent}, sentiment=${features.sentiment.toFixed(2)}, complexity=${features.complexity}`);
+
+    // 0.5 Extraer y guardar memorias del mensaje del cliente
+    if (context.customerId) {
+      try {
+        const extractedMemories = this.customerMemory.extractMemoriesFromMessage(userMessage);
+        for (const memory of extractedMemories) {
+          await this.customerMemory.saveMemory(context.customerId, memory, {
+            customerId: context.customerId,
+            conversationId: context.conversationId,
+            channel: context.channel,
+          });
+        }
+        if (extractedMemories.length > 0) {
+          this.logger.log(`🧠 Extracted ${extractedMemories.length} memories from message`);
+        }
+      } catch (error) {
+        this.logger.warn('Failed to extract memories:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
 
     // 1. Verificar cache para preguntas frecuentes
     const cacheKey = this.getCacheKey(userMessage, context);
@@ -124,8 +147,23 @@ export class HybridAIService {
       };
     }
 
-    // 2. Construir el prompt con RESTRICCIONES ESTRICTAS + adaptación al estilo del cliente
-    const systemPrompt = this.buildAdaptiveSystemPrompt(context, features);
+    // 2. Obtener memorias del cliente para personalización
+    let customerMemoriesPrompt = '';
+    if (context.customerId) {
+      try {
+        customerMemoriesPrompt = await this.customerMemory.getMemoriesForPrompt(context.customerId);
+        const memories = await this.customerMemory.getCustomerMemories(context.customerId);
+        memoriesUsed = memories.length;
+        if (memoriesUsed > 0) {
+          this.logger.debug(`📚 Using ${memoriesUsed} customer memories for response`);
+        }
+      } catch (error) {
+        this.logger.warn('Failed to get customer memories:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+
+    // 3. Construir el prompt con RESTRICCIONES ESTRICTAS + adaptación al estilo del cliente + memorias
+    const systemPrompt = this.buildAdaptiveSystemPrompt(context, features, customerMemoriesPrompt);
     const messages = this.buildMessages(systemPrompt, userMessage, context);
 
     let response: AIResponse | null = null;
@@ -229,8 +267,13 @@ export class HybridAIService {
   /**
    * Construye un prompt ADAPTATIVO que se ajusta al estilo del cliente
    * El bot "espejeará" la forma de comunicarse del cliente para ser más humano
+   * Incluye memorias del cliente para personalización
    */
-  private buildAdaptiveSystemPrompt(context: RestaurantContext, features: ExperienceFeatures): string {
+  private buildAdaptiveSystemPrompt(
+    context: RestaurantContext,
+    features: ExperienceFeatures,
+    customerMemoriesPrompt: string = '',
+  ): string {
     const restaurantName = context.restaurantInfo?.name || 'nuestro restaurante';
 
     // Determinar el estilo de respuesta basado en cómo escribe el cliente
