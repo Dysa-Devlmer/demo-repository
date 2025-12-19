@@ -127,3 +127,9 @@ apps/*/build/
 # Environment files in config/
 config/.env
 config/.env.local
+
+# --- Generated artifacts / local-only ---
+reports/
+testsprite_tests/tmp/
+tests/.auth/
+apps/backend/storage/compliance-reports/
