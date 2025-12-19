@@ -1,0 +1,17 @@
+services:
+  website:
+    build:
+      context: ../apps/website
+      dockerfile: Dockerfile
+    container_name: chatbotdysa-website
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://backend:8005
+    ports:
+      - "3004:3000"
+    networks:
+      - default
+
+networks:
+  default:
+    name: chatbotdysa_default
