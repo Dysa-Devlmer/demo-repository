@@ -8,7 +8,7 @@ import * as crypto from 'crypto';
 export class TwoFactorService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>
   ) {}
 
   /**
@@ -196,7 +196,9 @@ export class TwoFactorService {
   /**
    * Enable 2FA for user
    */
-  async enable2FA(userId: number): Promise<{ secret: string; qrCodeUrl: string; backupCodes: string[] }> {
+  async enable2FA(
+    userId: number
+  ): Promise<{ secret: string; qrCodeUrl: string; backupCodes: string[] }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new BadRequestException('User not found');
@@ -207,7 +209,7 @@ export class TwoFactorService {
     const backupCodes = this.generateBackupCodes(8);
 
     // Hash backup codes for storage
-    const hashedBackupCodes = backupCodes.map(code => this.hashBackupCode(code));
+    const hashedBackupCodes = backupCodes.map((code) => this.hashBackupCode(code));
 
     // Update user
     user.twoFactorSecret = secret;
@@ -309,7 +311,7 @@ export class TwoFactorService {
 
     // Generate new backup codes
     const backupCodes = this.generateBackupCodes(8);
-    const hashedBackupCodes = backupCodes.map(code => this.hashBackupCode(code));
+    const hashedBackupCodes = backupCodes.map((code) => this.hashBackupCode(code));
 
     user.twoFactorBackupCodes = hashedBackupCodes;
     await this.userRepository.save(user);

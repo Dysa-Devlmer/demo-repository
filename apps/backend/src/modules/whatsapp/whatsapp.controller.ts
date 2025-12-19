@@ -7,21 +7,21 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { IsString, IsOptional, IsEnum } from "class-validator";
-import type { WebhookMessage } from "./whatsapp.service";
-import { WhatsAppService } from "./whatsapp.service";
-import { HybridAIService } from "../ai/hybrid-ai.service";
-import { WebSocketsGateway } from "../websockets/websockets.gateway";
-import { BusinessHoursService } from "./business-hours.service";
-import { MenuService } from "../../menu/menu.service";
-import { CategoriesService } from "../../categories/categories.service";
-import { ReservationsService } from "../../reservations/reservations.service";
-import { OrdersService } from "../../orders/orders.service";
-import { ConversationsService } from "../../conversations/conversations.service";
-import { CustomersService } from "../../customers/customers.service";
-import { ConversationChannel, ConversationMode } from "../../entities/conversation.entity";
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { IsString, IsOptional, IsEnum } from 'class-validator';
+import type { WebhookMessage } from './whatsapp.service';
+import { WhatsAppService } from './whatsapp.service';
+import { HybridAIService } from '../ai/hybrid-ai.service';
+import { WebSocketsGateway } from '../websockets/websockets.gateway';
+import { BusinessHoursService } from './business-hours.service';
+import { MenuService } from '../../menu/menu.service';
+import { CategoriesService } from '../../categories/categories.service';
+import { ReservationsService } from '../../reservations/reservations.service';
+import { OrdersService } from '../../orders/orders.service';
+import { ConversationsService } from '../../conversations/conversations.service';
+import { CustomersService } from '../../customers/customers.service';
+import { ConversationChannel, ConversationMode } from '../../entities/conversation.entity';
 
 export class SendMessageDto {
   @IsString()
@@ -31,11 +31,11 @@ export class SendMessageDto {
   message: string;
 
   @IsOptional()
-  @IsEnum(["text", "menu", "buttons", "reservation", "order"])
-  type?: "text" | "menu" | "buttons" | "reservation" | "order";
+  @IsEnum(['text', 'menu', 'buttons', 'reservation', 'order'])
+  type?: 'text' | 'menu' | 'buttons' | 'reservation' | 'order';
 }
 
-@Controller("whatsapp")
+@Controller('whatsapp')
 export class WhatsAppController {
   private readonly logger = new Logger(WhatsAppController.name);
 
@@ -50,40 +50,33 @@ export class WhatsAppController {
     private readonly reservationsService: ReservationsService,
     private readonly ordersService: OrdersService,
     private readonly conversationsService: ConversationsService,
-    private readonly customersService: CustomersService,
+    private readonly customersService: CustomersService
   ) {}
 
-  @Get("webhook")
+  @Get('webhook')
   verifyWebhook(
-    @Query("hub.mode") mode: string,
-    @Query("hub.verify_token") token: string,
-    @Query("hub.challenge") challenge: string,
+    @Query('hub.mode') mode: string,
+    @Query('hub.verify_token') token: string,
+    @Query('hub.challenge') challenge: string
   ) {
     this.logger.log(`Webhook verification attempt: mode=${mode}`);
 
-    const verification = this.whatsappService.verifyWebhook(
-      mode,
-      token,
-      challenge,
-    );
+    const verification = this.whatsappService.verifyWebhook(mode, token, challenge);
 
     if (verification) {
       return parseInt(verification);
     }
 
-    throw new HttpException(
-      "Webhook verification failed",
-      HttpStatus.FORBIDDEN,
-    );
+    throw new HttpException('Webhook verification failed', HttpStatus.FORBIDDEN);
   }
 
   // Track processed message IDs to prevent duplicates (in-memory cache)
   private processedMessageIds: Set<string> = new Set();
 
-  @Post("webhook")
+  @Post('webhook')
   async handleWebhook(@Body() webhookData: WebhookMessage) {
     try {
-      this.logger.log("Received WhatsApp webhook");
+      this.logger.log('Received WhatsApp webhook');
 
       // ====================================
       // PROCESS STATUS UPDATES (sent, delivered, read, failed)
@@ -91,15 +84,13 @@ export class WhatsAppController {
       const statusUpdates = this.whatsappService.processStatusUpdates(webhookData);
 
       for (const statusUpdate of statusUpdates) {
-        this.logger.log(
-          `Status update: ${statusUpdate.messageId} -> ${statusUpdate.status}`,
-        );
+        this.logger.log(`Status update: ${statusUpdate.messageId} -> ${statusUpdate.status}`);
 
         // Update message delivery status in database
         const updatedMessage = await this.conversationsService.updateMessageDeliveryStatus(
           statusUpdate.messageId,
           statusUpdate.status,
-          statusUpdate.timestamp,
+          statusUpdate.timestamp
         );
 
         if (updatedMessage) {
@@ -133,9 +124,7 @@ export class WhatsAppController {
           this.processedMessageIds = new Set(idsArray.slice(-500));
         }
 
-        this.logger.log(
-          `Processing message from ${message.from}: "${message.content}"`,
-        );
+        this.logger.log(`Processing message from ${message.from}: "${message.content}"`);
 
         // Mark message as read
         await this.whatsappService.markAsRead(message.messageId);
@@ -170,19 +159,23 @@ export class WhatsAppController {
               whatsapp_message_id: message.messageId,
               timestamp: message.timestamp,
               message_type: message.type,
-              media: message.mediaData ? {
-                media_id: message.mediaData.mediaId,
-                mime_type: message.mediaData.mimeType,
-                caption: message.mediaData.caption,
-                filename: message.mediaData.filename,
-                is_voice: message.mediaData.isVoice,
-                is_animated: message.mediaData.isAnimated,
-              } : undefined,
+              media: message.mediaData
+                ? {
+                    media_id: message.mediaData.mediaId,
+                    mime_type: message.mediaData.mimeType,
+                    caption: message.mediaData.caption,
+                    filename: message.mediaData.filename,
+                    is_voice: message.mediaData.isVoice,
+                    is_animated: message.mediaData.isAnimated,
+                  }
+                : undefined,
               location: message.locationData,
               interaction: message.interactionData,
             },
           });
-          this.logger.log(`Customer message (${message.type}) saved to conversation ${conversation.session_id}`);
+          this.logger.log(
+            `Customer message (${message.type}) saved to conversation ${conversation.session_id}`
+          );
         } catch (dbError) {
           this.logger.error(`Error saving to database: ${dbError.message}`);
           // Continue processing even if DB save fails
@@ -199,7 +192,9 @@ export class WhatsAppController {
         // ====================================
         // If mode is MANUAL, bot should NOT respond - wait for human agent
         if (conversation?.mode === ConversationMode.MANUAL) {
-          this.logger.log(`Conversation ${conversation.session_id} is in MANUAL mode - waiting for human agent`);
+          this.logger.log(
+            `Conversation ${conversation.session_id} is in MANUAL mode - waiting for human agent`
+          );
 
           // Notify admin panel that a message needs attention
           this.websocketGateway.notifyWhatsAppMessage({
@@ -218,15 +213,20 @@ export class WhatsAppController {
 
         if (isOpen) {
           // Business is OPEN - Generate AI response with ChatBotDysa context
-          this.logger.log("Business is OPEN - Processing with AI");
+          this.logger.log('Business is OPEN - Processing with AI');
 
           // Get company information from environment variables
-          const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
-          const restaurantPhone = this.configService.get<string>("RESTAURANT_PHONE") || "+56965419765";
-          const restaurantHours = this.configService.get<string>("RESTAURANT_HOURS") || "24/7";
-          const restaurantAddress = this.configService.get<string>("RESTAURANT_ADDRESS") || "Sistema de chatbot inteligente";
-          const restaurantSpecialtiesStr = this.configService.get<string>("RESTAURANT_SPECIALTIES") || "Chatbot con IA,Atención automatizada";
-          const restaurantSpecialties = restaurantSpecialtiesStr.split(",").map(s => s.trim());
+          const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
+          const restaurantPhone =
+            this.configService.get<string>('RESTAURANT_PHONE') || '+56965419765';
+          const restaurantHours = this.configService.get<string>('RESTAURANT_HOURS') || '24/7';
+          const restaurantAddress =
+            this.configService.get<string>('RESTAURANT_ADDRESS') ||
+            'Sistema de chatbot inteligente';
+          const restaurantSpecialtiesStr =
+            this.configService.get<string>('RESTAURANT_SPECIALTIES') ||
+            'Chatbot con IA,Atención automatizada';
+          const restaurantSpecialties = restaurantSpecialtiesStr.split(',').map((s) => s.trim());
 
           // Get real data from database services and conversation history
           const [menuItems, categories, conversationWithMessages] = await Promise.all([
@@ -236,7 +236,7 @@ export class WhatsAppController {
           ]);
 
           // Format menu items for the AI context
-          const formattedMenuItems = menuItems.map(item => ({
+          const formattedMenuItems = menuItems.map((item) => ({
             id: item.id,
             name: item.name,
             price: item.price,
@@ -246,51 +246,47 @@ export class WhatsAppController {
           }));
 
           // Get categories with real names
-          const categoryNames = categories.map(cat => cat.name);
+          const categoryNames = categories.map((cat) => cat.name);
 
           // Format previous messages for AI context (last 10 messages to keep context manageable)
           const previousMessages = (conversationWithMessages.messages || [])
             .slice(-10) // Keep last 10 messages for context
-            .map(msg => ({
-              role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+            .map((msg) => ({
+              role: msg.role === 'user' ? ('user' as const) : ('assistant' as const),
               content: msg.content,
             }));
 
-          this.logger.log(`Providing AI with ${formattedMenuItems.length} menu items, ${categoryNames.length} categories, and ${previousMessages.length} previous messages`);
+          this.logger.log(
+            `Providing AI with ${formattedMenuItems.length} menu items, ${categoryNames.length} categories, and ${previousMessages.length} previous messages`
+          );
 
           // Use HybridAIService for faster responses (OpenAI ~1-2s vs Ollama ~10-15s)
-          const aiResult = await this.hybridAIService.generateResponse(
-            message.content,
-            {
-              customerName: customer?.name,
-              restaurantInfo: {
-                name: restaurantName,
-                phone: restaurantPhone,
-                hours: restaurantHours,
-                address: restaurantAddress,
-                specialties: restaurantSpecialties,
-              },
-              menuItems: formattedMenuItems,
-              categories: categoryNames,
-              previousMessages: previousMessages,
+          const aiResult = await this.hybridAIService.generateResponse(message.content, {
+            customerName: customer?.name,
+            restaurantInfo: {
+              name: restaurantName,
+              phone: restaurantPhone,
+              hours: restaurantHours,
+              address: restaurantAddress,
+              specialties: restaurantSpecialties,
             },
-          );
+            menuItems: formattedMenuItems,
+            categories: categoryNames,
+            previousMessages: previousMessages,
+          });
 
           // Log response time and provider
           this.logger.log(
-            `AI Response from ${aiResult.provider} in ${aiResult.responseTime}ms${aiResult.cached ? ' (cached)' : ''}`,
+            `AI Response from ${aiResult.provider} in ${aiResult.responseTime}ms${aiResult.cached ? ' (cached)' : ''}`
           );
 
           responseText = aiResult.content;
 
           // Send AI response back to WhatsApp
-          result = await this.whatsappService.sendTextMessage(
-            message.from,
-            responseText,
-          );
+          result = await this.whatsappService.sendTextMessage(message.from, responseText);
         } else {
           // Restaurant is CLOSED - Send closed message
-          this.logger.log("Restaurant is CLOSED - Sending closed message");
+          this.logger.log('Restaurant is CLOSED - Sending closed message');
 
           const closedMessage = this.businessHoursService.getClosedMessage();
           responseText = closedMessage;
@@ -300,16 +296,10 @@ export class WhatsAppController {
             const templateName = this.businessHoursService.getTemplateName();
             this.logger.log(`Sending template message: ${templateName}`);
 
-            result = await this.whatsappService.sendTemplateMessage(
-              message.from,
-              templateName!,
-            );
+            result = await this.whatsappService.sendTemplateMessage(message.from, templateName!);
           } else {
             // Send regular text message with closed hours info
-            result = await this.whatsappService.sendTextMessage(
-              message.from,
-              closedMessage,
-            );
+            result = await this.whatsappService.sendTextMessage(message.from, closedMessage);
           }
         }
 
@@ -350,78 +340,65 @@ export class WhatsAppController {
         });
       }
 
-      return { status: "success", processed: messages.length };
+      return { status: 'success', processed: messages.length };
     } catch (error) {
-      this.logger.error("Webhook processing error:", error.message);
-      throw new HttpException(
-        "Failed to process webhook",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error('Webhook processing error:', error.message);
+      throw new HttpException('Failed to process webhook', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  @Post("send-message")
+  @Post('send-message')
   async sendMessage(@Body() dto: SendMessageDto) {
     try {
       let result;
 
       switch (dto.type) {
-        case "menu":
+        case 'menu':
           // TODO: Get menu items from database
           const menuItems = [
             {
               id: 1,
-              name: "Pizza Margherita",
+              name: 'Pizza Margherita',
               price: 15.99,
-              category: "Pizzas",
-              description: "Deliciosa pizza con tomate, mozzarella y albahaca",
+              category: 'Pizzas',
+              description: 'Deliciosa pizza con tomate, mozzarella y albahaca',
             },
             {
               id: 2,
-              name: "Pasta Carbonara",
+              name: 'Pasta Carbonara',
               price: 12.99,
-              category: "Pastas",
-              description: "Pasta cremosa con pancetta y huevo",
+              category: 'Pastas',
+              description: 'Pasta cremosa con pancetta y huevo',
             },
             {
               id: 3,
-              name: "Tiramisu",
+              name: 'Tiramisu',
               price: 6.99,
-              category: "Postres",
-              description: "Postre italiano tradicional",
+              category: 'Postres',
+              description: 'Postre italiano tradicional',
             },
           ];
-          result = await this.whatsappService.sendRestaurantMenu(
-            dto.to,
-            menuItems,
-          );
+          result = await this.whatsappService.sendRestaurantMenu(dto.to, menuItems);
           break;
 
-        case "reservation":
+        case 'reservation':
           result = await this.whatsappService.sendReservationOptions(dto.to);
           break;
 
-        case "order":
+        case 'order':
           result = await this.whatsappService.sendOrderOptions(dto.to);
           break;
 
-        case "buttons":
-          result = await this.whatsappService.sendButtonMessage(
-            dto.to,
-            dto.message,
-            [
-              { id: "option_1", title: "Opción 1" },
-              { id: "option_2", title: "Opción 2" },
-              { id: "option_3", title: "Opción 3" },
-            ],
-          );
+        case 'buttons':
+          result = await this.whatsappService.sendButtonMessage(dto.to, dto.message, [
+            { id: 'option_1', title: 'Opción 1' },
+            { id: 'option_2', title: 'Opción 2' },
+            { id: 'option_3', title: 'Opción 3' },
+          ]);
           break;
 
         default:
-          result = await this.whatsappService.sendTextMessage(
-            dto.to,
-            dto.message,
-          );
+          result = await this.whatsappService.sendTextMessage(dto.to, dto.message);
           break;
       }
 
@@ -429,94 +406,85 @@ export class WhatsAppController {
         return {
           success: true,
           messageId: result.messageId,
-          message: "Message sent successfully",
+          message: 'Message sent successfully',
         };
       } else {
-        throw new HttpException(
-          result.error || "Failed to send message",
-          HttpStatus.BAD_REQUEST,
-        );
+        throw new HttpException(result.error || 'Failed to send message', HttpStatus.BAD_REQUEST);
       }
     } catch (error) {
-      this.logger.error("Send message error:", error.message);
-      throw new HttpException(
-        "Failed to send WhatsApp message",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error('Send message error:', error.message);
+      throw new HttpException('Failed to send WhatsApp message', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  @Get("health")
+  @Get('health')
   getHealth() {
     return this.whatsappService.getHealthStatus();
   }
 
-  @Post("test-menu")
+  @Post('test-menu')
   async sendTestMenu(@Body() body: { to: string }) {
     try {
       const testMenuItems = [
         {
           id: 1,
-          name: "Pizza Margherita",
+          name: 'Pizza Margherita',
           price: 15.99,
-          category: "🍕 Pizzas",
-          description: "Tomate, mozzarella fresca, albahaca",
+          category: '🍕 Pizzas',
+          description: 'Tomate, mozzarella fresca, albahaca',
         },
         {
           id: 2,
-          name: "Pizza Pepperoni",
+          name: 'Pizza Pepperoni',
           price: 17.99,
-          category: "🍕 Pizzas",
-          description: "Pepperoni, mozzarella, salsa de tomate",
+          category: '🍕 Pizzas',
+          description: 'Pepperoni, mozzarella, salsa de tomate',
         },
         {
           id: 3,
-          name: "Pasta Carbonara",
+          name: 'Pasta Carbonara',
           price: 12.99,
-          category: "🍝 Pastas",
-          description: "Pasta cremosa con pancetta y huevo",
+          category: '🍝 Pastas',
+          description: 'Pasta cremosa con pancetta y huevo',
         },
         {
           id: 4,
-          name: "Pasta Bolognese",
+          name: 'Pasta Bolognese',
           price: 13.99,
-          category: "🍝 Pastas",
-          description: "Pasta con salsa de carne tradicional",
+          category: '🍝 Pastas',
+          description: 'Pasta con salsa de carne tradicional',
         },
         {
           id: 5,
-          name: "Tiramisu",
+          name: 'Tiramisu',
           price: 6.99,
-          category: "🍰 Postres",
-          description: "Postre italiano con café y mascarpone",
+          category: '🍰 Postres',
+          description: 'Postre italiano con café y mascarpone',
         },
         {
           id: 6,
-          name: "Panna Cotta",
+          name: 'Panna Cotta',
           price: 5.99,
-          category: "🍰 Postres",
-          description: "Postre cremoso con frutos rojos",
+          category: '🍰 Postres',
+          description: 'Postre cremoso con frutos rojos',
         },
         {
           id: 7,
-          name: "Coca Cola",
+          name: 'Coca Cola',
           price: 2.99,
-          category: "🥤 Bebidas",
-          description: "Bebida gaseosa 330ml",
+          category: '🥤 Bebidas',
+          description: 'Bebida gaseosa 330ml',
         },
         {
           id: 8,
-          name: "Agua Mineral",
+          name: 'Agua Mineral',
           price: 1.99,
-          category: "🥤 Bebidas",
-          description: "Agua mineral 500ml",
+          category: '🥤 Bebidas',
+          description: 'Agua mineral 500ml',
         },
       ];
 
-      const result = await this.whatsappService.sendRestaurantMenu(
-        body.to,
-        testMenuItems,
-      );
+      const result = await this.whatsappService.sendRestaurantMenu(body.to, testMenuItems);
 
       return {
         success: result.success,
@@ -524,23 +492,15 @@ export class WhatsAppController {
         error: result.error,
       };
     } catch (error) {
-      this.logger.error("Test menu error:", error.message);
-      throw new HttpException(
-        "Failed to send test menu",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error('Test menu error:', error.message);
+      throw new HttpException('Failed to send test menu', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  @Post("test-reservation")
-  async sendTestReservation(
-    @Body() body: { to: string; customerName?: string },
-  ) {
+  @Post('test-reservation')
+  async sendTestReservation(@Body() body: { to: string; customerName?: string }) {
     try {
-      const result = await this.whatsappService.sendReservationOptions(
-        body.to,
-        body.customerName,
-      );
+      const result = await this.whatsappService.sendReservationOptions(body.to, body.customerName);
 
       return {
         success: result.success,
@@ -548,15 +508,15 @@ export class WhatsAppController {
         error: result.error,
       };
     } catch (error) {
-      this.logger.error("Test reservation error:", error.message);
+      this.logger.error('Test reservation error:', error.message);
       throw new HttpException(
-        "Failed to send test reservation options",
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to send test reservation options',
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
 
-  @Post("test-order")
+  @Post('test-order')
   async sendTestOrder(@Body() body: { to: string }) {
     try {
       const result = await this.whatsappService.sendOrderOptions(body.to);
@@ -567,10 +527,10 @@ export class WhatsAppController {
         error: result.error,
       };
     } catch (error) {
-      this.logger.error("Test order error:", error.message);
+      this.logger.error('Test order error:', error.message);
       throw new HttpException(
-        "Failed to send test order options",
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to send test order options',
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }

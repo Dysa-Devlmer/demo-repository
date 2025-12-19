@@ -14,6 +14,9 @@ module.exports = {
   ],
   coverageDirectory: './coverage',
   testEnvironment: 'node',
+  watchman: false,
+  maxWorkers: 1,
+  setupFiles: ['<rootDir>/test/jest.setup.ts'],
   roots: ['<rootDir>/src/', '<rootDir>/test/'],
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/src/$1',

@@ -6,48 +6,48 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
-} from "typeorm";
-import { Customer } from "./customer.entity";
-import { User } from "../auth/entities/user.entity";
+} from 'typeorm';
+import { Customer } from './customer.entity';
+import { User } from '../auth/entities/user.entity';
 
 export enum NotificationType {
-  ORDER_STATUS = "order_status",
-  RESERVATION_REMINDER = "reservation_reminder",
-  PROMOTION = "promotion",
-  SYSTEM = "system",
-  REVIEW_REQUEST = "review_request",
-  DELIVERY_UPDATE = "delivery_update",
+  ORDER_STATUS = 'order_status',
+  RESERVATION_REMINDER = 'reservation_reminder',
+  PROMOTION = 'promotion',
+  SYSTEM = 'system',
+  REVIEW_REQUEST = 'review_request',
+  DELIVERY_UPDATE = 'delivery_update',
 }
 
 export enum NotificationStatus {
-  PENDING = "pending",
-  SENT = "sent",
-  DELIVERED = "delivered",
-  FAILED = "failed",
-  READ = "read",
+  PENDING = 'pending',
+  SENT = 'sent',
+  DELIVERED = 'delivered',
+  FAILED = 'failed',
+  READ = 'read',
 }
 
 export enum NotificationChannel {
-  WHATSAPP = "whatsapp",
-  EMAIL = "email",
-  SMS = "sms",
-  PUSH = "push",
-  IN_APP = "in_app",
+  WHATSAPP = 'whatsapp',
+  EMAIL = 'email',
+  SMS = 'sms',
+  PUSH = 'push',
+  IN_APP = 'in_app',
 }
 
-@Entity("notifications")
+@Entity('notifications')
 export class Notification {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: NotificationType,
   })
   type: NotificationType;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: NotificationChannel,
   })
   channel: NotificationChannel;
@@ -55,28 +55,28 @@ export class Notification {
   @Column({ length: 200 })
   title: string;
 
-  @Column({ type: "text" })
+  @Column({ type: 'text' })
   message: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: NotificationStatus,
     default: NotificationStatus.PENDING,
   })
   status: NotificationStatus;
 
   @ManyToOne(() => Customer, (customer) => customer.notifications, {
-    onDelete: "CASCADE",
+    onDelete: 'CASCADE',
     nullable: true,
   })
-  @JoinColumn({ name: "customer_id" })
+  @JoinColumn({ name: 'customer_id' })
   customer?: Customer;
 
   @ManyToOne(() => User, (user) => user.notifications, {
-    onDelete: "CASCADE",
+    onDelete: 'CASCADE',
     nullable: true,
   })
-  @JoinColumn({ name: "user_id" })
+  @JoinColumn({ name: 'user_id' })
   user?: User;
 
   @Column({ nullable: true })
@@ -94,14 +94,14 @@ export class Notification {
   @Column({ nullable: true })
   read_at?: Date;
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   template_data?: {
     variables?: Record<string, any>;
     template_id?: string;
     personalization?: Record<string, any>;
   };
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   delivery_info?: {
     provider?: string;
     message_id?: string;
@@ -110,11 +110,11 @@ export class Notification {
     error_message?: string;
   };
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata?: {
     campaign_id?: string;
     source?: string;
-    priority?: "low" | "medium" | "high";
+    priority?: 'low' | 'medium' | 'high';
     related_entity_type?: string;
     related_entity_id?: number;
   };

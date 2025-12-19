@@ -10,7 +10,7 @@
  * - Incident tracking
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EmailService } from '../../common/services/email.service';
@@ -73,11 +73,12 @@ interface AlertThrottle {
 }
 
 @Injectable()
-export class SecurityAlertsService {
+export class SecurityAlertsService implements OnModuleDestroy {
   private readonly logger = new Logger(SecurityAlertsService.name);
   private readonly throttleCache = new Map<string, AlertThrottle>();
   private readonly alertHistory: SecurityAlert[] = [];
   private readonly maxHistorySize = 10000;
+  private throttleCleanupInterval?: NodeJS.Timeout;
 
   // Default configuration
   private config: AlertConfig = {
@@ -99,7 +100,7 @@ export class SecurityAlertsService {
     private readonly emailService: EmailService,
     private readonly twilioService: TwilioService,
     @InjectRepository(AuditLog)
-    private readonly auditRepo: Repository<AuditLog>,
+    private readonly auditRepo: Repository<AuditLog>
   ) {
     this.startThrottleCleanup();
   }
@@ -147,7 +148,7 @@ export class SecurityAlertsService {
       const successCount = results.filter((r) => r.status === 'fulfilled').length;
 
       this.logger.log(
-        `Alert sent: ${fullAlert.type} | Priority: ${fullAlert.priority} | Channels: ${successCount}/${results.length}`,
+        `Alert sent: ${fullAlert.type} | Priority: ${fullAlert.priority} | Channels: ${successCount}/${results.length}`
       );
 
       return successCount > 0;
@@ -269,29 +270,37 @@ export class SecurityAlertsService {
             </tr>
           </table>
 
-          ${alert.affectedResources && alert.affectedResources.length > 0 ? `
+          ${
+            alert.affectedResources && alert.affectedResources.length > 0
+              ? `
           <!-- Affected Resources -->
           <div style="margin-bottom: 20px;">
             <h3 style="color: #333; font-size: 16px; margin: 0 0 10px 0;">
               📋 Affected Resources
             </h3>
             <ul style="margin: 0; padding-left: 20px; color: #555;">
-              ${alert.affectedResources.map(r => `<li style="margin-bottom: 5px;">${r}</li>`).join('')}
+              ${alert.affectedResources.map((r) => `<li style="margin-bottom: 5px;">${r}</li>`).join('')}
             </ul>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
-          ${alert.recommendedActions && alert.recommendedActions.length > 0 ? `
+          ${
+            alert.recommendedActions && alert.recommendedActions.length > 0
+              ? `
           <!-- Recommended Actions -->
           <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
             <h3 style="color: #856404; font-size: 16px; margin: 0 0 10px 0;">
               ⚠️ Recommended Actions
             </h3>
             <ol style="margin: 0; padding-left: 20px; color: #856404;">
-              ${alert.recommendedActions.map(a => `<li style="margin-bottom: 5px;">${a}</li>`).join('')}
+              ${alert.recommendedActions.map((a) => `<li style="margin-bottom: 5px;">${a}</li>`).join('')}
             </ol>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <!-- Action Button -->
           <div style="text-align: center; margin-top: 30px;">
@@ -391,7 +400,12 @@ export class SecurityAlertsService {
 
     // Check minimum priority
     if (filters.minPriority) {
-      const priorities = [AlertPriority.LOW, AlertPriority.MEDIUM, AlertPriority.HIGH, AlertPriority.CRITICAL];
+      const priorities = [
+        AlertPriority.LOW,
+        AlertPriority.MEDIUM,
+        AlertPriority.HIGH,
+        AlertPriority.CRITICAL,
+      ];
       const minIndex = priorities.indexOf(filters.minPriority);
       const alertIndex = priorities.indexOf(alert.priority);
       if (alertIndex < minIndex) return false;
@@ -511,10 +525,13 @@ export class SecurityAlertsService {
    * Group alerts by type
    */
   private groupByType(alerts: SecurityAlert[]): Record<string, number> {
-    return alerts.reduce((acc, alert) => {
-      acc[alert.type] = (acc[alert.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    return alerts.reduce(
+      (acc, alert) => {
+        acc[alert.type] = (acc[alert.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
   }
 
   /**
@@ -536,17 +553,27 @@ export class SecurityAlertsService {
    * Cleanup old throttle entries periodically
    */
   private startThrottleCleanup(): void {
-    setInterval(() => {
-      const now = new Date();
-      const windowMs = this.config.throttleWindow * 60 * 1000;
+    this.throttleCleanupInterval = setInterval(
+      () => {
+        const now = new Date();
+        const windowMs = this.config.throttleWindow * 60 * 1000;
 
-      for (const [key, throttle] of this.throttleCache.entries()) {
-        const timeSinceFirst = now.getTime() - throttle.firstSeen.getTime();
-        if (timeSinceFirst > windowMs) {
-          this.throttleCache.delete(key);
+        for (const [key, throttle] of this.throttleCache.entries()) {
+          const timeSinceFirst = now.getTime() - throttle.firstSeen.getTime();
+          if (timeSinceFirst > windowMs) {
+            this.throttleCache.delete(key);
+          }
         }
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
+      },
+      5 * 60 * 1000
+    ); // Every 5 minutes
+  }
+
+  onModuleDestroy() {
+    if (this.throttleCleanupInterval) {
+      clearInterval(this.throttleCleanupInterval);
+      this.throttleCleanupInterval = undefined;
+    }
   }
 
   /**
@@ -646,6 +673,8 @@ export class SecurityAlertsService {
       ],
     };
 
-    return actions[auditLog.action] || ['Review security logs', 'Contact security team if suspicious'];
+    return (
+      actions[auditLog.action] || ['Review security logs', 'Contact security team if suspicious']
+    );
   }
 }

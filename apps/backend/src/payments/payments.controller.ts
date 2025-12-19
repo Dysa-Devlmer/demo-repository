@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Get, Headers, HttpCode, HttpStatus, Logger, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { MercadoPagoService } from './mercadopago.service';
 import { EmailService } from '../common/services/email.service';
@@ -12,7 +23,7 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly mercadoPagoService: MercadoPagoService,
-    private readonly emailService: EmailService,
+    private readonly emailService: EmailService
   ) {}
 
   /**
@@ -145,7 +156,7 @@ export class PaymentsController {
   async handleWebhook(
     @Body() webhookData: WebhookPaymentDto,
     @Headers('x-signature') signature?: string,
-    @Headers('x-request-id') requestId?: string,
+    @Headers('x-request-id') requestId?: string
   ) {
     this.logger.log(`Received webhook with request ID: ${requestId}`);
 
@@ -154,7 +165,7 @@ export class PaymentsController {
     const isValidSignature = this.mercadoPagoService.verifyWebhookSignature(
       signature || '',
       requestId || '',
-      dataId,
+      dataId
     );
 
     if (!isValidSignature) {

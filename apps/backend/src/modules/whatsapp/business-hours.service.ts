@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 export interface BusinessHours {
   dayOfWeek: number; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
@@ -23,25 +23,24 @@ export class BusinessHoursService {
 
   constructor(private configService: ConfigService) {
     // Get company information from environment variables
-    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
-    const restaurantPhone = this.configService.get<string>("RESTAURANT_PHONE") || "+56965419765";
-    const restaurantHours = this.configService.get<string>("RESTAURANT_HOURS") || "24/7 - Soporte automatizado";
-    const restaurantDescription = this.configService.get<string>("RESTAURANT_DESCRIPTION") || "Sistema de chatbot inteligente";
+    const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
+    const restaurantPhone = this.configService.get<string>('RESTAURANT_PHONE') || '+56965419765';
+    const restaurantHours =
+      this.configService.get<string>('RESTAURANT_HOURS') || '24/7 - Soporte automatizado';
+    const restaurantDescription =
+      this.configService.get<string>('RESTAURANT_DESCRIPTION') || 'Sistema de chatbot inteligente';
 
     this.config = {
-      timezone: this.configService.get(
-        "RESTAURANT_TIMEZONE",
-        "America/Santiago",
-      ),
+      timezone: this.configService.get('RESTAURANT_TIMEZONE', 'America/Santiago'),
       schedule: [
         // 24/7 availability for ChatBotDysa (can be customized per client)
-        { dayOfWeek: 0, openTime: "00:00", closeTime: "23:59" }, // Sunday
-        { dayOfWeek: 1, openTime: "00:00", closeTime: "23:59" }, // Monday
-        { dayOfWeek: 2, openTime: "00:00", closeTime: "23:59" }, // Tuesday
-        { dayOfWeek: 3, openTime: "00:00", closeTime: "23:59" }, // Wednesday
-        { dayOfWeek: 4, openTime: "00:00", closeTime: "23:59" }, // Thursday
-        { dayOfWeek: 5, openTime: "00:00", closeTime: "23:59" }, // Friday
-        { dayOfWeek: 6, openTime: "00:00", closeTime: "23:59" }, // Saturday
+        { dayOfWeek: 0, openTime: '00:00', closeTime: '23:59' }, // Sunday
+        { dayOfWeek: 1, openTime: '00:00', closeTime: '23:59' }, // Monday
+        { dayOfWeek: 2, openTime: '00:00', closeTime: '23:59' }, // Tuesday
+        { dayOfWeek: 3, openTime: '00:00', closeTime: '23:59' }, // Wednesday
+        { dayOfWeek: 4, openTime: '00:00', closeTime: '23:59' }, // Thursday
+        { dayOfWeek: 5, openTime: '00:00', closeTime: '23:59' }, // Friday
+        { dayOfWeek: 6, openTime: '00:00', closeTime: '23:59' }, // Saturday
       ],
       closedMessage: `🤖 *${restaurantName}*
 
@@ -68,18 +67,13 @@ ${restaurantPhone}
 ${restaurantHours}
 
 ¡Disculpa las molestias!`,
-      useTemplateWhenClosed: this.configService.get(
-        "USE_WHATSAPP_TEMPLATE_CLOSED",
-        "false",
-      ) === "true",
-      templateName: this.configService.get(
-        "WHATSAPP_CLOSED_TEMPLATE_NAME",
-        "",
-      ),
+      useTemplateWhenClosed:
+        this.configService.get('USE_WHATSAPP_TEMPLATE_CLOSED', 'false') === 'true',
+      templateName: this.configService.get('WHATSAPP_CLOSED_TEMPLATE_NAME', ''),
     };
 
     this.logger.log(
-      `Business hours configured: ${this.config.timezone}, Template mode: ${this.config.useTemplateWhenClosed}`,
+      `Business hours configured: ${this.config.timezone}, Template mode: ${this.config.useTemplateWhenClosed}`
     );
   }
 
@@ -92,16 +86,16 @@ ${restaurantHours}
       const now = new Date();
 
       // Get current time in restaurant's timezone
-      const localTime = new Intl.DateTimeFormat("en-US", {
+      const localTime = new Intl.DateTimeFormat('en-US', {
         timeZone: this.config.timezone,
-        hour: "2-digit",
-        minute: "2-digit",
+        hour: '2-digit',
+        minute: '2-digit',
         hour12: false,
       }).format(now);
 
-      const localDay = new Intl.DateTimeFormat("en-US", {
+      const localDay = new Intl.DateTimeFormat('en-US', {
         timeZone: this.config.timezone,
-        weekday: "short",
+        weekday: 'short',
       }).format(now);
 
       // Convert day name to number
@@ -118,9 +112,7 @@ ${restaurantHours}
       const currentDayOfWeek = dayMap[localDay];
 
       // Find schedule for current day
-      const todaySchedule = this.config.schedule.find(
-        (s) => s.dayOfWeek === currentDayOfWeek,
-      );
+      const todaySchedule = this.config.schedule.find((s) => s.dayOfWeek === currentDayOfWeek);
 
       if (!todaySchedule) {
         this.logger.warn(`No schedule found for day ${currentDayOfWeek}`);
@@ -132,16 +124,15 @@ ${restaurantHours}
       const openMinutes = this.timeToMinutes(todaySchedule.openTime);
       const closeMinutes = this.timeToMinutes(todaySchedule.closeTime);
 
-      const isCurrentlyOpen =
-        currentMinutes >= openMinutes && currentMinutes < closeMinutes;
+      const isCurrentlyOpen = currentMinutes >= openMinutes && currentMinutes < closeMinutes;
 
       this.logger.debug(
-        `Business hours check: Day=${localDay} Time=${localTime} Open=${todaySchedule.openTime}-${todaySchedule.closeTime} Status=${isCurrentlyOpen ? "OPEN" : "CLOSED"}`,
+        `Business hours check: Day=${localDay} Time=${localTime} Open=${todaySchedule.openTime}-${todaySchedule.closeTime} Status=${isCurrentlyOpen ? 'OPEN' : 'CLOSED'}`
       );
 
       return isCurrentlyOpen;
     } catch (error) {
-      this.logger.error("Error checking business hours:", error.message);
+      this.logger.error('Error checking business hours:', error.message);
       // Default to open on error to avoid blocking legitimate messages
       return true;
     }
@@ -153,9 +144,7 @@ ${restaurantHours}
    * @returns the message to send
    */
   getClosedMessage(systemOffline: boolean = false): string {
-    return systemOffline
-      ? this.config.offlineMessage
-      : this.config.closedMessage;
+    return systemOffline ? this.config.offlineMessage : this.config.closedMessage;
   }
 
   /**
@@ -193,7 +182,7 @@ ${restaurantHours}
    * Convert time string "HH:mm" to minutes since midnight
    */
   private timeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(":").map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;
   }
 
@@ -201,7 +190,7 @@ ${restaurantHours}
    * Format schedule for human-readable display
    */
   private formatSchedule(): string {
-    const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
     // Group consecutive days with same hours
     const groups: Array<{
@@ -234,11 +223,11 @@ ${restaurantHours}
           group.days.length === 1
             ? days[group.days[0]]
             : group.days.length === 7
-              ? "Todos los días"
+              ? 'Todos los días'
               : `${days[group.days[0]]} - ${days[group.days[group.days.length - 1]]}`;
 
         return `${dayRange}: ${group.openTime} - ${group.closeTime}`;
       })
-      .join("\n");
+      .join('\n');
   }
 }

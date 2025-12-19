@@ -34,7 +34,7 @@ export class DashboardAnalyticsService {
     @InjectRepository(Customer)
     private readonly customersRepo: Repository<Customer>,
     @InjectRepository(Conversation)
-    private readonly conversationsRepo: Repository<Conversation>,
+    private readonly conversationsRepo: Repository<Conversation>
   ) {}
 
   /**
@@ -90,7 +90,8 @@ export class DashboardAnalyticsService {
    * Get order distribution by status
    */
   async getOrdersByStatus(): Promise<DistributionDataPoint[]> {
-    const orders = await this.ordersRepo.createQueryBuilder('order')
+    const orders = await this.ordersRepo
+      .createQueryBuilder('order')
       .select('order.status', 'status')
       .addSelect('COUNT(*)', 'count')
       .groupBy('order.status')
@@ -115,7 +116,8 @@ export class DashboardAnalyticsService {
    * Get customer distribution by source
    */
   async getCustomersBySource(): Promise<DistributionDataPoint[]> {
-    const customers = await this.customersRepo.createQueryBuilder('customer')
+    const customers = await this.customersRepo
+      .createQueryBuilder('customer')
       .select('customer.source', 'source')
       .addSelect('COUNT(*)', 'count')
       .where('customer.source IS NOT NULL')
@@ -160,7 +162,7 @@ export class DashboardAnalyticsService {
     period: Period,
     conversations: any[],
     orders: any[],
-    startDate: Date,
+    startDate: Date
   ): TrendDataPoint[] {
     if (period === '7d') {
       // Group by day of week
@@ -261,11 +263,7 @@ export class DashboardAnalyticsService {
   /**
    * Group revenue by period buckets
    */
-  private groupRevenueByPeriod(
-    period: Period,
-    orders: any[],
-    startDate: Date,
-  ): RevenueDataPoint[] {
+  private groupRevenueByPeriod(period: Period, orders: any[], startDate: Date): RevenueDataPoint[] {
     if (period === '7d') {
       const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
       const buckets: Record<string, number> = {};

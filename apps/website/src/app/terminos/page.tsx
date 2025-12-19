@@ -51,7 +51,7 @@ export default function TerminosPage() {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Aceptacion de los Terminos</h2>
               <p className="text-gray-700 leading-relaxed">
-                Al acceder y utilizar ChatBotDysa Enterprise+++++ ("el Servicio"), usted acepta estar sujeto a estos terminos y condiciones. Si no esta de acuerdo con alguna parte de estos terminos, no podra acceder al servicio.
+                Al acceder y utilizar ChatBotDysa Enterprise+++++ (&quot;el Servicio&quot;), usted acepta estar sujeto a estos terminos y condiciones. Si no esta de acuerdo con alguna parte de estos terminos, no podra acceder al servicio.
               </p>
             </section>
 

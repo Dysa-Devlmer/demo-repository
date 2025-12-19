@@ -7,19 +7,18 @@ import {
   ManyToMany,
   JoinTable,
   OneToMany,
-} from "typeorm";
-import { Role } from "./role.entity";
-import { AuditLog } from "./audit-log.entity";
-import { Notification } from "../../entities/notification.entity";
+} from 'typeorm';
+import { Role } from './role.entity';
+import { Notification } from '../../entities/notification.entity';
 
 export enum UserStatus {
-  ACTIVE = "active",
-  INACTIVE = "inactive",
-  SUSPENDED = "suspended",
-  PENDING = "pending",
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended',
+  PENDING = 'pending',
 }
 
-@Entity("users")
+@Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -43,7 +42,7 @@ export class User {
   avatar: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: UserStatus,
     default: UserStatus.ACTIVE,
   })
@@ -92,19 +91,16 @@ export class User {
   emailVerificationToken: string;
 
   // Legacy role field for backward compatibility
-  @Column({ default: "user" })
-  role: "user" | "admin";
+  @Column({ default: 'user' })
+  role: 'user' | 'admin';
 
   @ManyToMany(() => Role, (role) => role.users, { eager: true })
   @JoinTable({
-    name: "user_roles",
-    joinColumn: { name: "userId", referencedColumnName: "id" },
-    inverseJoinColumn: { name: "roleId", referencedColumnName: "id" },
+    name: 'user_roles',
+    joinColumn: { name: 'userId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'roleId', referencedColumnName: 'id' },
   })
   roles: Role[];
-
-  @OneToMany(() => AuditLog, (log) => log.user)
-  auditLogs: AuditLog[];
 
   @OneToMany(() => Notification, (notification) => notification.user)
   notifications: Notification[];
@@ -143,9 +139,7 @@ export class User {
 
   hasPermission(permission: string): boolean {
     return (
-      this.roles?.some((role) =>
-        role.permissions?.some((p) => p.name === permission),
-      ) || false
+      this.roles?.some((role) => role.permissions?.some((p) => p.name === permission)) || false
     );
   }
 

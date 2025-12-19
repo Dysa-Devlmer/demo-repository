@@ -1,8 +1,8 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
-import { AppService } from "./app.service";
-import { JwtAuthGuard } from "./common/guards/jwt-auth.guard";
-import { PermissionsGuard } from "./auth/guards/permissions.guard";
-import { RequirePermissions, PERMISSIONS } from "./auth/decorators/permissions.decorator";
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { AppService } from './app.service';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { PermissionsGuard } from './auth/guards/permissions.guard';
+import { RequirePermissions, PERMISSIONS } from './auth/decorators/permissions.decorator';
 
 @Controller()
 export class AppController {
@@ -27,10 +27,10 @@ export class AppController {
         todayMessages: 156,
         pendingOrders: 12,
         satisfactionRate: 4.8,
-        responseTime: '2.3 min'
+        responseTime: '2.3 min',
       },
       timestamp: new Date().toISOString(),
-      path: '/api/dashboard/stats'
+      path: '/api/dashboard/stats',
     };
   }
 
@@ -49,7 +49,7 @@ export class AppController {
           avgSessionDuration: '4m 23s',
           sessionTrend: '+5.1%',
           customerSatisfaction: 4.8,
-          satisfactionTrend: '+2.3%'
+          satisfactionTrend: '+2.3%',
         },
         charts: {
           conversationsOverTime: [
@@ -59,23 +59,23 @@ export class AppController {
             { date: '2025-09-23', conversations: 298 },
             { date: '2025-09-24', conversations: 356 },
             { date: '2025-09-25', conversations: 401 },
-            { date: '2025-09-26', conversations: 423 }
+            { date: '2025-09-26', conversations: 423 },
           ],
           topChannels: [
             { channel: 'WhatsApp', conversations: 1247, percentage: 58 },
             { channel: 'Web Widget', conversations: 623, percentage: 29 },
-            { channel: 'Telegram', conversations: 278, percentage: 13 }
+            { channel: 'Telegram', conversations: 278, percentage: 13 },
           ],
           responseMetrics: {
             avgResponseTime: 2.3,
             firstResponseTime: 1.8,
             resolutionTime: 8.5,
-            customerSatisfactionScore: 4.8
-          }
-        }
+            customerSatisfactionScore: 4.8,
+          },
+        },
       },
       timestamp: new Date().toISOString(),
-      path: '/api/analytics/dashboard'
+      path: '/api/analytics/dashboard',
     };
   }
 
@@ -94,7 +94,7 @@ export class AppController {
           website: 'https://restauranteelite.com',
           timezone: 'America/Mexico_City',
           currency: 'USD',
-          language: 'es'
+          language: 'es',
         },
         business: {
           openingHours: {
@@ -104,11 +104,11 @@ export class AppController {
             thursday: { open: '09:00', close: '22:00', closed: false },
             friday: { open: '09:00', close: '23:00', closed: false },
             saturday: { open: '10:00', close: '23:00', closed: false },
-            sunday: { open: '10:00', close: '21:00', closed: false }
+            sunday: { open: '10:00', close: '21:00', closed: false },
           },
           tableCapacity: 120,
           averageServiceTime: 45,
-          deliveryRadius: 15
+          deliveryRadius: 15,
         },
         communications: {
           whatsapp: {
@@ -116,21 +116,21 @@ export class AppController {
             phoneNumber: '+1234567890',
             apiKey: '***hidden***',
             webhookUrl: 'https://api.chatbotdysa.com/webhook/whatsapp',
-            businessVerified: true
+            businessVerified: true,
           },
           twilio: {
             enabled: true,
             accountSid: '***hidden***',
             authToken: '***hidden***',
-            phoneNumber: '+1234567891'
+            phoneNumber: '+1234567891',
           },
           email: {
             enabled: true,
             smtpHost: 'smtp.gmail.com',
             smtpPort: 587,
             smtpUser: 'noreply@restauranteelite.com',
-            smtpPassword: '***hidden***'
-          }
+            smtpPassword: '***hidden***',
+          },
         },
         ai: {
           provider: 'openai',
@@ -138,9 +138,10 @@ export class AppController {
           apiKey: '***hidden***',
           maxTokens: 150,
           temperature: 0.7,
-          personalityPrompt: 'Eres un asistente virtual amigable y profesional de un restaurante de alta calidad. Ayudas a los clientes con reservas, pedidos y consultas generales.',
+          personalityPrompt:
+            'Eres un asistente virtual amigable y profesional de un restaurante de alta calidad. Ayudas a los clientes con reservas, pedidos y consultas generales.',
           autoResponses: true,
-          learningMode: true
+          learningMode: true,
         },
         notifications: {
           newOrders: true,
@@ -149,11 +150,11 @@ export class AppController {
           systemAlerts: true,
           email: true,
           sms: false,
-          push: true
-        }
+          push: true,
+        },
       },
       timestamp: new Date().toISOString(),
-      path: '/api/settings'
+      path: '/api/settings',
     };
   }
 }

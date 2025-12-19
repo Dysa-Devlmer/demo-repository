@@ -76,7 +76,8 @@ export class EmailService {
     }
 
     try {
-      const fromEmail = this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
+      const fromEmail =
+        this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
       const templateId = this.configService.get<string>('SENDGRID_TEMPLATE_PAYMENT_CONFIRMATION');
 
       const msg: any = {
@@ -124,7 +125,8 @@ export class EmailService {
     }
 
     try {
-      const fromEmail = this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
+      const fromEmail =
+        this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
       const templateId = this.configService.get<string>('SENDGRID_TEMPLATE_WELCOME');
 
       const msg: any = {
@@ -168,7 +170,8 @@ export class EmailService {
     }
 
     try {
-      const fromEmail = this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
+      const fromEmail =
+        this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
       const templateId = this.configService.get<string>('SENDGRID_TEMPLATE_PAYMENT_FAILED');
 
       const msg: any = {
@@ -207,7 +210,7 @@ export class EmailService {
     subject: string,
     html: string,
     templateId?: string,
-    templateData?: any,
+    templateData?: any
   ): Promise<boolean> {
     this.logger.log(`Enviando email genérico a: ${to}`);
 
@@ -219,7 +222,8 @@ export class EmailService {
     }
 
     try {
-      const fromEmail = this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
+      const fromEmail =
+        this.configService.get<string>('SENDGRID_FROM_EMAIL') || 'noreply@chatbotdysa.com';
 
       const msg: sgMail.MailDataRequired = {
         to,

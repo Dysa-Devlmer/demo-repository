@@ -1,10 +1,10 @@
-import { Module, Global } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { DatabaseService } from "./database.service";
-import * as entities from "./entities";
-import { CacheModule } from "@nestjs/cache-manager";
-import { redisStore } from "cache-manager-ioredis-yet";
+import { Module, Global } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DatabaseService } from './database.service';
+import * as entities from './entities';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-ioredis-yet';
 
 @Global()
 @Module({
@@ -15,35 +15,71 @@ import { redisStore } from "cache-manager-ioredis-yet";
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: "postgres",
-        host: config.get<string>("DATABASE_HOST", "localhost"),
-        port: config.get<number>("DATABASE_PORT", 5432),
-        username: config.get<string>("DATABASE_USER", "postgres"),
-        password:
-          config.get<string>("DATABASE_PASS") ??
-          config.get<string>("DATABASE_PASSWORD", "supersecret"),
-        database: config.get<string>("DATABASE_NAME", "chatbotdysa"),
-        entities: Object.values(entities),
-        // ⚠️ IMPORTANTE: synchronize debe ser false cuando usas migraciones
-        synchronize: false, // SIEMPRE false - usamos migraciones para control de schema
-        migrationsRun: false, // DESHABILITADO: ejecutar manualmente con npm run typeorm:run
-        migrations: [__dirname + "/migrations/*{.ts,.js}"],
-        migrationsTableName: "migrations", // Nombre correcto de la tabla
-        autoLoadEntities: true,
-        retryAttempts: 10,
-        retryDelay: 3000,
-        logging: ["error", "migration"],
-        ssl: false,
-      }),
+      useFactory: (config: ConfigService) => {
+        const isTest =
+          config.get<string>('NODE_ENV') === 'test' || Boolean(process.env.JEST_WORKER_ID);
+        const databaseHost = isTest
+          ? process.env.DATABASE_HOST || '127.0.0.1'
+          : config.get<string>('DATABASE_HOST', 'localhost');
+        const databasePort = isTest
+          ? Number(process.env.DATABASE_PORT) || 5432
+          : Number(config.get<string>('DATABASE_PORT')) || 5432;
+        const databaseName = isTest
+          ? process.env.DATABASE_NAME || 'chatbotdysa_test'
+          : config.get<string>('DATABASE_NAME', 'chatbotdysa');
+        const databaseUser = isTest
+          ? process.env.DATABASE_USER || 'postgres'
+          : config.get<string>('DATABASE_USER', 'postgres');
+        const databasePassword = isTest
+          ? process.env.DATABASE_PASS ||
+            process.env.DATABASE_PASSWORD ||
+            'supersecret'
+          : config.get<string>('DATABASE_PASS') ??
+            config.get<string>('DATABASE_PASSWORD', 'supersecret');
+
+        return {
+          type: 'postgres',
+          host: databaseHost,
+          port: databasePort,
+          username: databaseUser,
+          password: databasePassword,
+          database: databaseName,
+          entities: Object.values(entities),
+          // ⚠️ IMPORTANTE: synchronize debe ser false cuando usas migraciones
+          synchronize: isTest, // en tests se habilita para crear schema automaticamente
+          dropSchema: isTest, // limpiar schema de tests para evitar conflictos
+          migrationsRun: false, // DESHABILITADO: ejecutar manualmente con npm run typeorm:run
+          migrations: [__dirname + '/migrations/*{.ts,.js}'],
+          migrationsTableName: 'migrations', // Nombre correcto de la tabla
+          autoLoadEntities: true,
+          retryAttempts: isTest ? 3 : 10,
+          retryDelay: isTest ? 500 : 3000,
+          logging: isTest ? ['error'] : ['error', 'migration'],
+          ssl: false,
+        };
+      },
     }),
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => {
-        const redisHost = config.get<string>("REDIS_HOST", "redis");
-        const redisPort = config.get<number>("REDIS_PORT", 6379);
+        const isTest =
+          config.get<string>('NODE_ENV') === 'test' || Boolean(process.env.JEST_WORKER_ID);
+
+        if (isTest) {
+          return {
+            ttl: 60 * 5,
+            max: 1000,
+          };
+        }
+
+        const redisHost = isTest
+          ? process.env.REDIS_HOST || '127.0.0.1'
+          : config.get<string>('REDIS_HOST', 'redis');
+        const redisPort = isTest
+          ? Number(process.env.REDIS_PORT) || 6379
+          : Number(config.get<string>('REDIS_PORT')) || 6379;
 
         console.log(`[Redis] Connecting to ${redisHost}:${redisPort}`);
 

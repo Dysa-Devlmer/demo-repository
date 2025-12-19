@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateSettingsTables1728235000000 implements MigrationInterface {
-    name = 'CreateSettingsTables1728235000000'
+  name = 'CreateSettingsTables1728235000000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Create settings enum type
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create settings enum type
+    await queryRunner.query(`
             DO $$ BEGIN
                 CREATE TYPE "setting_status_enum" AS ENUM ('active', 'draft', 'archived');
             EXCEPTION
@@ -13,7 +13,7 @@ export class CreateSettingsTables1728235000000 implements MigrationInterface {
             END $$;
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             DO $$ BEGIN
                 CREATE TYPE "setting_category_enum" AS ENUM (
                     'restaurant', 'whatsapp', 'twilio', 'ollama',
@@ -24,7 +24,7 @@ export class CreateSettingsTables1728235000000 implements MigrationInterface {
             END $$;
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             DO $$ BEGIN
                 CREATE TYPE "setting_change_action_enum" AS ENUM (
                     'created', 'updated', 'deleted', 'activated', 'archived'
@@ -34,8 +34,8 @@ export class CreateSettingsTables1728235000000 implements MigrationInterface {
             END $$;
         `);
 
-        // Create settings table
-        await queryRunner.query(`
+    // Create settings table
+    await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "settings" (
                 "id" SERIAL PRIMARY KEY,
                 "key" VARCHAR NOT NULL UNIQUE,
@@ -52,8 +52,8 @@ export class CreateSettingsTables1728235000000 implements MigrationInterface {
             );
         `);
 
-        // Create setting_history table
-        await queryRunner.query(`
+    // Create setting_history table
+    await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "setting_history" (
                 "id" SERIAL PRIMARY KEY,
                 "setting_id" INTEGER NOT NULL,
@@ -71,30 +71,30 @@ export class CreateSettingsTables1728235000000 implements MigrationInterface {
             );
         `);
 
-        // Create indexes for settings
-        await queryRunner.query(`
+    // Create indexes for settings
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_settings_key"
             ON "settings" ("key");
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_settings_category_key"
             ON "settings" ("category", "key");
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_settings_status"
             ON "settings" ("status");
         `);
 
-        // Create indexes for setting_history
-        await queryRunner.query(`
+    // Create indexes for setting_history
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_setting_history_setting_id"
             ON "setting_history" ("setting_id", "created_at");
         `);
 
-        // Insert default settings
-        await queryRunner.query(`
+    // Insert default settings
+    await queryRunner.query(`
             INSERT INTO "settings" ("key", "value", "category", "description", "is_required")
             VALUES
                 ('app.name', 'ChatBotDysa Enterprise', 'general', 'Nombre de la aplicación', true),
@@ -109,16 +109,16 @@ export class CreateSettingsTables1728235000000 implements MigrationInterface {
                 ('ollama.model', 'llama3.2', 'ollama', 'Modelo de Ollama', false)
             ON CONFLICT ("key") DO NOTHING;
         `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // Drop tables
-        await queryRunner.query(`DROP TABLE IF EXISTS "setting_history"`);
-        await queryRunner.query(`DROP TABLE IF EXISTS "settings"`);
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop tables
+    await queryRunner.query(`DROP TABLE IF EXISTS "setting_history"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "settings"`);
 
-        // Drop enum types
-        await queryRunner.query(`DROP TYPE IF EXISTS "setting_change_action_enum"`);
-        await queryRunner.query(`DROP TYPE IF EXISTS "setting_category_enum"`);
-        await queryRunner.query(`DROP TYPE IF EXISTS "setting_status_enum"`);
-    }
+    // Drop enum types
+    await queryRunner.query(`DROP TYPE IF EXISTS "setting_change_action_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "setting_category_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "setting_status_enum"`);
+  }
 }

@@ -6,13 +6,7 @@
  * para operaciones críticas del sistema
  */
 
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Request, Response } from 'express';
@@ -69,7 +63,7 @@ export class AuditInterceptor implements NestInterceptor {
     // Log de la solicitud
     if (isCritical || isMutation) {
       this.logger.log(
-        `[AUDIT] ${method} ${originalUrl} - User: ${user?.email || 'Anonymous'} - IP: ${ip}`,
+        `[AUDIT] ${method} ${originalUrl} - User: ${user?.email || 'Anonymous'} - IP: ${ip}`
       );
     }
 
@@ -114,7 +108,7 @@ export class AuditInterceptor implements NestInterceptor {
         }
 
         throw error;
-      }),
+      })
     );
   }
 

@@ -26,13 +26,13 @@ export class ReportStorageService {
     // Storage directory
     this.storageDir = this.config.get<string>(
       'REPORTS_STORAGE_DIR',
-      path.join(process.cwd(), 'storage', 'reports'),
+      path.join(process.cwd(), 'storage', 'reports')
     );
 
     // Base URL for accessing files
     this.baseUrl = this.config.get<string>(
       'REPORTS_BASE_URL',
-      'http://localhost:8005/api/reports/files',
+      'http://localhost:8005/api/reports/files'
     );
 
     // Ensure storage directory exists
@@ -56,11 +56,7 @@ export class ReportStorageService {
   /**
    * Store report file
    */
-  async storeReport(
-    reportId: number,
-    format: string,
-    buffer: Buffer,
-  ): Promise<StoredFile> {
+  async storeReport(reportId: number, format: string, buffer: Buffer): Promise<StoredFile> {
     const timestamp = Date.now();
     const filename = `report_${reportId}_${timestamp}.${format}`;
     const filePath = path.join(this.storageDir, filename);
@@ -70,9 +66,7 @@ export class ReportStorageService {
 
       const stats = fs.statSync(filePath);
 
-      this.logger.log(
-        `Stored report file: ${filename} (${stats.size} bytes)`,
-      );
+      this.logger.log(`Stored report file: ${filename} (${stats.size} bytes)`);
 
       return {
         filename,
@@ -171,7 +165,7 @@ export class ReportStorageService {
       }
 
       this.logger.log(
-        `Cleanup completed: ${deletedCount} files deleted (older than ${daysOld} days)`,
+        `Cleanup completed: ${deletedCount} files deleted (older than ${daysOld} days)`
       );
       return deletedCount;
     } catch (error) {

@@ -19,18 +19,15 @@ export class CacheInterceptor implements NestInterceptor {
 
   constructor(
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
-    private reflector: Reflector,
+    private reflector: Reflector
   ) {}
 
-  async intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Promise<Observable<any>> {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     // Check if cache is disabled for this endpoint
-    const cacheDisabled = this.reflector.getAllAndOverride<boolean>(
-      'cache:disabled',
-      [context.getHandler(), context.getClass()],
-    );
+    const cacheDisabled = this.reflector.getAllAndOverride<boolean>('cache:disabled', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (cacheDisabled) {
       return next.handle();
@@ -43,9 +40,10 @@ export class CacheInterceptor implements NestInterceptor {
     }
 
     // Get cache key from metadata or generate from URL
-    const cacheKeyMetadata = this.reflector.getAllAndOverride<
-      string | ((req: any) => string)
-    >(CACHE_KEY_METADATA, [context.getHandler(), context.getClass()]);
+    const cacheKeyMetadata = this.reflector.getAllAndOverride<string | ((req: any) => string)>(
+      CACHE_KEY_METADATA,
+      [context.getHandler(), context.getClass()]
+    );
 
     const cacheKey =
       typeof cacheKeyMetadata === 'function'
@@ -74,13 +72,11 @@ export class CacheInterceptor implements NestInterceptor {
         tap(async (response) => {
           try {
             await this.cacheManager.set(cacheKey, response, ttl);
-            this.logger.debug(
-              `Cache SET: ${cacheKey} (TTL: ${ttl || 'default'}s)`,
-            );
+            this.logger.debug(`Cache SET: ${cacheKey} (TTL: ${ttl || 'default'}s)`);
           } catch (error) {
             this.logger.error(`Failed to set cache for ${cacheKey}:`, error);
           }
-        }),
+        })
       );
     } catch (error) {
       this.logger.error(`Cache error for ${cacheKey}:`, error);
@@ -91,12 +87,12 @@ export class CacheInterceptor implements NestInterceptor {
 
   private async handleInvalidation(
     context: ExecutionContext,
-    next: CallHandler,
+    next: CallHandler
   ): Promise<Observable<any>> {
-    const invalidatePatterns = this.reflector.getAllAndOverride<string[]>(
-      'cache:invalidate',
-      [context.getHandler(), context.getClass()],
-    );
+    const invalidatePatterns = this.reflector.getAllAndOverride<string[]>('cache:invalidate', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!invalidatePatterns || invalidatePatterns.length === 0) {
       return next.handle();
@@ -110,13 +106,10 @@ export class CacheInterceptor implements NestInterceptor {
             await this.invalidatePattern(pattern);
             this.logger.debug(`Cache invalidated: ${pattern}`);
           } catch (error) {
-            this.logger.error(
-              `Failed to invalidate cache for ${pattern}:`,
-              error,
-            );
+            this.logger.error(`Failed to invalidate cache for ${pattern}:`, error);
           }
         }
-      }),
+      })
     );
   }
 

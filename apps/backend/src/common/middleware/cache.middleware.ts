@@ -21,7 +21,7 @@ export class CacheMiddleware implements NestMiddleware {
 
     // Skip caching for auth and dynamic endpoints
     const skipPaths = ['/auth', '/ws', '/api/health'];
-    if (skipPaths.some(path => req.path.includes(path))) {
+    if (skipPaths.some((path) => req.path.includes(path))) {
       return next();
     }
 
@@ -80,10 +80,10 @@ export class CacheMiddleware implements NestMiddleware {
   private getTTL(path: string): number {
     // Different TTL for different endpoints
     const ttlMap: Record<string, number> = {
-      '/api/orders/stats': 5 * 60 * 1000,    // 5 minutes for stats
-      '/api/analytics': 10 * 60 * 1000,      // 10 minutes for analytics
-      '/api/orders': 30 * 1000,              // 30 seconds for orders list
-      '/api/customers': 2 * 60 * 1000,       // 2 minutes for customers
+      '/api/orders/stats': 5 * 60 * 1000, // 5 minutes for stats
+      '/api/analytics': 10 * 60 * 1000, // 10 minutes for analytics
+      '/api/orders': 30 * 1000, // 30 seconds for orders list
+      '/api/customers': 2 * 60 * 1000, // 2 minutes for customers
     };
 
     for (const [pathPattern, ttl] of Object.entries(ttlMap)) {

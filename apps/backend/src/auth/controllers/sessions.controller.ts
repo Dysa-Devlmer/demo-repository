@@ -10,13 +10,7 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { SessionsService } from '../services/sessions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -188,10 +182,7 @@ export class SessionsController {
       throw new BadRequestException('Current token not found');
     }
 
-    const revokedCount = await this.sessionsService.revokeAllOtherSessions(
-      userId,
-      currentToken
-    );
+    const revokedCount = await this.sessionsService.revokeAllOtherSessions(userId, currentToken);
 
     return {
       success: true,

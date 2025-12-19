@@ -19,7 +19,7 @@ import { LearningExperience } from '../../entities/learning-experience.entity';
 
 export interface ExperienceFeatures {
   wordCount: number;
-  sentiment: number;  // -1 a 1
+  sentiment: number; // -1 a 1
   complexity: number; // 1-10
   keywords: string[];
   intent: string;
@@ -71,7 +71,7 @@ export class LearningMemoryService {
 
   constructor(
     @InjectRepository(LearningExperience)
-    private experienceRepo: Repository<LearningExperience>,
+    private experienceRepo: Repository<LearningExperience>
   ) {
     this.loadQTable();
   }
@@ -110,26 +110,56 @@ export class LearningMemoryService {
 
     // Indicadores de formalidad
     const formalIndicators = [
-      'usted', 'estimado', 'cordialmente', 'atentamente', 'por favor',
-      'sería tan amable', 'podría', 'quisiera', 'le agradecería',
-      'buenos días', 'buenas tardes', 'buenas noches', 'disculpe',
+      'usted',
+      'estimado',
+      'cordialmente',
+      'atentamente',
+      'por favor',
+      'sería tan amable',
+      'podría',
+      'quisiera',
+      'le agradecería',
+      'buenos días',
+      'buenas tardes',
+      'buenas noches',
+      'disculpe',
     ];
 
     // Indicadores de informalidad
     const informalIndicators = [
-      'hola', 'hey', 'que tal', 'como estas', 'wena', 'oye', 'mira',
-      'porfa', 'plis', 'dale', 'va', 'oka', 'ok', 'sip', 'nop',
-      'jaja', 'jeje', 'xd', 'lol', 'bro', 'wey', 'tío', 'crack',
+      'hola',
+      'hey',
+      'que tal',
+      'como estas',
+      'wena',
+      'oye',
+      'mira',
+      'porfa',
+      'plis',
+      'dale',
+      'va',
+      'oka',
+      'ok',
+      'sip',
+      'nop',
+      'jaja',
+      'jeje',
+      'xd',
+      'lol',
+      'bro',
+      'wey',
+      'tío',
+      'crack',
     ];
 
     let formalScore = 0;
     let informalScore = 0;
 
-    formalIndicators.forEach(word => {
+    formalIndicators.forEach((word) => {
       if (lower.includes(word)) formalScore++;
     });
 
-    informalIndicators.forEach(word => {
+    informalIndicators.forEach((word) => {
       if (lower.includes(word)) informalScore++;
     });
 
@@ -146,7 +176,8 @@ export class LearningMemoryService {
    * Detecta si el mensaje usa emojis
    */
   private detectEmojis(message: string): boolean {
-    const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]/u;
+    const emojiRegex =
+      /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]/u;
     return emojiRegex.test(message);
   }
 
@@ -166,7 +197,13 @@ export class LearningMemoryService {
   private detectPoliteness(message: string): 'very_polite' | 'polite' | 'casual' | 'direct' {
     const lower = message.toLowerCase();
 
-    const veryPoliteWords = ['por favor', 'sería tan amable', 'le agradecería', 'disculpe', 'perdone'];
+    const veryPoliteWords = [
+      'por favor',
+      'sería tan amable',
+      'le agradecería',
+      'disculpe',
+      'perdone',
+    ];
     const politeWords = ['gracias', 'buenos días', 'buenas', 'podría', 'quisiera'];
     const casualWords = ['hola', 'hey', 'oye', 'dale', 'va'];
 
@@ -191,17 +228,26 @@ export class LearningMemoryService {
   private detectLanguage(message: string): 'spanish' | 'english' | 'mixed' {
     const lower = message.toLowerCase();
 
-    const spanishWords = ['hola', 'gracias', 'por favor', 'quiero', 'menú', 'mesa', 'reserva', 'pedido'];
+    const spanishWords = [
+      'hola',
+      'gracias',
+      'por favor',
+      'quiero',
+      'menú',
+      'mesa',
+      'reserva',
+      'pedido',
+    ];
     const englishWords = ['hello', 'thanks', 'please', 'want', 'menu', 'table', 'order', 'book'];
 
     let spanishCount = 0;
     let englishCount = 0;
 
-    spanishWords.forEach(word => {
+    spanishWords.forEach((word) => {
       if (lower.includes(word)) spanishCount++;
     });
 
-    englishWords.forEach(word => {
+    englishWords.forEach((word) => {
       if (lower.includes(word)) englishCount++;
     });
 
@@ -218,23 +264,49 @@ export class LearningMemoryService {
 
     // Palabras positivas
     const positiveWords = [
-      'gracias', 'excelente', 'perfecto', 'genial', 'bien', 'bueno',
-      'delicioso', 'rico', 'increíble', 'maravilloso', 'encanta',
-      'feliz', 'contento', 'satisfecho', 'recomiendo', 'me gusta',
+      'gracias',
+      'excelente',
+      'perfecto',
+      'genial',
+      'bien',
+      'bueno',
+      'delicioso',
+      'rico',
+      'increíble',
+      'maravilloso',
+      'encanta',
+      'feliz',
+      'contento',
+      'satisfecho',
+      'recomiendo',
+      'me gusta',
     ];
 
     // Palabras negativas
     const negativeWords = [
-      'malo', 'terrible', 'horrible', 'pésimo', 'no me gusta',
-      'queja', 'problema', 'error', 'lento', 'frío', 'caro',
-      'demora', 'molesto', 'frustrado', 'enojado', 'decepcionado',
+      'malo',
+      'terrible',
+      'horrible',
+      'pésimo',
+      'no me gusta',
+      'queja',
+      'problema',
+      'error',
+      'lento',
+      'frío',
+      'caro',
+      'demora',
+      'molesto',
+      'frustrado',
+      'enojado',
+      'decepcionado',
     ];
 
     let score = 0;
-    positiveWords.forEach(word => {
+    positiveWords.forEach((word) => {
       if (lower.includes(word)) score += 0.2;
     });
-    negativeWords.forEach(word => {
+    negativeWords.forEach((word) => {
       if (lower.includes(word)) score -= 0.2;
     });
 
@@ -246,7 +318,7 @@ export class LearningMemoryService {
    */
   private analyzeComplexity(message: string): number {
     const words = message.split(/\s+/);
-    const sentences = message.split(/[.!?]+/).filter(s => s.trim());
+    const sentences = message.split(/[.!?]+/).filter((s) => s.trim());
 
     // Factores de complejidad
     let complexity = 1;
@@ -260,7 +332,7 @@ export class LearningMemoryService {
     else if (sentences.length > 1) complexity += 1;
 
     // Palabras complejas (más de 8 caracteres)
-    const complexWords = words.filter(w => w.length > 8).length;
+    const complexWords = words.filter((w) => w.length > 8).length;
     complexity += Math.min(3, complexWords);
 
     // Preguntas múltiples
@@ -289,7 +361,7 @@ export class LearningMemoryService {
     };
 
     for (const [category, words] of Object.entries(restaurantKeywords)) {
-      if (words.some(w => lower.includes(w))) {
+      if (words.some((w) => lower.includes(w))) {
         keywords.push(category);
       }
     }
@@ -390,7 +462,9 @@ export class LearningMemoryService {
     // Actualizar patrones frecuentes
     this.updatePatterns(data.userInput, data.botResponse, features);
 
-    this.logger.debug(`Experience saved: ${features.intent} (sentiment: ${features.sentiment.toFixed(2)})`);
+    this.logger.debug(
+      `Experience saved: ${features.intent} (sentiment: ${features.sentiment.toFixed(2)})`
+    );
 
     return saved;
   }
@@ -398,13 +472,16 @@ export class LearningMemoryService {
   /**
    * Registra feedback del usuario para una experiencia
    */
-  async recordFeedback(experienceId: number, feedback: {
-    qualityScore?: number;
-    positiveContinuation?: boolean;
-    escalatedToHuman?: boolean;
-    resultedInAction?: boolean;
-    actionType?: string;
-  }): Promise<void> {
+  async recordFeedback(
+    experienceId: number,
+    feedback: {
+      qualityScore?: number;
+      positiveContinuation?: boolean;
+      escalatedToHuman?: boolean;
+      resultedInAction?: boolean;
+      actionType?: string;
+    }
+  ): Promise<void> {
     const experience = await this.experienceRepo.findOne({
       where: { id: experienceId },
     });
@@ -592,9 +669,13 @@ export class LearningMemoryService {
 
     if (recentExperiences.length > 0) {
       // Calcular métricas
-      const avgResponseTime = recentExperiences.reduce((sum, e) => sum + e.response_time_ms, 0) / recentExperiences.length;
-      const avgSentiment = recentExperiences.reduce((sum, e) => sum + e.sentiment, 0) / recentExperiences.length;
-      const cacheHitRate = recentExperiences.filter(e => e.from_cache).length / recentExperiences.length;
+      const avgResponseTime =
+        recentExperiences.reduce((sum, e) => sum + e.response_time_ms, 0) /
+        recentExperiences.length;
+      const avgSentiment =
+        recentExperiences.reduce((sum, e) => sum + e.sentiment, 0) / recentExperiences.length;
+      const cacheHitRate =
+        recentExperiences.filter((e) => e.from_cache).length / recentExperiences.length;
 
       // Insights de rendimiento
       if (avgResponseTime > 15000) {
@@ -635,7 +716,7 @@ export class LearningMemoryService {
 
       // Intenciones más comunes
       const intentCounts = new Map<string, number>();
-      recentExperiences.forEach(e => {
+      recentExperiences.forEach((e) => {
         if (e.intent) {
           intentCounts.set(e.intent, (intentCounts.get(e.intent) || 0) + 1);
         }
@@ -713,7 +794,9 @@ export class LearningMemoryService {
         }
       }
 
-      this.logger.log(`Q-Table loaded: ${this.qTable.size} states from ${experiences.length} experiences`);
+      this.logger.log(
+        `Q-Table loaded: ${this.qTable.size} states from ${experiences.length} experiences`
+      );
     } catch (error) {
       this.logger.warn('Could not load Q-Table (table might not exist yet)');
     }

@@ -1,14 +1,14 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class InitialSchema1728233820000 implements MigrationInterface {
-    name = 'InitialSchema1728233820000'
+  name = 'InitialSchema1728233820000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Esta migración representa el estado inicial de la base de datos
-        // Como ya tenemos datos, solo creamos la tabla de migraciones
-        // Las tablas existentes se mantienen tal cual
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Esta migración representa el estado inicial de la base de datos
+    // Como ya tenemos datos, solo creamos la tabla de migraciones
+    // Las tablas existentes se mantienen tal cual
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             -- Verificar que las tablas existen
             DO $$
             BEGIN
@@ -196,12 +196,12 @@ export class InitialSchema1728233820000 implements MigrationInterface {
             END $$;
         `);
 
-        console.log('✅ InitialSchema migration completed - Database schema verified');
-    }
+    console.log('✅ InitialSchema migration completed - Database schema verified');
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // No hacemos DROP de las tablas en el down porque queremos preservar los datos
-        // Esta es la migración inicial, no debería revertirse
-        console.log('⚠️  InitialSchema migration rollback skipped - preserving existing data');
-    }
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // No hacemos DROP de las tablas en el down porque queremos preservar los datos
+    // Esta es la migración inicial, no debería revertirse
+    console.log('⚠️  InitialSchema migration rollback skipped - preserving existing data');
+  }
 }

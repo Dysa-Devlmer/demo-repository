@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { I18nService } from "../../i18n/i18n.service";
-import { Twilio } from "twilio";
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { I18nService } from '../../i18n/i18n.service';
+import { Twilio } from 'twilio';
 
 export interface TwilioCallOptions {
   to: string;
@@ -37,10 +37,10 @@ export interface VoiceCallOptions {
   url?: string;
   twiml?: string;
   statusCallback?: string;
-  statusCallbackMethod?: "GET" | "POST";
+  statusCallbackMethod?: 'GET' | 'POST';
   record?: boolean;
   timeout?: number;
-  machineDetection?: "Enable" | "DetectMessageEnd";
+  machineDetection?: 'Enable' | 'DetectMessageEnd';
 }
 
 export interface SMSOptions {
@@ -54,20 +54,20 @@ export interface SMSOptions {
 export interface CallStatus {
   sid: string;
   status:
-    | "queued"
-    | "initiated"
-    | "ringing"
-    | "answered"
-    | "completed"
-    | "busy"
-    | "failed"
-    | "no-answer"
-    | "canceled";
+    | 'queued'
+    | 'initiated'
+    | 'ringing'
+    | 'answered'
+    | 'completed'
+    | 'busy'
+    | 'failed'
+    | 'no-answer'
+    | 'canceled';
   duration?: string;
   startTime?: Date;
   endTime?: Date;
   price?: string;
-  direction: "inbound" | "outbound";
+  direction: 'inbound' | 'outbound';
 }
 
 @Injectable()
@@ -81,35 +81,33 @@ export class TwilioService {
 
   constructor(
     private configService: ConfigService,
-    private readonly i18n: I18nService,
+    private readonly i18n: I18nService
   ) {
-    this.accountSid =
-      this.configService.get<string>("TWILIO_ACCOUNT_SID") || "";
-    this.authToken = this.configService.get<string>("TWILIO_AUTH_TOKEN") || "";
-    this.phoneNumber =
-      this.configService.get<string>("TWILIO_PHONE_NUMBER") || "";
-    this.webhookUrl = this.configService.get<string>("TWILIO_WEBHOOK_URL", "");
+    this.accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID') || '';
+    this.authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN') || '';
+    this.phoneNumber = this.configService.get<string>('TWILIO_PHONE_NUMBER') || '';
+    this.webhookUrl = this.configService.get<string>('TWILIO_WEBHOOK_URL', '');
 
     if (!this.accountSid || !this.authToken || !this.phoneNumber) {
-      this.logger.warn("Twilio credentials not configured");
+      this.logger.warn('Twilio credentials not configured');
       return;
     }
 
     try {
       this.twilioClient = new Twilio(this.accountSid, this.authToken);
-      this.logger.log("Twilio client initialized successfully");
+      this.logger.log('Twilio client initialized successfully');
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error("Failed to initialize Twilio client:", err.message);
+      this.logger.error('Failed to initialize Twilio client:', err.message);
     }
   }
 
   async makeCall(
-    options: VoiceCallOptions,
+    options: VoiceCallOptions
   ): Promise<{ success: boolean; callSid?: string; error?: string }> {
     try {
       if (!this.twilioClient) {
-        throw new Error(this.i18n.t("errors.twilioNotConfigured"));
+        throw new Error(this.i18n.t('errors.twilioNotConfigured'));
       }
 
       const callOptions: any = {
@@ -131,8 +129,7 @@ export class TwilioService {
 
       if (options.statusCallback) {
         callOptions.statusCallback = options.statusCallback;
-        callOptions.statusCallbackMethod =
-          options.statusCallbackMethod || "POST";
+        callOptions.statusCallbackMethod = options.statusCallbackMethod || 'POST';
       }
 
       const call = await this.twilioClient.calls.create(callOptions);
@@ -145,7 +142,7 @@ export class TwilioService {
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error("Failed to make call:", err.message);
+      this.logger.error('Failed to make call:', err.message);
 
       return {
         success: false,
@@ -155,11 +152,11 @@ export class TwilioService {
   }
 
   async sendSMS(
-    options: SMSOptions,
+    options: SMSOptions
   ): Promise<{ success: boolean; messageSid?: string; error?: string }> {
     try {
       if (!this.twilioClient) {
-        throw new Error(this.i18n.t("errors.twilioNotConfigured"));
+        throw new Error(this.i18n.t('errors.twilioNotConfigured'));
       }
 
       const messageOptions: any = {
@@ -186,7 +183,7 @@ export class TwilioService {
       };
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error("Failed to send SMS:", err.message);
+      this.logger.error('Failed to send SMS:', err.message);
 
       return {
         success: false,
@@ -198,7 +195,7 @@ export class TwilioService {
   async getCallStatus(callSid: string): Promise<CallStatus | null> {
     try {
       if (!this.twilioClient) {
-        throw new Error(this.i18n.t("errors.twilioNotConfigured"));
+        throw new Error(this.i18n.t('errors.twilioNotConfigured'));
       }
 
       const call = await this.twilioClient.calls(callSid).fetch();
@@ -213,7 +210,7 @@ export class TwilioService {
         direction: call.direction as any,
       };
     } catch (error) {
-      this.logger.error("Failed to get call status:", error.message);
+      this.logger.error('Failed to get call status:', error.message);
       return null;
     }
   }
@@ -221,15 +218,15 @@ export class TwilioService {
   async hangupCall(callSid: string): Promise<boolean> {
     try {
       if (!this.twilioClient) {
-        throw new Error(this.i18n.t("errors.twilioNotConfigured"));
+        throw new Error(this.i18n.t('errors.twilioNotConfigured'));
       }
 
-      await this.twilioClient.calls(callSid).update({ status: "completed" });
+      await this.twilioClient.calls(callSid).update({ status: 'completed' });
 
       this.logger.log(`Call ${callSid} hung up successfully`);
       return true;
     } catch (error) {
-      this.logger.error("Failed to hangup call:", error.message);
+      this.logger.error('Failed to hangup call:', error.message);
       return false;
     }
   }
@@ -245,20 +242,20 @@ export class TwilioService {
   }): string {
     const welcomeMessage =
       options?.welcomeMessage ||
-      "¡Hola! Gracias por llamar a nuestro restaurante. Soy ChefBot Dysa, tu asistente telefónico.";
+      '¡Hola! Gracias por llamar a nuestro restaurante. Soy ChefBot Dysa, tu asistente telefónico.';
 
     const defaultMenuOptions = options?.menuOptions || [
       {
-        digit: "1",
-        description: "Para hacer una reserva",
-        action: "reservation",
+        digit: '1',
+        description: 'Para hacer una reserva',
+        action: 'reservation',
       },
-      { digit: "2", description: "Para hacer un pedido", action: "order" },
-      { digit: "3", description: "Para consultar horarios", action: "hours" },
+      { digit: '2', description: 'Para hacer un pedido', action: 'order' },
+      { digit: '3', description: 'Para consultar horarios', action: 'hours' },
       {
-        digit: "4",
-        description: "Para hablar con un representante",
-        action: "transfer",
+        digit: '4',
+        description: 'Para hablar con un representante',
+        action: 'transfer',
       },
     ];
 
@@ -310,8 +307,7 @@ export class TwilioService {
 
   generateHoursTwiML(hours?: string): string {
     const restaurantHours =
-      hours ||
-      "Lunes a Viernes de 11:00 AM a 10:00 PM, Sábados y Domingos de 12:00 PM a 11:00 PM";
+      hours || 'Lunes a Viernes de 11:00 AM a 10:00 PM, Sábados y Domingos de 12:00 PM a 11:00 PM';
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
@@ -327,7 +323,7 @@ export class TwilioService {
   }
 
   processVoiceWebhook(body: any): {
-    type: "menu" | "reservation" | "order" | "hours" | "unknown";
+    type: 'menu' | 'reservation' | 'order' | 'hours' | 'unknown';
     data: any;
   } {
     const digits = body.Digits;
@@ -337,25 +333,25 @@ export class TwilioService {
 
     if (digits) {
       switch (digits) {
-        case "1":
-          return { type: "reservation", data: { callSid, from } };
-        case "2":
-          return { type: "order", data: { callSid, from } };
-        case "3":
-          return { type: "hours", data: { callSid, from } };
-        case "4":
-          return { type: "menu", data: { action: "transfer", callSid, from } };
+        case '1':
+          return { type: 'reservation', data: { callSid, from } };
+        case '2':
+          return { type: 'order', data: { callSid, from } };
+        case '3':
+          return { type: 'hours', data: { callSid, from } };
+        case '4':
+          return { type: 'menu', data: { action: 'transfer', callSid, from } };
         default:
-          return { type: "unknown", data: { digits, callSid, from } };
+          return { type: 'unknown', data: { digits, callSid, from } };
       }
     }
 
     if (recordingUrl) {
       const pathname = new URL(body.request.url).pathname;
 
-      if (pathname.includes("/reservation")) {
+      if (pathname.includes('/reservation')) {
         return {
-          type: "reservation",
+          type: 'reservation',
           data: {
             recordingUrl,
             callSid,
@@ -363,9 +359,9 @@ export class TwilioService {
             duration: body.RecordingDuration,
           },
         };
-      } else if (pathname.includes("/order")) {
+      } else if (pathname.includes('/order')) {
         return {
-          type: "order",
+          type: 'order',
           data: {
             recordingUrl,
             callSid,
@@ -376,7 +372,7 @@ export class TwilioService {
       }
     }
 
-    return { type: "unknown", data: body };
+    return { type: 'unknown', data: body };
   }
 
   async transcribeRecording(recordingUrl: string): Promise<string | null> {
@@ -386,28 +382,28 @@ export class TwilioService {
       this.logger.log(`Transcription requested for: ${recordingUrl}`);
 
       // Placeholder - en producción implementar transcripción real
-      return "Transcripción pendiente de implementar";
+      return 'Transcripción pendiente de implementar';
     } catch (error) {
-      this.logger.error("Failed to transcribe recording:", error.message);
+      this.logger.error('Failed to transcribe recording:', error.message);
       return null;
     }
   }
 
   async sendRestaurantNotificationSMS(
     to: string,
-    type: "reservation" | "order" | "confirmation",
-    data: any,
+    type: 'reservation' | 'order' | 'confirmation',
+    data: any
   ): Promise<{ success: boolean; messageSid?: string; error?: string }> {
-    let message = "";
+    let message = '';
 
     switch (type) {
-      case "reservation":
+      case 'reservation':
         message = `🍽️ ¡Hola! Tu reserva para ${data.guests} personas el ${data.date} a las ${data.time} ha sido ${data.status}. Restaurante: ${data.restaurantName}`;
         break;
-      case "order":
+      case 'order':
         message = `🛒 Tu pedido #${data.orderId} por $${data.total} está ${data.status}. Tiempo estimado: ${data.estimatedTime} min. ¡Gracias por tu preferencia!`;
         break;
-      case "confirmation":
+      case 'confirmation':
         message = `✅ ${data.message} - ${data.restaurantName}. Si tienes dudas, llámanos o responde este mensaje.`;
         break;
       default:
@@ -422,7 +418,7 @@ export class TwilioService {
 
   getHealthStatus() {
     return {
-      service: "Twilio Voice & SMS",
+      service: 'Twilio Voice & SMS',
       configured: !!(this.accountSid && this.authToken && this.phoneNumber),
       phoneNumber: this.phoneNumber,
       webhookUrl: this.webhookUrl,

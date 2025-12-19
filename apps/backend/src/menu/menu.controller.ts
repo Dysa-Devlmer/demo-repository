@@ -10,30 +10,30 @@ import {
   ParseIntPipe,
   UseGuards,
   UseInterceptors,
-} from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
-import { MenuService } from "./menu.service";
-import { CreateMenuItemDto } from "./dto/create-menu-item.dto";
-import { UpdateMenuItemDto } from "./dto/update-menu-item.dto";
-import { RateLimitGuard } from "../common/guards/rate-limit.guard";
-import { RateLimit, RateLimitPresets } from "../common/decorators/rate-limit.decorator";
-import { CacheInterceptor } from "../common/interceptors/cache.interceptor";
-import { CacheKey, InvalidateCache } from "../common/decorators/cache-key.decorator";
-import { CacheKeyBuilder, CacheTTL } from "../config/cache.config";
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { MenuService } from './menu.service';
+import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { RateLimitGuard } from '../common/guards/rate-limit.guard';
+import { RateLimit, RateLimitPresets } from '../common/decorators/rate-limit.decorator';
+import { CacheInterceptor } from '../common/interceptors/cache.interceptor';
+import { CacheKey, InvalidateCache } from '../common/decorators/cache-key.decorator';
+import { CacheKeyBuilder, CacheTTL } from '../config/cache.config';
 
-@ApiTags("menu")
-@ApiBearerAuth("JWT")
-@Controller("menu")
+@ApiTags('menu')
+@ApiBearerAuth('JWT')
+@Controller('menu')
 @UseGuards(RateLimitGuard)
 @UseInterceptors(CacheInterceptor)
 export class MenuController {
   constructor(private readonly menuService: MenuService) {}
 
   @Post()
-  @ApiOperation({ summary: "Crear nuevo item de menú" })
-  @ApiResponse({ status: 201, description: "Item creado exitosamente" })
-  @ApiResponse({ status: 400, description: "Datos inválidos" })
-  @ApiResponse({ status: 401, description: "No autorizado" })
+  @ApiOperation({ summary: 'Crear nuevo item de menú' })
+  @ApiResponse({ status: 201, description: 'Item creado exitosamente' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
   @RateLimit(RateLimitPresets.API_STRICT)
   @InvalidateCache(CacheKeyBuilder.menuPattern())
   async create(@Body() dto: CreateMenuItemDto) {
@@ -41,8 +41,8 @@ export class MenuController {
   }
 
   @Get()
-  @ApiOperation({ summary: "Obtener todos los items del menú" })
-  @ApiResponse({ status: 200, description: "Lista de items del menú (cached 30min)" })
+  @ApiOperation({ summary: 'Obtener todos los items del menú' })
+  @ApiResponse({ status: 200, description: 'Lista de items del menú (cached 30min)' })
   @RateLimit({
     windowMs: 60 * 1000, // 60 seconds
     maxRequests: 100, // 100 requests per minute (development mode)
@@ -53,57 +53,51 @@ export class MenuController {
     return await this.menuService.findAll();
   }
 
-  @Get(":id")
-  @ApiOperation({ summary: "Obtener item de menú por ID" })
-  @ApiResponse({ status: 200, description: "Item encontrado (cached 30min)" })
-  @ApiResponse({ status: 404, description: "Item no encontrado" })
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener item de menú por ID' })
+  @ApiResponse({ status: 200, description: 'Item encontrado (cached 30min)' })
+  @ApiResponse({ status: 404, description: 'Item no encontrado' })
   @CacheKey((req) => CacheKeyBuilder.menu(req.params.id), CacheTTL.MENU_ITEMS)
-  async findOne(@Param("id", ParseIntPipe) id: number) {
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.menuService.findOne(id);
   }
 
-  @Put(":id")
-  @ApiOperation({ summary: "Actualizar item de menú (completo)" })
-  @ApiResponse({ status: 200, description: "Item actualizado exitosamente" })
-  @ApiResponse({ status: 404, description: "Item no encontrado" })
-  @ApiResponse({ status: 401, description: "No autorizado" })
+  @Put(':id')
+  @ApiOperation({ summary: 'Actualizar item de menú (completo)' })
+  @ApiResponse({ status: 200, description: 'Item actualizado exitosamente' })
+  @ApiResponse({ status: 404, description: 'Item no encontrado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  async update(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateMenuItemDto,
-  ) {
+  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMenuItemDto) {
     return await this.menuService.update(id, dto);
   }
 
-  @Patch(":id")
-  @ApiOperation({ summary: "Actualizar item de menú (parcial)" })
-  @ApiResponse({ status: 200, description: "Item actualizado exitosamente" })
-  @ApiResponse({ status: 404, description: "Item no encontrado" })
-  @ApiResponse({ status: 401, description: "No autorizado" })
+  @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar item de menú (parcial)' })
+  @ApiResponse({ status: 200, description: 'Item actualizado exitosamente' })
+  @ApiResponse({ status: 404, description: 'Item no encontrado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  async partialUpdate(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateMenuItemDto,
-  ) {
+  async partialUpdate(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMenuItemDto) {
     return await this.menuService.update(id, dto);
   }
 
-  @Patch(":id/toggle-availability")
-  @ApiOperation({ summary: "Cambiar disponibilidad de un item" })
-  @ApiResponse({ status: 200, description: "Disponibilidad actualizada" })
-  @ApiResponse({ status: 404, description: "Item no encontrado" })
+  @Patch(':id/toggle-availability')
+  @ApiOperation({ summary: 'Cambiar disponibilidad de un item' })
+  @ApiResponse({ status: 200, description: 'Disponibilidad actualizada' })
+  @ApiResponse({ status: 404, description: 'Item no encontrado' })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  async toggleAvailability(@Param("id", ParseIntPipe) id: number) {
+  async toggleAvailability(@Param('id', ParseIntPipe) id: number) {
     return await this.menuService.toggleAvailability(id);
   }
 
-  @Delete(":id")
-  @ApiOperation({ summary: "Eliminar item de menú (soft delete)" })
-  @ApiResponse({ status: 200, description: "Item eliminado exitosamente" })
-  @ApiResponse({ status: 404, description: "Item no encontrado" })
-  @ApiResponse({ status: 401, description: "No autorizado" })
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar item de menú (soft delete)' })
+  @ApiResponse({ status: 200, description: 'Item eliminado exitosamente' })
+  @ApiResponse({ status: 404, description: 'Item no encontrado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
   @InvalidateCache(CacheKeyBuilder.menuPattern())
-  async remove(@Param("id", ParseIntPipe) id: number) {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     return await this.menuService.remove(id);
   }
 

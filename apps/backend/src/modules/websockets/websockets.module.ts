@@ -1,5 +1,5 @@
-import { Module } from "@nestjs/common";
-import { WebSocketsGateway } from "./websockets.gateway";
+import { Module } from '@nestjs/common';
+import { WebSocketsGateway } from './websockets.gateway';
 
 @Module({
   providers: [WebSocketsGateway],

@@ -198,7 +198,7 @@ export default function CasosExitoPage() {
                   <div className="relative mb-6">
                     <Quote className="absolute -left-2 -top-2 h-8 w-8 text-blue-200" />
                     <p className="text-lg text-gray-700 italic pl-6">
-                      "{testimonio.quote}"
+                      &ldquo;{testimonio.quote}&rdquo;
                     </p>
                   </div>
 

@@ -8,13 +8,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { TwoFactorService } from '../services/two-factor.service';
 import { AuthGuard } from '../../common/guards/auth.guard';
 import { User } from '../decorators/user.decorator';

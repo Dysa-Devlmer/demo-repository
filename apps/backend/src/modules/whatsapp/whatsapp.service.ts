@@ -1,12 +1,12 @@
-import { Injectable, Logger, HttpException, HttpStatus } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { I18nService } from "../../i18n/i18n.service";
-import axios, { AxiosInstance } from "axios";
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { I18nService } from '../../i18n/i18n.service';
+import axios, { AxiosInstance } from 'axios';
 
 export interface WhatsAppMessage {
-  messaging_product: "whatsapp";
+  messaging_product: 'whatsapp';
   to: string;
-  type: "text" | "image" | "document" | "template" | "interactive";
+  type: 'text' | 'image' | 'document' | 'template' | 'interactive';
   text?: {
     body: string;
   };
@@ -29,9 +29,9 @@ export interface WhatsAppMessage {
     components?: any[];
   };
   interactive?: {
-    type: "list" | "button";
+    type: 'list' | 'button';
     header?: {
-      type: "text" | "image" | "document";
+      type: 'text' | 'image' | 'document';
       text?: string;
       image?: { link: string };
       document?: { link: string };
@@ -45,7 +45,7 @@ export interface WhatsAppMessage {
     action: {
       button?: string;
       buttons?: Array<{
-        type: "reply";
+        type: 'reply';
         reply: {
           id: string;
           title: string;
@@ -141,7 +141,7 @@ export interface WebhookMessage {
         }>;
         statuses?: Array<{
           id: string;
-          status: "sent" | "delivered" | "read" | "failed";
+          status: 'sent' | 'delivered' | 'read' | 'failed';
           timestamp: string;
           recipient_id: string;
         }>;
@@ -158,22 +158,22 @@ export class WhatsAppService {
   private readonly accessToken: string;
   private readonly phoneNumberId: string;
   private readonly verifyToken: string;
-  private readonly apiVersion: string = "v18.0";
+  private readonly apiVersion: string = 'v18.0';
 
   constructor(
     private configService: ConfigService,
-    private readonly i18n: I18nService,
+    private readonly i18n: I18nService
   ) {
-    this.accessToken = this.configService.get<string>("WA_ACCESS_TOKEN") || "";
-    this.phoneNumberId =
-      this.configService.get<string>("WA_BUSINESS_PHONE_ID") || "";
-    this.verifyToken =
-      this.configService.get<string>("WA_WEBHOOK_VERIFY_TOKEN") || "";
+    this.accessToken = this.configService.get<string>('WA_ACCESS_TOKEN') || '';
+    this.phoneNumberId = this.configService.get<string>('WA_BUSINESS_PHONE_ID') || '';
+    this.verifyToken = this.configService.get<string>('WA_WEBHOOK_VERIFY_TOKEN') || '';
 
     if (!this.accessToken || !this.phoneNumberId) {
-      this.logger.warn("WhatsApp Business credentials not configured");
+      this.logger.warn('WhatsApp Business credentials not configured');
     } else {
-      this.logger.log(`📱 WhatsApp configured: Phone ID=${this.phoneNumberId.substring(0, 8)}... Token=${this.accessToken.substring(0, 20)}...`);
+      this.logger.log(
+        `📱 WhatsApp configured: Phone ID=${this.phoneNumberId.substring(0, 8)}... Token=${this.accessToken.substring(0, 20)}...`
+      );
     }
 
     this.httpClient = axios.create({
@@ -181,15 +181,13 @@ export class WhatsAppService {
       timeout: 30000,
       headers: {
         Authorization: `Bearer ${this.accessToken}`,
-        "Content-Type": "application/json",
-        "User-Agent": "DysaBot/1.0.0",
+        'Content-Type': 'application/json',
+        'User-Agent': 'DysaBot/1.0.0',
       },
     });
 
     this.httpClient.interceptors.request.use((config) => {
-      this.logger.debug(
-        `WhatsApp API request: ${config.method?.toUpperCase()} ${config.url}`,
-      );
+      this.logger.debug(`WhatsApp API request: ${config.method?.toUpperCase()} ${config.url}`);
       return config;
     });
 
@@ -199,43 +197,33 @@ export class WhatsAppService {
         return response;
       },
       (error) => {
-        this.logger.error(
-          "WhatsApp API error:",
-          error.response?.data || error.message,
-        );
+        this.logger.error('WhatsApp API error:', error.response?.data || error.message);
         return Promise.reject(error);
-      },
+      }
     );
   }
 
   verifyWebhook(mode: string, token: string, challenge: string): string | null {
-    if (mode === "subscribe" && token === this.verifyToken) {
-      this.logger.log("WhatsApp webhook verified successfully");
+    if (mode === 'subscribe' && token === this.verifyToken) {
+      this.logger.log('WhatsApp webhook verified successfully');
       return challenge;
     }
 
-    this.logger.error("WhatsApp webhook verification failed");
+    this.logger.error('WhatsApp webhook verification failed');
     return null;
   }
 
   async sendMessage(
-    message: WhatsAppMessage,
+    message: WhatsAppMessage
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       if (!this.accessToken || !this.phoneNumberId) {
-        throw new Error(this.i18n.t("errors.whatsappNotConfigured"));
+        throw new Error(this.i18n.t('errors.whatsappNotConfigured'));
       }
 
-      const response = await this.httpClient.post(
-        `/${this.phoneNumberId}/messages`,
-        message,
-      );
+      const response = await this.httpClient.post(`/${this.phoneNumberId}/messages`, message);
 
-      if (
-        response.data &&
-        response.data.messages &&
-        response.data.messages[0]
-      ) {
+      if (response.data && response.data.messages && response.data.messages[0]) {
         const messageId = response.data.messages[0].id;
         this.logger.log(`Message sent successfully: ${messageId}`);
 
@@ -245,9 +233,9 @@ export class WhatsAppService {
         };
       }
 
-      throw new Error(this.i18n.t("errors.invalidWhatsappResponse"));
+      throw new Error(this.i18n.t('errors.invalidWhatsappResponse'));
     } catch (error) {
-      this.logger.error("Failed to send WhatsApp message:", error.message);
+      this.logger.error('Failed to send WhatsApp message:', error.message);
 
       return {
         success: false,
@@ -258,12 +246,12 @@ export class WhatsAppService {
 
   async sendTextMessage(
     to: string,
-    text: string,
+    text: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const message: WhatsAppMessage = {
-      messaging_product: "whatsapp",
+      messaging_product: 'whatsapp',
       to,
-      type: "text",
+      type: 'text',
       text: {
         body: text,
       },
@@ -285,14 +273,14 @@ export class WhatsAppService {
       }>;
     }>,
     headerText?: string,
-    footerText?: string,
+    footerText?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const message: WhatsAppMessage = {
-      messaging_product: "whatsapp",
+      messaging_product: 'whatsapp',
       to,
-      type: "interactive",
+      type: 'interactive',
       interactive: {
-        type: "list",
+        type: 'list',
         body: {
           text: bodyText,
         },
@@ -305,7 +293,7 @@ export class WhatsAppService {
 
     if (headerText) {
       message.interactive!.header = {
-        type: "text",
+        type: 'text',
         text: headerText,
       };
     }
@@ -327,24 +315,24 @@ export class WhatsAppService {
       title: string;
     }>,
     headerText?: string,
-    footerText?: string,
+    footerText?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     if (buttons.length > 3) {
-      throw new Error(this.i18n.t("errors.maxButtonsExceeded"));
+      throw new Error(this.i18n.t('errors.maxButtonsExceeded'));
     }
 
     const message: WhatsAppMessage = {
-      messaging_product: "whatsapp",
+      messaging_product: 'whatsapp',
       to,
-      type: "interactive",
+      type: 'interactive',
       interactive: {
-        type: "button",
+        type: 'button',
         body: {
           text: bodyText,
         },
         action: {
           buttons: buttons.map((button) => ({
-            type: "reply" as const,
+            type: 'reply' as const,
             reply: {
               id: button.id,
               title: button.title,
@@ -356,7 +344,7 @@ export class WhatsAppService {
 
     if (headerText) {
       message.interactive!.header = {
-        type: "text",
+        type: 'text',
         text: headerText,
       };
     }
@@ -373,13 +361,13 @@ export class WhatsAppService {
   async sendTemplateMessage(
     to: string,
     templateName: string,
-    languageCode: string = "es",
-    components?: any[],
+    languageCode: string = 'es',
+    components?: any[]
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const message: WhatsAppMessage = {
-      messaging_product: "whatsapp",
+      messaging_product: 'whatsapp',
       to,
-      type: "template",
+      type: 'template',
       template: {
         name: templateName,
         language: {
@@ -394,57 +382,58 @@ export class WhatsAppService {
 
   async sendRestaurantMenu(
     to: string,
-    menuItems: any[],
+    menuItems: any[]
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const sections = this.buildMenuSections(menuItems);
-    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
-    const restaurantDescription = this.configService.get<string>("RESTAURANT_DESCRIPTION") || "Sistema de chatbot inteligente";
+    const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
+    const restaurantDescription =
+      this.configService.get<string>('RESTAURANT_DESCRIPTION') || 'Sistema de chatbot inteligente';
 
     return this.sendInteractiveMenu(
       to,
-      "🍽️ ¡Aquí tienes nuestro menú! Selecciona lo que te gustaría ordenar:",
-      "Ver Menú",
+      '🍽️ ¡Aquí tienes nuestro menú! Selecciona lo que te gustaría ordenar:',
+      'Ver Menú',
       sections,
       `${restaurantName} - Menú`,
-      restaurantDescription,
+      restaurantDescription
     );
   }
 
   async sendReservationOptions(
     to: string,
-    customerName?: string,
+    customerName?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const greeting = customerName ? `¡Hola ${customerName}!` : "¡Hola!";
-    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+    const greeting = customerName ? `¡Hola ${customerName}!` : '¡Hola!';
+    const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
 
     return this.sendButtonMessage(
       to,
       `${greeting} 📅 ¿Te ayudo con una reserva? Selecciona una opción:`,
       [
-        { id: "new_reservation", title: "🆕 Nueva Reserva" },
-        { id: "check_reservation", title: "🔍 Consultar Reserva" },
-        { id: "modify_reservation", title: "✏️ Modificar Reserva" },
+        { id: 'new_reservation', title: '🆕 Nueva Reserva' },
+        { id: 'check_reservation', title: '🔍 Consultar Reserva' },
+        { id: 'modify_reservation', title: '✏️ Modificar Reserva' },
       ],
       `${restaurantName} - Reservas`,
-      "También puedes escribir directamente tu consulta",
+      'También puedes escribir directamente tu consulta'
     );
   }
 
   async sendOrderOptions(
-    to: string,
+    to: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+    const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
 
     return this.sendButtonMessage(
       to,
-      "🛒 ¿Qué tipo de pedido te gustaría hacer?",
+      '🛒 ¿Qué tipo de pedido te gustaría hacer?',
       [
-        { id: "delivery_order", title: "🚗 Delivery" },
-        { id: "takeaway_order", title: "🏃 Para llevar" },
-        { id: "view_menu", title: "📋 Ver menú" },
+        { id: 'delivery_order', title: '🚗 Delivery' },
+        { id: 'takeaway_order', title: '🏃 Para llevar' },
+        { id: 'view_menu', title: '📋 Ver menú' },
       ],
       `${restaurantName} - Pedidos`,
-      "Selecciona tu opción preferida",
+      'Selecciona tu opción preferida'
     );
   }
 
@@ -453,7 +442,7 @@ export class WhatsAppService {
     rows: Array<{ id: string; title: string; description?: string }>;
   }> {
     const categories = menuItems.reduce((acc, item) => {
-      const category = item.category || "Otros";
+      const category = item.category || 'Otros';
       if (!acc[category]) {
         acc[category] = [];
       }
@@ -467,8 +456,7 @@ export class WhatsAppService {
         id: `menu_${item.id}`,
         title: `${item.name} - $${item.price}`,
         description:
-          item.description?.substring(0, 70) +
-          (item.description?.length > 70 ? "..." : ""),
+          item.description?.substring(0, 70) + (item.description?.length > 70 ? '...' : ''),
       })),
     }));
   }
@@ -479,13 +467,13 @@ export class WhatsAppService {
    */
   processStatusUpdates(webhookData: WebhookMessage): Array<{
     messageId: string;
-    status: "sent" | "delivered" | "read" | "failed";
+    status: 'sent' | 'delivered' | 'read' | 'failed';
     timestamp: Date;
     recipientId: string;
   }> {
     const statusUpdates: Array<{
       messageId: string;
-      status: "sent" | "delivered" | "read" | "failed";
+      status: 'sent' | 'delivered' | 'read' | 'failed';
       timestamp: Date;
       recipientId: string;
     }> = [];
@@ -557,18 +545,18 @@ export class WhatsAppService {
       for (const change of entry.changes) {
         if (change.value.messages) {
           for (const message of change.value.messages) {
-            let content = "";
+            let content = '';
             let interactionData: any = undefined;
             let mediaData: any = undefined;
             let locationData: any = undefined;
 
             switch (message.type) {
-              case "text":
-                content = message.text?.body || "";
+              case 'text':
+                content = message.text?.body || '';
                 break;
 
-              case "image":
-                content = message.image?.caption || "[Imagen recibida]";
+              case 'image':
+                content = message.image?.caption || '[Imagen recibida]';
                 mediaData = {
                   mediaId: message.image?.id,
                   mimeType: message.image?.mime_type,
@@ -576,8 +564,8 @@ export class WhatsAppService {
                 };
                 break;
 
-              case "audio":
-                content = message.audio?.voice ? "[Nota de voz]" : "[Audio recibido]";
+              case 'audio':
+                content = message.audio?.voice ? '[Nota de voz]' : '[Audio recibido]';
                 mediaData = {
                   mediaId: message.audio?.id,
                   mimeType: message.audio?.mime_type,
@@ -585,8 +573,8 @@ export class WhatsAppService {
                 };
                 break;
 
-              case "video":
-                content = message.video?.caption || "[Video recibido]";
+              case 'video':
+                content = message.video?.caption || '[Video recibido]';
                 mediaData = {
                   mediaId: message.video?.id,
                   mimeType: message.video?.mime_type,
@@ -594,8 +582,10 @@ export class WhatsAppService {
                 };
                 break;
 
-              case "document":
-                content = message.document?.caption || `[Documento: ${message.document?.filename || 'archivo'}]`;
+              case 'document':
+                content =
+                  message.document?.caption ||
+                  `[Documento: ${message.document?.filename || 'archivo'}]`;
                 mediaData = {
                   mediaId: message.document?.id,
                   mimeType: message.document?.mime_type,
@@ -604,8 +594,8 @@ export class WhatsAppService {
                 };
                 break;
 
-              case "sticker":
-                content = "[Sticker]";
+              case 'sticker':
+                content = '[Sticker]';
                 mediaData = {
                   mediaId: message.sticker?.id,
                   mimeType: message.sticker?.mime_type,
@@ -613,8 +603,9 @@ export class WhatsAppService {
                 };
                 break;
 
-              case "location":
-                content = message.location?.name || message.location?.address || "[Ubicación compartida]";
+              case 'location':
+                content =
+                  message.location?.name || message.location?.address || '[Ubicación compartida]';
                 locationData = {
                   latitude: message.location?.latitude,
                   longitude: message.location?.longitude,
@@ -623,37 +614,37 @@ export class WhatsAppService {
                 };
                 break;
 
-              case "contacts":
-                const contactNames = message.contacts?.map(c => c.name.formatted_name).join(", ");
+              case 'contacts':
+                const contactNames = message.contacts?.map((c) => c.name.formatted_name).join(', ');
                 content = `[Contacto: ${contactNames || 'compartido'}]`;
                 interactionData = {
-                  type: "contacts",
+                  type: 'contacts',
                   contacts: message.contacts,
                 };
                 break;
 
-              case "interactive":
+              case 'interactive':
                 if (message.interactive?.list_reply) {
                   content = message.interactive.list_reply.title;
                   interactionData = {
-                    type: "list_reply",
+                    type: 'list_reply',
                     id: message.interactive.list_reply.id,
                     title: message.interactive.list_reply.title,
                   };
                 } else if (message.interactive?.button_reply) {
                   content = message.interactive.button_reply.title;
                   interactionData = {
-                    type: "button_reply",
+                    type: 'button_reply',
                     id: message.interactive.button_reply.id,
                     title: message.interactive.button_reply.title,
                   };
                 }
                 break;
 
-              case "button":
-                content = message.button?.text || "";
+              case 'button':
+                content = message.button?.text || '';
                 interactionData = {
-                  type: "button",
+                  type: 'button',
                   payload: message.button?.payload,
                 };
                 break;
@@ -697,7 +688,7 @@ export class WhatsAppService {
       const mediaUrl = mediaResponse.data?.url;
 
       if (!mediaUrl) {
-        return { success: false, error: "Media URL not found" };
+        return { success: false, error: 'Media URL not found' };
       }
 
       this.logger.log(`Downloading media from: ${mediaUrl.substring(0, 50)}...`);
@@ -737,21 +728,21 @@ export class WhatsAppService {
   async markAsRead(messageId: string): Promise<boolean> {
     try {
       await this.httpClient.post(`/${this.phoneNumberId}/messages`, {
-        messaging_product: "whatsapp",
-        status: "read",
+        messaging_product: 'whatsapp',
+        status: 'read',
         message_id: messageId,
       });
 
       return true;
     } catch (error) {
-      this.logger.error("Failed to mark message as read:", error.message);
+      this.logger.error('Failed to mark message as read:', error.message);
       return false;
     }
   }
 
   getHealthStatus() {
     return {
-      service: "WhatsApp Business API",
+      service: 'WhatsApp Business API',
       configured: !!(this.accessToken && this.phoneNumberId),
       phoneNumberId: this.phoneNumberId,
       apiVersion: this.apiVersion,
@@ -764,12 +755,12 @@ export class WhatsAppService {
   async sendImageMessage(
     to: string,
     imageUrl: string,
-    caption?: string,
+    caption?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const message: WhatsAppMessage = {
-      messaging_product: "whatsapp",
+      messaging_product: 'whatsapp',
       to,
-      type: "image",
+      type: 'image',
       image: {
         link: imageUrl,
         caption: caption,
@@ -789,7 +780,7 @@ export class WhatsAppService {
       description: string;
       price: number;
       imageUrl?: string;
-    },
+    }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const caption = `🍽️ *${item.name}*\n\n${item.description}\n\n💰 Precio: $${item.price.toLocaleString('es-CL')}`;
 
@@ -814,10 +805,13 @@ export class WhatsAppService {
       deliveryAddress?: string;
       estimatedTime?: number;
       paymentStatus?: string;
-    },
+    }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const itemsText = order.items
-      .map((item) => `• ${item.quantity}x ${item.name} - $${(item.price * item.quantity).toLocaleString('es-CL')}`)
+      .map(
+        (item) =>
+          `• ${item.quantity}x ${item.name} - $${(item.price * item.quantity).toLocaleString('es-CL')}`
+      )
       .join('\n');
 
     let message = `✅ *PEDIDO CONFIRMADO*\n\n`;
@@ -855,7 +849,7 @@ export class WhatsAppService {
     to: string,
     orderNumber: string,
     status: 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'cancelled',
-    additionalInfo?: string,
+    additionalInfo?: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     const statusMessages: Record<string, { emoji: string; text: string }> = {
       confirmed: { emoji: '✅', text: 'Tu pedido ha sido confirmado' },
@@ -893,9 +887,9 @@ export class WhatsAppService {
       time: string;
       partySize: number;
       notes?: string;
-    },
+    }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+    const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
 
     let message = `✅ *RESERVA CONFIRMADA*\n\n`;
     message += `Hola ${reservation.customerName}!\n\n`;
@@ -925,9 +919,9 @@ export class WhatsAppService {
       date: string;
       time: string;
       partySize: number;
-    },
+    }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+    const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
 
     return this.sendButtonMessage(
       to,
@@ -938,7 +932,7 @@ export class WhatsAppService {
         { id: `modify_${reservation.code}`, title: '✏️ Modificar' },
       ],
       `${restaurantName} - Recordatorio`,
-      `Código: ${reservation.code}`,
+      `Código: ${reservation.code}`
     );
   }
 
@@ -953,7 +947,7 @@ export class WhatsAppService {
       currency: string;
       method: string;
       transactionId: string;
-    },
+    }
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     let message = `💳 *PAGO CONFIRMADO*\n\n`;
     message += `Pedido #${payment.orderNumber}\n\n`;
@@ -970,9 +964,9 @@ export class WhatsAppService {
    */
   async sendSatisfactionSurvey(
     to: string,
-    orderNumber: string,
+    orderNumber: string
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const restaurantName = this.configService.get<string>("RESTAURANT_NAME") || "ChatBotDysa";
+    const restaurantName = this.configService.get<string>('RESTAURANT_NAME') || 'ChatBotDysa';
 
     return this.sendButtonMessage(
       to,
@@ -983,7 +977,7 @@ export class WhatsAppService {
         { id: `rating_1_${orderNumber}`, title: '⭐ Malo' },
       ],
       `${restaurantName} - Encuesta`,
-      'Responde tocando un botón',
+      'Responde tocando un botón'
     );
   }
 }

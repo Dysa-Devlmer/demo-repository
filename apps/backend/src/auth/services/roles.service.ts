@@ -1,19 +1,11 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { Role } from "../entities/role.entity";
-import {
-  Permission,
-  PermissionModule,
-  PermissionAction,
-} from "../entities/permission.entity";
-import { User } from "../entities/user.entity";
-import { ROLES } from "../decorators/roles.decorator";
-import { PERMISSIONS } from "../decorators/permissions.decorator";
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Role } from '../entities/role.entity';
+import { Permission, PermissionModule, PermissionAction } from '../entities/permission.entity';
+import { User } from '../entities/user.entity';
+import { ROLES } from '../decorators/roles.decorator';
+import { PERMISSIONS } from '../decorators/permissions.decorator';
 
 @Injectable()
 export class RolesService {
@@ -23,7 +15,7 @@ export class RolesService {
     @InjectRepository(Permission)
     private readonly permissionRepository: Repository<Permission>,
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>
   ) {}
 
   async onModuleInit() {
@@ -47,7 +39,7 @@ export class RolesService {
       // Dashboard
       {
         name: PERMISSIONS.DASHBOARD_READ,
-        displayName: "Ver Dashboard",
+        displayName: 'Ver Dashboard',
         module: PermissionModule.DASHBOARD,
         action: PermissionAction.READ,
       },
@@ -55,31 +47,31 @@ export class RolesService {
       // Customers
       {
         name: PERMISSIONS.CUSTOMERS_READ,
-        displayName: "Ver Clientes",
+        displayName: 'Ver Clientes',
         module: PermissionModule.CUSTOMERS,
         action: PermissionAction.READ,
       },
       {
         name: PERMISSIONS.CUSTOMERS_CREATE,
-        displayName: "Crear Clientes",
+        displayName: 'Crear Clientes',
         module: PermissionModule.CUSTOMERS,
         action: PermissionAction.CREATE,
       },
       {
         name: PERMISSIONS.CUSTOMERS_UPDATE,
-        displayName: "Actualizar Clientes",
+        displayName: 'Actualizar Clientes',
         module: PermissionModule.CUSTOMERS,
         action: PermissionAction.UPDATE,
       },
       {
         name: PERMISSIONS.CUSTOMERS_DELETE,
-        displayName: "Eliminar Clientes",
+        displayName: 'Eliminar Clientes',
         module: PermissionModule.CUSTOMERS,
         action: PermissionAction.DELETE,
       },
       {
         name: PERMISSIONS.CUSTOMERS_EXPORT,
-        displayName: "Exportar Clientes",
+        displayName: 'Exportar Clientes',
         module: PermissionModule.CUSTOMERS,
         action: PermissionAction.EXPORT,
       },
@@ -87,25 +79,25 @@ export class RolesService {
       // Orders
       {
         name: PERMISSIONS.ORDERS_READ,
-        displayName: "Ver Órdenes",
+        displayName: 'Ver Órdenes',
         module: PermissionModule.ORDERS,
         action: PermissionAction.READ,
       },
       {
         name: PERMISSIONS.ORDERS_CREATE,
-        displayName: "Crear Órdenes",
+        displayName: 'Crear Órdenes',
         module: PermissionModule.ORDERS,
         action: PermissionAction.CREATE,
       },
       {
         name: PERMISSIONS.ORDERS_UPDATE,
-        displayName: "Actualizar Órdenes",
+        displayName: 'Actualizar Órdenes',
         module: PermissionModule.ORDERS,
         action: PermissionAction.UPDATE,
       },
       {
         name: PERMISSIONS.ORDERS_DELETE,
-        displayName: "Eliminar Órdenes",
+        displayName: 'Eliminar Órdenes',
         module: PermissionModule.ORDERS,
         action: PermissionAction.DELETE,
       },
@@ -113,25 +105,25 @@ export class RolesService {
       // Menu
       {
         name: PERMISSIONS.MENU_READ,
-        displayName: "Ver Menú",
+        displayName: 'Ver Menú',
         module: PermissionModule.MENU,
         action: PermissionAction.READ,
       },
       {
         name: PERMISSIONS.MENU_CREATE,
-        displayName: "Crear Items Menú",
+        displayName: 'Crear Items Menú',
         module: PermissionModule.MENU,
         action: PermissionAction.CREATE,
       },
       {
         name: PERMISSIONS.MENU_UPDATE,
-        displayName: "Actualizar Menú",
+        displayName: 'Actualizar Menú',
         module: PermissionModule.MENU,
         action: PermissionAction.UPDATE,
       },
       {
         name: PERMISSIONS.MENU_DELETE,
-        displayName: "Eliminar Items Menú",
+        displayName: 'Eliminar Items Menú',
         module: PermissionModule.MENU,
         action: PermissionAction.DELETE,
       },
@@ -146,25 +138,25 @@ export class RolesService {
       // Reservations
       {
         name: PERMISSIONS.RESERVATIONS_READ,
-        displayName: "Ver Reservas",
+        displayName: 'Ver Reservas',
         module: PermissionModule.RESERVATIONS,
         action: PermissionAction.READ,
       },
       {
         name: PERMISSIONS.RESERVATIONS_CREATE,
-        displayName: "Crear Reservas",
+        displayName: 'Crear Reservas',
         module: PermissionModule.RESERVATIONS,
         action: PermissionAction.CREATE,
       },
       {
         name: PERMISSIONS.RESERVATIONS_UPDATE,
-        displayName: "Actualizar Reservas",
+        displayName: 'Actualizar Reservas',
         module: PermissionModule.RESERVATIONS,
         action: PermissionAction.UPDATE,
       },
       {
         name: PERMISSIONS.RESERVATIONS_DELETE,
-        displayName: "Eliminar Reservas",
+        displayName: 'Eliminar Reservas',
         module: PermissionModule.RESERVATIONS,
         action: PermissionAction.DELETE,
       },
@@ -172,50 +164,50 @@ export class RolesService {
       // Users & Roles
       {
         name: PERMISSIONS.USERS_READ,
-        displayName: "Ver Usuarios",
+        displayName: 'Ver Usuarios',
         module: PermissionModule.USERS,
         action: PermissionAction.READ,
       },
       {
         name: PERMISSIONS.USERS_CREATE,
-        displayName: "Crear Usuarios",
+        displayName: 'Crear Usuarios',
         module: PermissionModule.USERS,
         action: PermissionAction.CREATE,
       },
       {
         name: PERMISSIONS.USERS_UPDATE,
-        displayName: "Actualizar Usuarios",
+        displayName: 'Actualizar Usuarios',
         module: PermissionModule.USERS,
         action: PermissionAction.UPDATE,
       },
       {
         name: PERMISSIONS.USERS_DELETE,
-        displayName: "Eliminar Usuarios",
+        displayName: 'Eliminar Usuarios',
         module: PermissionModule.USERS,
         action: PermissionAction.DELETE,
       },
 
       {
         name: PERMISSIONS.ROLES_READ,
-        displayName: "Ver Roles",
+        displayName: 'Ver Roles',
         module: PermissionModule.ROLES,
         action: PermissionAction.READ,
       },
       {
         name: PERMISSIONS.ROLES_CREATE,
-        displayName: "Crear Roles",
+        displayName: 'Crear Roles',
         module: PermissionModule.ROLES,
         action: PermissionAction.CREATE,
       },
       {
         name: PERMISSIONS.ROLES_UPDATE,
-        displayName: "Actualizar Roles",
+        displayName: 'Actualizar Roles',
         module: PermissionModule.ROLES,
         action: PermissionAction.UPDATE,
       },
       {
         name: PERMISSIONS.ROLES_DELETE,
-        displayName: "Eliminar Roles",
+        displayName: 'Eliminar Roles',
         module: PermissionModule.ROLES,
         action: PermissionAction.DELETE,
       },
@@ -230,13 +222,13 @@ export class RolesService {
       // Settings
       {
         name: PERMISSIONS.SETTINGS_READ,
-        displayName: "Ver Configuración",
+        displayName: 'Ver Configuración',
         module: PermissionModule.SETTINGS,
         action: PermissionAction.READ,
       },
       {
         name: PERMISSIONS.SETTINGS_UPDATE,
-        displayName: "Actualizar Configuración",
+        displayName: 'Actualizar Configuración',
         module: PermissionModule.SETTINGS,
         action: PermissionAction.UPDATE,
       },
@@ -251,7 +243,7 @@ export class RolesService {
       // Audit
       {
         name: PERMISSIONS.AUDIT_READ,
-        displayName: "Ver Auditoría",
+        displayName: 'Ver Auditoría',
         module: PermissionModule.AUDIT,
         action: PermissionAction.READ,
       },
@@ -279,7 +271,7 @@ export class RolesService {
       // },
       {
         name: PERMISSIONS.SYSTEM_MANAGE,
-        displayName: "Gestionar Sistema",
+        displayName: 'Gestionar Sistema',
         module: PermissionModule.SYSTEM,
         action: PermissionAction.MANAGE,
       },
@@ -311,26 +303,26 @@ export class RolesService {
       // },
       {
         name: ROLES.ADMIN,
-        displayName: "Administrador",
-        description: "Acceso administrativo con permisos limitados de sistema",
+        displayName: 'Administrador',
+        description: 'Acceso administrativo con permisos limitados de sistema',
         isSystem: true,
       },
       {
         name: ROLES.MANAGER,
-        displayName: "Gerente",
-        description: "Gestión de operaciones del restaurante y reportes",
+        displayName: 'Gerente',
+        description: 'Gestión de operaciones del restaurante y reportes',
         isSystem: true,
       },
       {
         name: ROLES.STAFF,
-        displayName: "Personal",
-        description: "Acceso básico para operaciones diarias",
+        displayName: 'Personal',
+        description: 'Acceso básico para operaciones diarias',
         isSystem: true,
       },
       {
         name: ROLES.USER,
-        displayName: "Usuario",
-        description: "Usuario final con acceso limitado",
+        displayName: 'Usuario',
+        description: 'Usuario final con acceso limitado',
         isSystem: true,
       },
       // TODO: Add EMPLOYEE role
@@ -385,7 +377,7 @@ export class RolesService {
     // Admin - Most permissions except system-critical ones
     const adminRole = await this.roleRepository.findOne({
       where: { name: ROLES.ADMIN },
-      relations: ["permissions"],
+      relations: ['permissions'],
     });
 
     if (adminRole && adminRole.permissions.length === 0) {
@@ -411,7 +403,7 @@ export class RolesService {
     // Manager - Business operations focused
     const managerRole = await this.roleRepository.findOne({
       where: { name: ROLES.MANAGER },
-      relations: ["permissions"],
+      relations: ['permissions'],
     });
 
     if (managerRole && managerRole.permissions.length === 0) {
@@ -470,30 +462,30 @@ export class RolesService {
 
   async getAllRoles(): Promise<Role[]> {
     return await this.roleRepository.find({
-      relations: ["permissions"],
+      relations: ['permissions'],
     });
   }
 
   async getAllPermissions(): Promise<Permission[]> {
     return await this.permissionRepository.find({
-      order: { module: "ASC", action: "ASC" },
+      order: { module: 'ASC', action: 'ASC' },
     });
   }
 
   async assignRoleToUser(userId: number, roleId: number): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ["roles"],
+      relations: ['roles'],
     });
 
     if (!user) {
-      throw new NotFoundException("Usuario no encontrado");
+      throw new NotFoundException('Usuario no encontrado');
     }
 
     const role = await this.roleRepository.findOne({ where: { id: roleId } });
 
     if (!role) {
-      throw new NotFoundException("Rol no encontrado");
+      throw new NotFoundException('Rol no encontrado');
     }
 
     if (!user.roles) {
@@ -502,7 +494,7 @@ export class RolesService {
 
     const hasRole = user.roles.some((r) => r.id === roleId);
     if (hasRole) {
-      throw new BadRequestException("El usuario ya tiene este rol asignado");
+      throw new BadRequestException('El usuario ya tiene este rol asignado');
     }
 
     user.roles.push(role);
@@ -512,11 +504,11 @@ export class RolesService {
   async removeRoleFromUser(userId: number, roleId: number): Promise<void> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      relations: ["roles"],
+      relations: ['roles'],
     });
 
     if (!user) {
-      throw new NotFoundException("Usuario no encontrado");
+      throw new NotFoundException('Usuario no encontrado');
     }
 
     user.roles = user.roles?.filter((role) => role.id !== roleId) || [];

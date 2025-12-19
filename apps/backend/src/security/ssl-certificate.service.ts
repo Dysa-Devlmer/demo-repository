@@ -1,11 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { WinstonLogger } from "../common/logger/winston.logger";
-import * as fs from "fs";
-import * as path from "path";
-import * as https from "https";
-import * as crypto from "crypto";
-import { promisify } from "util";
-import { exec } from "child_process";
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { WinstonLogger } from '../common/logger/winston.logger';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as https from 'https';
+import * as crypto from 'crypto';
+import { promisify } from 'util';
+import { exec } from 'child_process';
 
 const execAsync = promisify(exec);
 
@@ -20,7 +20,7 @@ export interface SSLCertificate {
   validFrom: Date;
   validTo: Date;
   fingerprint: string;
-  status: "valid" | "expired" | "expiring" | "invalid";
+  status: 'valid' | 'expired' | 'expiring' | 'invalid';
   autoRenew: boolean;
   created: Date;
   lastChecked: Date;
@@ -41,33 +41,32 @@ export interface SSLConfig {
 }
 
 @Injectable()
-export class SSLCertificateService {
+export class SSLCertificateService implements OnModuleDestroy {
   private readonly logger = new WinstonLogger();
   private certificates: Map<string, SSLCertificate> = new Map();
   private config: SSLConfig;
+  private renewalInterval?: NodeJS.Timeout;
 
   constructor() {
     this.config = {
-      enabled: process.env.SSL_ENABLED === "true",
-      autoRenew: process.env.SSL_AUTO_RENEW !== "false",
+      enabled: process.env.SSL_ENABLED === 'true',
+      autoRenew: process.env.SSL_AUTO_RENEW !== 'false',
       renewBeforeDays: parseInt(process.env.SSL_RENEW_DAYS || '30', 10) || 30,
-      certDir: process.env.SSL_CERT_DIR || "/etc/ssl/dysabot",
-      domains: (process.env.SSL_DOMAINS || "localhost").split(","),
-      email: process.env.SSL_EMAIL || "admin@dysabot.local",
-      acmeServer:
-        process.env.SSL_ACME_SERVER ||
-        "https://acme-v02.api.letsencrypt.org/directory",
+      certDir: process.env.SSL_CERT_DIR || '/etc/ssl/dysabot',
+      domains: (process.env.SSL_DOMAINS || 'localhost').split(','),
+      email: process.env.SSL_EMAIL || 'admin@dysabot.local',
+      acmeServer: process.env.SSL_ACME_SERVER || 'https://acme-v02.api.letsencrypt.org/directory',
       keySize: parseInt(process.env.SSL_KEY_SIZE || '2048', 10) || 2048,
-      algorithm: process.env.SSL_ALGORITHM || "RSA",
+      algorithm: process.env.SSL_ALGORITHM || 'RSA',
       cipherSuite: [
-        "ECDHE-RSA-AES256-GCM-SHA384",
-        "ECDHE-RSA-AES128-GCM-SHA256",
-        "ECDHE-RSA-AES256-SHA384",
-        "ECDHE-RSA-AES128-SHA256",
-        "ECDHE-RSA-AES256-SHA",
-        "ECDHE-RSA-AES128-SHA",
+        'ECDHE-RSA-AES256-GCM-SHA384',
+        'ECDHE-RSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES256-SHA384',
+        'ECDHE-RSA-AES128-SHA256',
+        'ECDHE-RSA-AES256-SHA',
+        'ECDHE-RSA-AES128-SHA',
       ],
-      protocols: ["TLSv1.2", "TLSv1.3"],
+      protocols: ['TLSv1.2', 'TLSv1.3'],
     };
 
     this.initializeSSL();
@@ -76,7 +75,7 @@ export class SSLCertificateService {
   private async initializeSSL() {
     try {
       if (!this.config.enabled) {
-        this.logger.log("SSL/TLS is disabled", "SSLCertificateService");
+        this.logger.log('SSL/TLS is disabled', 'SSLCertificateService');
         return;
       }
 
@@ -93,29 +92,32 @@ export class SSLCertificateService {
         await this.checkRenewals();
 
         // Schedule periodic renewal checks (daily)
-        setInterval(
+        this.renewalInterval = setInterval(
           async () => {
             await this.checkRenewals();
           },
-          24 * 60 * 60 * 1000,
+          24 * 60 * 60 * 1000
         );
       }
 
-      this.logger.log(
-        "SSL/TLS certificate service initialized",
-        "SSLCertificateService",
-        {
-          enabled: this.config.enabled,
-          autoRenew: this.config.autoRenew,
-          domains: this.config.domains.length,
-        },
-      );
+      this.logger.log('SSL/TLS certificate service initialized', 'SSLCertificateService', {
+        enabled: this.config.enabled,
+        autoRenew: this.config.autoRenew,
+        domains: this.config.domains.length,
+      });
     } catch (error) {
       this.logger.error(
-        "Failed to initialize SSL certificate service",
+        'Failed to initialize SSL certificate service',
         error.stack,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
+    }
+  }
+
+  onModuleDestroy() {
+    if (this.renewalInterval) {
+      clearInterval(this.renewalInterval);
+      this.renewalInterval = undefined;
     }
   }
 
@@ -144,11 +146,11 @@ export class SSLCertificateService {
 
       this.logger.log(
         `Self-signed certificate created for domain: ${domain}`,
-        "SSLCertificateService",
+        'SSLCertificateService',
         {
           certId,
           validTo: certificate.validTo,
-        },
+        }
       );
 
       return certificate;
@@ -156,7 +158,7 @@ export class SSLCertificateService {
       this.logger.error(
         `Failed to create self-signed certificate for ${domain}`,
         error.stack,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
       throw new Error(`Certificate creation failed: ${error.message}`);
     }
@@ -168,7 +170,7 @@ export class SSLCertificateService {
       // In production, you'd use ACME client like certbot or acme.js
       this.logger.log(
         `Requesting Let's Encrypt certificate for: ${domain}`,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
 
       const certId = `le_${domain}_${Date.now()}`;
@@ -185,7 +187,7 @@ export class SSLCertificateService {
 
       this.logger.warn(
         `Using self-signed certificate as Let's Encrypt placeholder for: ${domain}`,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
 
       return certificate;
@@ -193,7 +195,7 @@ export class SSLCertificateService {
       this.logger.error(
         `Failed to request Let's Encrypt certificate for ${domain}`,
         error.stack,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
       throw error;
     }
@@ -206,83 +208,63 @@ export class SSLCertificateService {
       }
 
       const files = fs.readdirSync(this.config.certDir);
-      const certFiles = files.filter((f) => f.endsWith(".crt"));
+      const certFiles = files.filter((f) => f.endsWith('.crt'));
 
       for (const certFile of certFiles) {
         try {
           const certPath = path.join(this.config.certDir, certFile);
-          const keyFile = certFile.replace(".crt", ".key");
+          const keyFile = certFile.replace('.crt', '.key');
           const keyPath = path.join(this.config.certDir, keyFile);
 
           if (fs.existsSync(keyPath)) {
-            const certificate = await this.loadCertificateInfo(
-              certPath,
-              keyPath,
-            );
-            const certId = certFile.replace(".crt", "");
+            const certificate = await this.loadCertificateInfo(certPath, keyPath);
+            const certId = certFile.replace('.crt', '');
             certificate.id = certId;
-            certificate.domain =
-              certificate.subject.split("CN=")[1]?.split(",")[0] || "unknown";
+            certificate.domain = certificate.subject.split('CN=')[1]?.split(',')[0] || 'unknown';
 
             this.certificates.set(certId, certificate);
           }
         } catch (error) {
-          this.logger.warn(
-            `Failed to load certificate: ${certFile}`,
-            "SSLCertificateService",
-          );
+          this.logger.warn(`Failed to load certificate: ${certFile}`, 'SSLCertificateService');
         }
       }
 
-      this.logger.log(
-        `Loaded ${this.certificates.size} certificates`,
-        "SSLCertificateService",
-      );
+      this.logger.log(`Loaded ${this.certificates.size} certificates`, 'SSLCertificateService');
     } catch (error) {
-      this.logger.error(
-        "Failed to load certificates",
-        error.stack,
-        "SSLCertificateService",
-      );
+      this.logger.error('Failed to load certificates', error.stack, 'SSLCertificateService');
     }
   }
 
-  private async loadCertificateInfo(
-    certPath: string,
-    keyPath: string,
-  ): Promise<SSLCertificate> {
+  private async loadCertificateInfo(certPath: string, keyPath: string): Promise<SSLCertificate> {
     try {
-      const certContent = fs.readFileSync(certPath, "utf8");
+      const certContent = fs.readFileSync(certPath, 'utf8');
       const cert = crypto.X509Certificate
         ? new crypto.X509Certificate(certContent)
         : await this.parseX509Certificate(certPath);
 
-      const fingerprint = crypto
-        .createHash("sha256")
-        .update(certContent)
-        .digest("hex");
+      const fingerprint = crypto.createHash('sha256').update(certContent).digest('hex');
 
       const validFrom = cert.validFrom ? new Date(cert.validFrom) : new Date();
       const validTo = cert.validTo ? new Date(cert.validTo) : new Date();
       const now = new Date();
 
-      let status: "valid" | "expired" | "expiring" | "invalid" = "valid";
+      let status: 'valid' | 'expired' | 'expiring' | 'invalid' = 'valid';
       if (validTo < now) {
-        status = "expired";
+        status = 'expired';
       } else if (
         validTo.getTime() - now.getTime() <
         this.config.renewBeforeDays * 24 * 60 * 60 * 1000
       ) {
-        status = "expiring";
+        status = 'expiring';
       }
 
       return {
-        id: "",
-        domain: "",
+        id: '',
+        domain: '',
         certificatePath: certPath,
         privateKeyPath: keyPath,
-        issuer: cert.issuer || "Unknown",
-        subject: cert.subject || "Unknown",
+        issuer: cert.issuer || 'Unknown',
+        subject: cert.subject || 'Unknown',
         validFrom,
         validTo,
         fingerprint,
@@ -309,8 +291,8 @@ export class SSLCertificateService {
       return {
         validFrom: validFromMatch ? validFromMatch[1] : null,
         validTo: validToMatch ? validToMatch[1] : null,
-        subject: subjectMatch ? subjectMatch[1] : "Unknown",
-        issuer: issuerMatch ? issuerMatch[1] : "Unknown",
+        subject: subjectMatch ? subjectMatch[1] : 'Unknown',
+        issuer: issuerMatch ? issuerMatch[1] : 'Unknown',
       };
     } catch (error) {
       throw new Error(`Failed to parse certificate: ${error.message}`);
@@ -320,18 +302,14 @@ export class SSLCertificateService {
   async checkRenewals(): Promise<void> {
     try {
       const expiring = Array.from(this.certificates.values()).filter(
-        (cert) => cert.status === "expiring" && cert.autoRenew,
+        (cert) => cert.status === 'expiring' && cert.autoRenew
       );
 
       for (const cert of expiring) {
-        this.logger.log(
-          `Certificate expiring soon: ${cert.domain}`,
-          "SSLCertificateService",
-          {
-            domain: cert.domain,
-            validTo: cert.validTo,
-          },
-        );
+        this.logger.log(`Certificate expiring soon: ${cert.domain}`, 'SSLCertificateService', {
+          domain: cert.domain,
+          validTo: cert.validTo,
+        });
 
         try {
           await this.renewCertificate(cert.id);
@@ -339,15 +317,15 @@ export class SSLCertificateService {
           this.logger.error(
             `Failed to renew certificate: ${cert.domain}`,
             error.stack,
-            "SSLCertificateService",
+            'SSLCertificateService'
           );
         }
       }
     } catch (error) {
       this.logger.error(
-        "Failed to check certificate renewals",
+        'Failed to check certificate renewals',
         error.stack,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
     }
   }
@@ -358,15 +336,12 @@ export class SSLCertificateService {
       throw new Error(`Certificate not found: ${certId}`);
     }
 
-    this.logger.log(
-      `Renewing certificate: ${cert.domain}`,
-      "SSLCertificateService",
-    );
+    this.logger.log(`Renewing certificate: ${cert.domain}`, 'SSLCertificateService');
 
     try {
       // Create new certificate
       const newCert =
-        cert.issuer.includes("Let's Encrypt") || cert.issuer.includes("ACME")
+        cert.issuer.includes("Let's Encrypt") || cert.issuer.includes('ACME')
           ? await this.requestLetsEncryptCertificate(cert.domain)
           : await this.createSelfSignedCertificate(cert.domain);
 
@@ -380,7 +355,7 @@ export class SSLCertificateService {
       } catch (error) {
         this.logger.warn(
           `Failed to remove old certificate files for: ${cert.domain}`,
-          "SSLCertificateService",
+          'SSLCertificateService'
         );
       }
 
@@ -388,22 +363,18 @@ export class SSLCertificateService {
       this.certificates.delete(certId);
       this.certificates.set(newCert.id, newCert);
 
-      this.logger.log(
-        `Certificate renewed successfully: ${cert.domain}`,
-        "SSLCertificateService",
-        {
-          oldCertId: certId,
-          newCertId: newCert.id,
-          validTo: newCert.validTo,
-        },
-      );
+      this.logger.log(`Certificate renewed successfully: ${cert.domain}`, 'SSLCertificateService', {
+        oldCertId: certId,
+        newCertId: newCert.id,
+        validTo: newCert.validTo,
+      });
 
       return newCert;
     } catch (error) {
       this.logger.error(
         `Certificate renewal failed: ${cert.domain}`,
         error.stack,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
       throw error;
     }
@@ -417,12 +388,10 @@ export class SSLCertificateService {
 
       // Find certificate for domain or use first available
       const cert = domain
-        ? Array.from(this.certificates.values()).find(
-            (c) => c.domain === domain,
-          )
+        ? Array.from(this.certificates.values()).find((c) => c.domain === domain)
         : Array.from(this.certificates.values())[0];
 
-      if (!cert || cert.status === "expired") {
+      if (!cert || cert.status === 'expired') {
         return null;
       }
 
@@ -433,27 +402,23 @@ export class SSLCertificateService {
           fs.existsSync(cert.chainPath) && {
             ca: fs.readFileSync(cert.chainPath),
           }),
-        ciphers: this.config.cipherSuite.join(":"),
-        secureProtocol: "TLS_method",
-        minVersion: "TLSv1.2",
-        maxVersion: "TLSv1.3",
+        ciphers: this.config.cipherSuite.join(':'),
+        secureProtocol: 'TLS_method',
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.3',
         honorCipherOrder: true,
-        ecdhCurve: "prime256v1:secp384r1:secp521r1",
+        ecdhCurve: 'prime256v1:secp384r1:secp521r1',
         dhparam: this.generateDHParams(),
       };
     } catch (error) {
-      this.logger.error(
-        "Failed to get HTTPS options",
-        error.stack,
-        "SSLCertificateService",
-      );
+      this.logger.error('Failed to get HTTPS options', error.stack, 'SSLCertificateService');
       return null;
     }
   }
 
   private generateDHParams(): Buffer | undefined {
     try {
-      const dhParamsPath = path.join(this.config.certDir, "dhparams.pem");
+      const dhParamsPath = path.join(this.config.certDir, 'dhparams.pem');
 
       if (!fs.existsSync(dhParamsPath)) {
         // Generate DH params asynchronously
@@ -463,7 +428,7 @@ export class SSLCertificateService {
 
       return fs.readFileSync(dhParamsPath);
     } catch (error) {
-      this.logger.warn("Failed to load DH params", "SSLCertificateService");
+      this.logger.warn('Failed to load DH params', 'SSLCertificateService');
       return undefined;
     }
   }
@@ -471,21 +436,14 @@ export class SSLCertificateService {
   private async generateDHParamsAsync(dhParamsPath: string): Promise<void> {
     try {
       this.logger.log(
-        "Generating DH parameters (this may take a while)...",
-        "SSLCertificateService",
+        'Generating DH parameters (this may take a while)...',
+        'SSLCertificateService'
       );
       const command = `openssl dhparam -out ${dhParamsPath} 2048`;
       await execAsync(command);
-      this.logger.log(
-        "DH parameters generated successfully",
-        "SSLCertificateService",
-      );
+      this.logger.log('DH parameters generated successfully', 'SSLCertificateService');
     } catch (error) {
-      this.logger.error(
-        "Failed to generate DH parameters",
-        error.stack,
-        "SSLCertificateService",
-      );
+      this.logger.error('Failed to generate DH parameters', error.stack, 'SSLCertificateService');
     }
   }
 
@@ -514,19 +472,15 @@ export class SSLCertificateService {
       // Remove from registry
       this.certificates.delete(id);
 
-      this.logger.log(
-        `Certificate deleted: ${cert.domain}`,
-        "SSLCertificateService",
-        {
-          certId: id,
-          domain: cert.domain,
-        },
-      );
+      this.logger.log(`Certificate deleted: ${cert.domain}`, 'SSLCertificateService', {
+        certId: id,
+        domain: cert.domain,
+      });
     } catch (error) {
       this.logger.error(
         `Failed to delete certificate: ${id}`,
         error.stack,
-        "SSLCertificateService",
+        'SSLCertificateService'
       );
       throw error;
     }
@@ -539,7 +493,7 @@ export class SSLCertificateService {
   async updateSSLConfig(newConfig: Partial<SSLConfig>): Promise<void> {
     this.config = { ...this.config, ...newConfig };
 
-    this.logger.log("SSL configuration updated", "SSLCertificateService", {
+    this.logger.log('SSL configuration updated', 'SSLCertificateService', {
       enabled: this.config.enabled,
       autoRenew: this.config.autoRenew,
       domains: this.config.domains.length,

@@ -34,7 +34,7 @@ export function slugify(str: string) {
     .replace(/[^a-z0-9 -]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
-    .trim('-')
+    .replace(/^-+|-+$/g, '')
 }
 
 export function generateSubdomain(name: string) {

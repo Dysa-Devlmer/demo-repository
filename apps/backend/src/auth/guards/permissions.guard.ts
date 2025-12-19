@@ -1,11 +1,6 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-} from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { UserFromJwt } from "../jwt.strategy";
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { UserFromJwt } from '../jwt.strategy';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -13,10 +8,10 @@ export class PermissionsGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     // Get required permissions from metadata
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
-      "permissions",
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredPermissions = this.reflector.getAllAndOverride<string[]>('permissions', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     // If no permissions required, allow access
     if (!requiredPermissions || requiredPermissions.length === 0) {
@@ -28,17 +23,17 @@ export class PermissionsGuard implements CanActivate {
     const user: UserFromJwt = request.user;
 
     if (!user) {
-      throw new ForbiddenException("Usuario no autenticado");
+      throw new ForbiddenException('Usuario no autenticado');
     }
 
     // Check if user has any of the required permissions
     const hasPermission = requiredPermissions.some((permission) =>
-      user.permissions?.includes(permission),
+      user.permissions?.includes(permission)
     );
 
     if (!hasPermission) {
       throw new ForbiddenException(
-        `Acceso denegado. Se requieren permisos: ${requiredPermissions.join(", ")}`,
+        `Acceso denegado. Se requieren permisos: ${requiredPermissions.join(', ')}`
       );
     }
 

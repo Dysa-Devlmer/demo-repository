@@ -25,12 +25,7 @@ export class SessionsService {
   /**
    * Create a new session
    */
-  createSession(
-    userId: number,
-    token: string,
-    userAgent?: string,
-    ip?: string
-  ): UserSession {
+  createSession(userId: number, token: string, userAgent?: string, ip?: string): UserSession {
     const sessionId = this.generateSessionId();
     const { device, browser, os } = this.parseUserAgent(userAgent || '');
 
@@ -70,9 +65,7 @@ export class SessionsService {
     });
 
     // Sort by last active (most recent first)
-    return userSessions.sort((a, b) =>
-      b.lastActive.getTime() - a.lastActive.getTime()
-    );
+    return userSessions.sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
   }
 
   /**
@@ -94,10 +87,7 @@ export class SessionsService {
   /**
    * Revoke all sessions except current
    */
-  async revokeAllOtherSessions(
-    userId: number,
-    currentToken: string
-  ): Promise<number> {
+  async revokeAllOtherSessions(userId: number, currentToken: string): Promise<number> {
     let revokedCount = 0;
 
     const tokensToDelete: string[] = [];
@@ -109,7 +99,7 @@ export class SessionsService {
       }
     });
 
-    tokensToDelete.forEach(token => this.sessions.delete(token));
+    tokensToDelete.forEach((token) => this.sessions.delete(token));
 
     return revokedCount;
   }
@@ -141,7 +131,7 @@ export class SessionsService {
       }
     });
 
-    tokensToDelete.forEach(token => this.sessions.delete(token));
+    tokensToDelete.forEach((token) => this.sessions.delete(token));
 
     return cleanedCount;
   }

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Check, X, Zap, ArrowLeft, Sparkles, Crown, Rocket } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { trackSelectPlan } from '@/lib/analytics'
+import { trackSelectPlan, type PlanType } from '@/lib/analytics'
 
 const planes = [
   {
@@ -81,6 +81,11 @@ const billingOptions = [
 
 export default function PlanesPage() {
   const [billing, setBilling] = useState('monthly')
+  const analyticsPlanMap: Record<string, PlanType> = {
+    starter: 'saas-multi',
+    professional: 'saas-dedicated',
+    enterprise: 'on-premise',
+  }
 
   const calculatePrice = (basePrice: number) => {
     const option = billingOptions.find((o) => o.id === billing)
@@ -88,8 +93,9 @@ export default function PlanesPage() {
     return Math.round(basePrice * (1 - discount / 100))
   }
 
-  const handleSelectPlan = (planName: string, price: number) => {
-    trackSelectPlan(planName, price)
+  const handleSelectPlan = (planId: string, price: number) => {
+    const analyticsPlan = analyticsPlanMap[planId] ?? 'saas-multi'
+    trackSelectPlan(analyticsPlan, price)
   }
 
   return (

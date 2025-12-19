@@ -410,7 +410,7 @@ describe('WhatsAppService - Unit Tests', () => {
       expect(result.success).toBe(true);
       const callArgs = mockAxiosInstance.post.mock.calls[0][1];
       expect(callArgs.interactive.type).toBe('list');
-      expect(callArgs.interactive.header.text).toContain('ChefBot Dysa');
+      expect(callArgs.interactive.header.text).toContain('ChatBotDysa - Menú');
       expect(callArgs.interactive.body.text).toContain('menú');
       expect(callArgs.interactive.action.sections).toHaveLength(2);
     });

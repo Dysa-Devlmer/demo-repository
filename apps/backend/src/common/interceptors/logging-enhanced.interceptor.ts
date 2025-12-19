@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
@@ -156,14 +150,7 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
     const sanitized = { ...body };
 
     // Remover campos sensibles
-    const sensitiveFields = [
-      'password',
-      'token',
-      'secret',
-      'apiKey',
-      'creditCard',
-      'ssn',
-    ];
+    const sensitiveFields = ['password', 'token', 'secret', 'apiKey', 'creditCard', 'ssn'];
 
     for (const field of sensitiveFields) {
       if (sanitized[field]) {

@@ -6,64 +6,64 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
-} from "typeorm";
-import { Customer } from "./customer.entity";
-import { Order } from "./order.entity";
+} from 'typeorm';
+import { Customer } from './customer.entity';
+import { Order } from './order.entity';
 
 export enum ReviewStatus {
-  PENDING = "pending",
-  APPROVED = "approved",
-  REJECTED = "rejected",
-  FLAGGED = "flagged",
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  FLAGGED = 'flagged',
 }
 
 export enum ReviewType {
-  ORDER = "order",
-  RESTAURANT = "restaurant",
-  SERVICE = "service",
-  DELIVERY = "delivery",
+  ORDER = 'order',
+  RESTAURANT = 'restaurant',
+  SERVICE = 'service',
+  DELIVERY = 'delivery',
 }
 
-@Entity("reviews")
+@Entity('reviews')
 export class Review {
   @PrimaryGeneratedColumn()
   id: number;
 
   @ManyToOne(() => Customer, (customer) => customer.reviews, {
-    onDelete: "CASCADE",
+    onDelete: 'CASCADE',
     eager: true,
   })
-  @JoinColumn({ name: "customer_id" })
+  @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
   @ManyToOne(() => Order, (order) => order.reviews, {
-    onDelete: "CASCADE",
+    onDelete: 'CASCADE',
     nullable: true,
   })
-  @JoinColumn({ name: "order_id" })
+  @JoinColumn({ name: 'order_id' })
   order?: Order;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: ReviewType,
     default: ReviewType.RESTAURANT,
   })
   type: ReviewType;
 
-  @Column({ type: "int", width: 1 })
+  @Column({ type: 'int', width: 1 })
   rating: number; // 1-5 stars
 
-  @Column({ type: "text", nullable: true })
+  @Column({ type: 'text', nullable: true })
   comment?: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: ReviewStatus,
     default: ReviewStatus.PENDING,
   })
   status: ReviewStatus;
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   ratings_breakdown?: {
     food_quality?: number;
     service?: number;
@@ -72,12 +72,12 @@ export class Review {
     delivery_time?: number;
   };
 
-  @Column({ type: "simple-array", nullable: true })
+  @Column({ type: 'simple-array', nullable: true })
   photos?: string[]; // URLs de fotos subidas
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata?: {
-    source?: "whatsapp" | "web_widget" | "email" | "admin";
+    source?: 'whatsapp' | 'web_widget' | 'email' | 'admin';
     ip_address?: string;
     user_agent?: string;
     flagged_reason?: string;

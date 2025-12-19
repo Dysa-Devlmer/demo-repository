@@ -25,7 +25,10 @@ export class I18nService {
         this.translations.set(lang, JSON.parse(content));
         console.log(`✅ Enterprise++++ i18n loaded for ${lang.toUpperCase()}`);
       } catch (error) {
-        console.error(`🚨 CRITICAL: Failed to load Enterprise++++ translations for ${lang}:`, error.message);
+        console.error(
+          `🚨 CRITICAL: Failed to load Enterprise++++ translations for ${lang}:`,
+          error.message
+        );
       }
     }
   }

@@ -1,6 +1,6 @@
-import { Injectable, LoggerService } from "@nestjs/common";
-import * as winston from "winston";
-import "winston-daily-rotate-file";
+import { Injectable, LoggerService } from '@nestjs/common';
+import * as winston from 'winston';
+import 'winston-daily-rotate-file';
 
 export interface LogContext {
   userId?: number;
@@ -21,33 +21,31 @@ export class WinstonLogger implements LoggerService {
 
   constructor() {
     const logFormat = winston.format.combine(
-      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss.SSS" }),
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
       winston.format.errors({ stack: true }),
       winston.format.json(),
-      winston.format.printf(
-        ({ timestamp, level, message, context, trace, ...meta }) => {
-          const logEntry = {
-            timestamp,
-            level: level.toUpperCase(),
-            message,
-            context: context || "Application",
-            environment: process.env.NODE_ENV || "development",
-            service: "chatbotdysa-backend",
-            version: process.env.npm_package_version || "1.0.0",
-            ...(trace ? { trace } : {}),
-            ...meta,
-          };
-          return JSON.stringify(logEntry);
-        },
-      ),
+      winston.format.printf(({ timestamp, level, message, context, trace, ...meta }) => {
+        const logEntry = {
+          timestamp,
+          level: level.toUpperCase(),
+          message,
+          context: context || 'Application',
+          environment: process.env.NODE_ENV || 'development',
+          service: 'chatbotdysa-backend',
+          version: process.env.npm_package_version || '1.0.0',
+          ...(trace ? { trace } : {}),
+          ...meta,
+        };
+        return JSON.stringify(logEntry);
+      })
     );
 
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || "info",
+      level: process.env.LOG_LEVEL || 'info',
       format: logFormat,
       defaultMeta: {
-        service: "chatbotdysa-backend",
-        environment: process.env.NODE_ENV || "development",
+        service: 'chatbotdysa-backend',
+        environment: process.env.NODE_ENV || 'development',
       },
       transports: [
         // Console transport for development
@@ -56,81 +54,75 @@ export class WinstonLogger implements LoggerService {
             winston.format.colorize(),
             winston.format.simple(),
             winston.format.printf(({ timestamp, level, message, context }) => {
-              return `${timestamp} [${context || "App"}] ${level}: ${message}`;
-            }),
+              return `${timestamp} [${context || 'App'}] ${level}: ${message}`;
+            })
           ),
         }),
 
         // File transport for all logs
         new winston.transports.DailyRotateFile({
-          filename: "logs/app-%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          maxSize: "100m",
-          maxFiles: "30d",
-          auditFile: "logs/app-audit.json",
+          filename: 'logs/app-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '100m',
+          maxFiles: '30d',
+          auditFile: 'logs/app-audit.json',
         }),
 
         // Separate file for errors
         new winston.transports.DailyRotateFile({
-          filename: "logs/error-%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          level: "error",
-          maxSize: "100m",
-          maxFiles: "90d",
-          auditFile: "logs/error-audit.json",
+          filename: 'logs/error-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          level: 'error',
+          maxSize: '100m',
+          maxFiles: '90d',
+          auditFile: 'logs/error-audit.json',
         }),
 
         // Separate file for HTTP requests
         new winston.transports.DailyRotateFile({
-          filename: "logs/http-%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          maxSize: "100m",
-          maxFiles: "30d",
-          auditFile: "logs/http-audit.json",
-          format: winston.format.combine(
-            logFormat,
-            winston.format.label({ label: "HTTP" }),
-          ),
+          filename: 'logs/http-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '100m',
+          maxFiles: '30d',
+          auditFile: 'logs/http-audit.json',
+          format: winston.format.combine(logFormat, winston.format.label({ label: 'HTTP' })),
         }),
 
         // Security logs
         new winston.transports.DailyRotateFile({
-          filename: "logs/security-%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          maxSize: "100m",
-          maxFiles: "180d", // Keep security logs longer
-          auditFile: "logs/security-audit.json",
-          format: winston.format.combine(
-            logFormat,
-            winston.format.label({ label: "SECURITY" }),
-          ),
+          filename: 'logs/security-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '100m',
+          maxFiles: '180d', // Keep security logs longer
+          auditFile: 'logs/security-audit.json',
+          format: winston.format.combine(logFormat, winston.format.label({ label: 'SECURITY' })),
         }),
       ],
 
       // Handle uncaught exceptions and rejections
       exceptionHandlers: [
         new winston.transports.DailyRotateFile({
-          filename: "logs/exceptions-%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          maxSize: "100m",
-          maxFiles: "90d",
+          filename: 'logs/exceptions-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '100m',
+          maxFiles: '90d',
         }),
       ],
 
       rejectionHandlers: [
         new winston.transports.DailyRotateFile({
-          filename: "logs/rejections-%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          maxSize: "100m",
-          maxFiles: "90d",
+          filename: 'logs/rejections-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          maxSize: '100m',
+          maxFiles: '90d',
         }),
       ],
     });
 
     // Create logs directory if it doesn't exist
-    const fs = require("fs");
-    if (!fs.existsSync("logs")) {
-      fs.mkdirSync("logs", { recursive: true });
+    const fs = require('fs');
+    if (!fs.existsSync('logs')) {
+      fs.mkdirSync('logs', { recursive: true });
     }
   }
 
@@ -156,47 +148,41 @@ export class WinstonLogger implements LoggerService {
 
   // Enterprise-specific logging methods
   logHTTPRequest(meta: LogContext) {
-    this.logger.info("HTTP Request", {
-      context: "HTTP",
-      label: "HTTP",
+    this.logger.info('HTTP Request', {
+      context: 'HTTP',
+      label: 'HTTP',
       ...meta,
     });
   }
 
   logSecurityEvent(
     message: string,
-    meta: LogContext & { severity: "low" | "medium" | "high" | "critical" },
+    meta: LogContext & { severity: 'low' | 'medium' | 'high' | 'critical' }
   ) {
     this.logger.warn(message, {
-      context: "SECURITY",
-      label: "SECURITY",
+      context: 'SECURITY',
+      label: 'SECURITY',
       ...meta,
     });
   }
 
-  logBusinessEvent(
-    message: string,
-    meta: LogContext & { event: string; data?: any },
-  ) {
+  logBusinessEvent(message: string, meta: LogContext & { event: string; data?: any }) {
     this.logger.info(message, {
-      context: "BUSINESS",
+      context: 'BUSINESS',
       ...meta,
     });
   }
 
-  logPerformance(
-    message: string,
-    meta: LogContext & { duration: number; operation: string },
-  ) {
+  logPerformance(message: string, meta: LogContext & { duration: number; operation: string }) {
     this.logger.info(message, {
-      context: "PERFORMANCE",
+      context: 'PERFORMANCE',
       ...meta,
     });
   }
 
   logDatabaseQuery(query: string, duration: number, meta?: LogContext) {
-    this.logger.debug("Database Query", {
-      context: "DATABASE",
+    this.logger.debug('Database Query', {
+      context: 'DATABASE',
       query,
       duration,
       ...meta,
@@ -211,11 +197,7 @@ export class WinstonLogger implements LoggerService {
     const originalWarn = childLogger.warn.bind(childLogger);
     const originalDebug = childLogger.debug.bind(childLogger);
 
-    childLogger.log = (
-      message: string,
-      childContext?: string,
-      meta?: LogContext,
-    ) =>
+    childLogger.log = (message: string, childContext?: string, meta?: LogContext) =>
       originalLog(message, childContext || context, {
         ...persistentMeta,
         ...meta,
@@ -225,28 +207,20 @@ export class WinstonLogger implements LoggerService {
       message: string,
       trace?: string,
       childContext?: string,
-      meta?: LogContext,
+      meta?: LogContext
     ) =>
       originalError(message, trace, childContext || context, {
         ...persistentMeta,
         ...meta,
       });
 
-    childLogger.warn = (
-      message: string,
-      childContext?: string,
-      meta?: LogContext,
-    ) =>
+    childLogger.warn = (message: string, childContext?: string, meta?: LogContext) =>
       originalWarn(message, childContext || context, {
         ...persistentMeta,
         ...meta,
       });
 
-    childLogger.debug = (
-      message: string,
-      childContext?: string,
-      meta?: LogContext,
-    ) =>
+    childLogger.debug = (message: string, childContext?: string, meta?: LogContext) =>
       originalDebug(message, childContext || context, {
         ...persistentMeta,
         ...meta,

@@ -1,19 +1,14 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, IsNull, Not, LessThan, DataSource } from "typeorm";
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull, Not, LessThan, DataSource } from 'typeorm';
 import {
   Conversation,
   ConversationStatus,
   ConversationChannel,
   ConversationMode,
-} from "../entities/conversation.entity";
-import { Message } from "../entities/message.entity";
-import { Customer } from "../entities/customer.entity";
+} from '../entities/conversation.entity';
+import { Message } from '../entities/message.entity';
+import { Customer } from '../entities/customer.entity';
 
 @Injectable()
 export class ConversationsService {
@@ -26,7 +21,7 @@ export class ConversationsService {
     private readonly messagesRepo: Repository<Message>,
     @InjectRepository(Customer)
     private readonly customersRepo: Repository<Customer>,
-    private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource
   ) {}
 
   /**
@@ -43,9 +38,7 @@ export class ConversationsService {
     });
 
     if (!customer) {
-      throw new BadRequestException(
-        `Customer with ID ${data.customerId} not found`,
-      );
+      throw new BadRequestException(`Customer with ID ${data.customerId} not found`);
     }
 
     // Check if there's an active conversation for this customer
@@ -54,7 +47,7 @@ export class ConversationsService {
         customer: { id: data.customerId },
         status: ConversationStatus.ACTIVE,
       },
-      relations: ["customer", "messages"],
+      relations: ['customer', 'messages'],
     });
 
     if (activeConversation) {
@@ -63,7 +56,7 @@ export class ConversationsService {
       await this.conversationsRepo.save(activeConversation);
 
       this.logger.log(
-        `Returning existing active conversation ${activeConversation.session_id} for customer ${customer.name}`,
+        `Returning existing active conversation ${activeConversation.session_id} for customer ${customer.name}`
       );
       return activeConversation;
     }
@@ -85,9 +78,7 @@ export class ConversationsService {
 
     const saved = await this.conversationsRepo.save(conversation);
 
-    this.logger.log(
-      `Conversation ${sessionId} created for ${customer.name} via ${data.channel}`,
-    );
+    this.logger.log(`Conversation ${sessionId} created for ${customer.name} via ${data.channel}`);
 
     return saved;
   }
@@ -112,33 +103,30 @@ export class ConversationsService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.conversationsRepo
-      .createQueryBuilder("conversation")
-      .leftJoinAndSelect("conversation.customer", "customer")
-      .leftJoinAndSelect("conversation.messages", "messages")
-      .orderBy("conversation.last_activity", "DESC");
+      .createQueryBuilder('conversation')
+      .leftJoinAndSelect('conversation.customer', 'customer')
+      .leftJoinAndSelect('conversation.messages', 'messages')
+      .orderBy('conversation.last_activity', 'DESC');
 
     if (filters?.status) {
-      queryBuilder.andWhere("conversation.status = :status", {
+      queryBuilder.andWhere('conversation.status = :status', {
         status: filters.status,
       });
     }
 
     if (filters?.channel) {
-      queryBuilder.andWhere("conversation.channel = :channel", {
+      queryBuilder.andWhere('conversation.channel = :channel', {
         channel: filters.channel,
       });
     }
 
     if (filters?.customerId) {
-      queryBuilder.andWhere("conversation.customer.id = :customerId", {
+      queryBuilder.andWhere('conversation.customer.id = :customerId', {
         customerId: filters.customerId,
       });
     }
 
-    const [data, total] = await queryBuilder
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+    const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
 
     return {
       data,
@@ -154,10 +142,10 @@ export class ConversationsService {
   async findOne(id: number): Promise<Conversation> {
     const conversation = await this.conversationsRepo.findOne({
       where: { id },
-      relations: ["customer", "messages"],
+      relations: ['customer', 'messages'],
       order: {
         messages: {
-          created_at: "ASC",
+          created_at: 'ASC',
         },
       },
     });
@@ -175,18 +163,16 @@ export class ConversationsService {
   async findBySessionId(sessionId: string): Promise<Conversation> {
     const conversation = await this.conversationsRepo.findOne({
       where: { session_id: sessionId },
-      relations: ["customer", "messages"],
+      relations: ['customer', 'messages'],
       order: {
         messages: {
-          created_at: "ASC",
+          created_at: 'ASC',
         },
       },
     });
 
     if (!conversation) {
-      throw new NotFoundException(
-        `Conversation with session ID ${sessionId} not found`,
-      );
+      throw new NotFoundException(`Conversation with session ID ${sessionId} not found`);
     }
 
     return conversation;
@@ -202,9 +188,9 @@ export class ConversationsService {
     conversationId: number,
     data: {
       content: string;
-      sender: "bot" | "human" | "customer" | "agent";
+      sender: 'bot' | 'human' | 'customer' | 'agent';
       metadata?: any;
-    },
+    }
   ): Promise<Message> {
     this.logger.log(`[FIX v5] addMessage called for conversation ${conversationId}`);
 
@@ -213,10 +199,10 @@ export class ConversationsService {
 
     // Map sender to MessageRole
     const roleMap = {
-      bot: "bot" as const,
-      human: "agent" as const,
-      agent: "agent" as const,
-      customer: "user" as const,
+      bot: 'bot' as const,
+      human: 'agent' as const,
+      agent: 'agent' as const,
+      customer: 'user' as const,
     };
 
     const role = roleMap[data.sender];
@@ -231,19 +217,21 @@ export class ConversationsService {
           conversation_id: conversationId,
           content: data.content,
           role: role as any,
-          type: "text" as any,
+          type: 'text' as any,
           metadata: data.metadata,
         })
-        .returning("*")
+        .returning('*')
         .execute();
 
       const saved = result.raw[0] as Message;
-      this.logger.log(`[FIX v5] Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`);
+      this.logger.log(
+        `[FIX v5] Message inserted - ID: ${saved.id}, conversation_id: ${saved.conversation_id}`
+      );
 
       // STEP 2: Update conversation stats using DIRECT SQL (avoids cascade: true issue)
       // Using conversationsRepo.save() triggers cascade which resets conversation_id to NULL
-      const botIncrement = data.sender === "bot" ? 1 : 0;
-      const humanIncrement = data.sender === "human" ? 1 : 0;
+      const botIncrement = data.sender === 'bot' ? 1 : 0;
+      const humanIncrement = data.sender === 'human' ? 1 : 0;
 
       await this.dataSource.query(
         `UPDATE conversations
@@ -256,7 +244,7 @@ export class ConversationsService {
       );
 
       this.logger.log(
-        `[FIX v5] Message added to conversation ${conversation.session_id} by ${data.sender}`,
+        `[FIX v5] Message added to conversation ${conversation.session_id} by ${data.sender}`
       );
 
       return saved;
@@ -270,19 +258,14 @@ export class ConversationsService {
   /**
    * Update conversation status
    */
-  async updateStatus(
-    id: number,
-    status: ConversationStatus,
-  ): Promise<Conversation> {
+  async updateStatus(id: number, status: ConversationStatus): Promise<Conversation> {
     const conversation = await this.findOne(id);
     conversation.status = status;
     conversation.last_activity = new Date();
 
     const updated = await this.conversationsRepo.save(conversation);
 
-    this.logger.log(
-      `Conversation ${conversation.session_id} status updated to ${status}`,
-    );
+    this.logger.log(`Conversation ${conversation.session_id} status updated to ${status}`);
 
     return updated;
   }
@@ -298,9 +281,7 @@ export class ConversationsService {
 
     const escalated = await this.conversationsRepo.save(conversation);
 
-    this.logger.warn(
-      `Conversation ${conversation.session_id} escalated to agent ${agentId}`,
-    );
+    this.logger.warn(`Conversation ${conversation.session_id} escalated to agent ${agentId}`);
 
     return escalated;
   }
@@ -308,20 +289,14 @@ export class ConversationsService {
   /**
    * Resolve conversation
    */
-  async resolve(
-    id: number,
-    satisfactionScore?: number,
-    feedback?: string,
-  ): Promise<Conversation> {
+  async resolve(id: number, satisfactionScore?: number, feedback?: string): Promise<Conversation> {
     const conversation = await this.findOne(id);
     conversation.status = ConversationStatus.RESOLVED;
     conversation.last_activity = new Date();
 
     if (satisfactionScore) {
       if (satisfactionScore < 1 || satisfactionScore > 5) {
-        throw new BadRequestException(
-          "Satisfaction score must be between 1 and 5",
-        );
+        throw new BadRequestException('Satisfaction score must be between 1 and 5');
       }
       conversation.satisfaction_score = satisfactionScore;
     }
@@ -333,7 +308,7 @@ export class ConversationsService {
     const resolved = await this.conversationsRepo.save(conversation);
 
     this.logger.log(
-      `Conversation ${conversation.session_id} resolved with score ${satisfactionScore || "N/A"}`,
+      `Conversation ${conversation.session_id} resolved with score ${satisfactionScore || 'N/A'}`
     );
 
     return resolved;
@@ -376,9 +351,9 @@ export class ConversationsService {
       where: {
         status: ConversationStatus.ACTIVE,
       },
-      relations: ["customer", "messages"],
+      relations: ['customer', 'messages'],
       order: {
-        last_activity: "DESC",
+        last_activity: 'DESC',
       },
     });
   }
@@ -391,9 +366,9 @@ export class ConversationsService {
       where: {
         status: ConversationStatus.ESCALATED,
       },
-      relations: ["customer", "messages"],
+      relations: ['customer', 'messages'],
       order: {
-        last_activity: "DESC",
+        last_activity: 'DESC',
       },
     });
   }
@@ -409,9 +384,9 @@ export class ConversationsService {
         status: ConversationStatus.ACTIVE,
         last_activity: LessThan(thirtyMinutesAgo),
       },
-      relations: ["customer"],
+      relations: ['customer'],
       order: {
-        last_activity: "ASC",
+        last_activity: 'ASC',
       },
     });
   }
@@ -426,9 +401,7 @@ export class ConversationsService {
       conversation.status = ConversationStatus.CLOSED;
       await this.conversationsRepo.save(conversation);
 
-      this.logger.log(
-        `Auto-closed stale conversation ${conversation.session_id}`,
-      );
+      this.logger.log(`Auto-closed stale conversation ${conversation.session_id}`);
     }
 
     return staleConversations.length;
@@ -453,59 +426,47 @@ export class ConversationsService {
       phone: number;
     };
   }> {
-    const [
-      total,
-      active,
-      resolved,
-      closed,
-      escalated,
-      whatsapp,
-      webWidget,
-      phone,
-    ] = await Promise.all([
-      this.conversationsRepo.count(),
-      this.conversationsRepo.count({
-        where: { status: ConversationStatus.ACTIVE },
-      }),
-      this.conversationsRepo.count({
-        where: { status: ConversationStatus.RESOLVED },
-      }),
-      this.conversationsRepo.count({
-        where: { status: ConversationStatus.CLOSED },
-      }),
-      this.conversationsRepo.count({
-        where: { status: ConversationStatus.ESCALATED },
-      }),
-      this.conversationsRepo.count({
-        where: { channel: ConversationChannel.WHATSAPP },
-      }),
-      this.conversationsRepo.count({
-        where: { channel: ConversationChannel.WEB_WIDGET },
-      }),
-      this.conversationsRepo.count({
-        where: { channel: ConversationChannel.PHONE },
-      }),
-    ]);
+    const [total, active, resolved, closed, escalated, whatsapp, webWidget, phone] =
+      await Promise.all([
+        this.conversationsRepo.count(),
+        this.conversationsRepo.count({
+          where: { status: ConversationStatus.ACTIVE },
+        }),
+        this.conversationsRepo.count({
+          where: { status: ConversationStatus.RESOLVED },
+        }),
+        this.conversationsRepo.count({
+          where: { status: ConversationStatus.CLOSED },
+        }),
+        this.conversationsRepo.count({
+          where: { status: ConversationStatus.ESCALATED },
+        }),
+        this.conversationsRepo.count({
+          where: { channel: ConversationChannel.WHATSAPP },
+        }),
+        this.conversationsRepo.count({
+          where: { channel: ConversationChannel.WEB_WIDGET },
+        }),
+        this.conversationsRepo.count({
+          where: { channel: ConversationChannel.PHONE },
+        }),
+      ]);
 
     const allConversations = await this.conversationsRepo.find();
 
     const avgMessagesPerConversation =
-      allConversations.reduce((sum, c) => sum + c.message_count, 0) /
-        (total || 1);
+      allConversations.reduce((sum, c) => sum + c.message_count, 0) / (total || 1);
     const avgBotMessages =
-      allConversations.reduce((sum, c) => sum + c.bot_messages, 0) /
-        (total || 1);
+      allConversations.reduce((sum, c) => sum + c.bot_messages, 0) / (total || 1);
     const avgHumanMessages =
-      allConversations.reduce((sum, c) => sum + c.human_messages, 0) /
-        (total || 1);
+      allConversations.reduce((sum, c) => sum + c.human_messages, 0) / (total || 1);
 
     const satisfactionScores = allConversations
       .filter((c) => c.satisfaction_score != null)
       .map((c) => c.satisfaction_score as number);
     const avgSatisfactionScore =
       satisfactionScores.length > 0
-        ? satisfactionScores.reduce((sum, score) => sum! + score!, 0) /
-          satisfactionScores.length
+        ? satisfactionScores.reduce((sum, score) => sum + score, 0) / satisfactionScores.length
         : 0;
 
     return {
@@ -536,11 +497,11 @@ export class ConversationsService {
       agent_id?: string;
       mode?: string;
       metadata?: any;
-    },
+    }
   ): Promise<Conversation> {
     const conversation = await this.conversationsRepo.findOne({
       where: { id },
-      relations: ["customer", "messages"],
+      relations: ['customer', 'messages'],
     });
 
     if (!conversation) {
@@ -588,7 +549,7 @@ export class ConversationsService {
     const updated = await this.conversationsRepo.save(conversation);
 
     this.logger.log(
-      `Conversation ${conversation.session_id} updated - Status: ${conversation.status}, Agent: ${conversation.agent_id || "none"}`,
+      `Conversation ${conversation.session_id} updated - Status: ${conversation.status}, Agent: ${conversation.agent_id || 'none'}`
     );
 
     return updated;
@@ -608,9 +569,7 @@ export class ConversationsService {
     const conversation = await this.findOne(id);
     await this.conversationsRepo.remove(conversation);
 
-    this.logger.warn(
-      `Conversation ${conversation.session_id} permanently deleted`,
-    );
+    this.logger.warn(`Conversation ${conversation.session_id} permanently deleted`);
   }
 
   /**
@@ -619,7 +578,7 @@ export class ConversationsService {
   async updateMessageDeliveryStatus(
     whatsappMessageId: string,
     status: 'sent' | 'delivered' | 'read' | 'failed',
-    timestamp?: Date,
+    timestamp?: Date
   ): Promise<Message | null> {
     // Find message by WhatsApp message ID stored in metadata
     const message = await this.messagesRepo
@@ -659,9 +618,7 @@ export class ConversationsService {
       .where('id = :id', { id: message.id })
       .execute();
 
-    this.logger.log(
-      `Message ${message.id} delivery status updated to ${status}`,
-    );
+    this.logger.log(`Message ${message.id} delivery status updated to ${status}`);
 
     // Return updated message
     return this.messagesRepo.findOne({ where: { id: message.id } });
@@ -672,7 +629,7 @@ export class ConversationsService {
    */
   async getMessagesByDeliveryStatus(
     conversationId: number,
-    status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed',
+    status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed'
   ): Promise<Message[]> {
     return this.messagesRepo.find({
       where: {

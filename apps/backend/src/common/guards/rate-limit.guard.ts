@@ -4,9 +4,9 @@ import {
   ExecutionContext,
   HttpException,
   HttpStatus,
-} from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { Request } from "express";
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { Request } from 'express';
 
 interface RateLimitRule {
   windowMs: number; // Time window in milliseconds
@@ -35,10 +35,10 @@ export class RateLimitGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
 
     // Get rate limit configuration from metadata
-    const rateLimitConfig = this.reflector.getAllAndOverride<RateLimitRule>(
-      "rateLimit",
-      [context.getHandler(), context.getClass()],
-    );
+    const rateLimitConfig = this.reflector.getAllAndOverride<RateLimitRule>('rateLimit', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     // If no rate limit config, allow request
     if (!rateLimitConfig) {
@@ -69,13 +69,13 @@ export class RateLimitGuard implements CanActivate {
       throw new HttpException(
         {
           message: `Demasiados intentos. Por favor, espera ${waitTime} segundos antes de volver a intentarlo.`,
-          error: "Límite de Solicitudes Excedido",
+          error: 'Límite de Solicitudes Excedido',
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           retryAfter: waitTime,
           failedAttempts: record.failedAttempts || 1,
           detail: `Intento ${record.failedAttempts || 1}: Espera ${waitTime}s. Cliente bloqueado hasta ${new Date(record.blockedUntil).toISOString()}`,
         },
-        HttpStatus.TOO_MANY_REQUESTS,
+        HttpStatus.TOO_MANY_REQUESTS
       );
     }
 
@@ -115,7 +115,7 @@ export class RateLimitGuard implements CanActivate {
       throw new HttpException(
         {
           message: `Demasiados intentos. Por favor, espera ${Math.ceil(progressiveDelay / 1000)} segundos antes de volver a intentarlo.`,
-          error: "Límite de Solicitudes Excedido",
+          error: 'Límite de Solicitudes Excedido',
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           limit: rateLimitConfig.maxRequests,
           windowMs: rateLimitConfig.windowMs,
@@ -123,7 +123,7 @@ export class RateLimitGuard implements CanActivate {
           failedAttempts: record.failedAttempts,
           detail: `Intento ${record.failedAttempts}: Espera ${Math.ceil(progressiveDelay / 1000)}s. Cada intento erróneo duplica el tiempo de espera.`,
         },
-        HttpStatus.TOO_MANY_REQUESTS,
+        HttpStatus.TOO_MANY_REQUESTS
       );
     }
 
@@ -132,29 +132,26 @@ export class RateLimitGuard implements CanActivate {
 
     // Add rate limit headers to response
     const response = context.switchToHttp().getResponse();
-    response.setHeader("X-RateLimit-Limit", rateLimitConfig.maxRequests);
+    response.setHeader('X-RateLimit-Limit', rateLimitConfig.maxRequests);
     response.setHeader(
-      "X-RateLimit-Remaining",
-      Math.max(0, rateLimitConfig.maxRequests - record.count),
+      'X-RateLimit-Remaining',
+      Math.max(0, rateLimitConfig.maxRequests - record.count)
     );
-    response.setHeader(
-      "X-RateLimit-Reset",
-      new Date(record.resetTime).toISOString(),
-    );
-    response.setHeader("X-RateLimit-Window", rateLimitConfig.windowMs);
+    response.setHeader('X-RateLimit-Reset', new Date(record.resetTime).toISOString());
+    response.setHeader('X-RateLimit-Window', rateLimitConfig.windowMs);
 
     return true;
   }
 
   private getClientIdentifier(request: Request): string {
     // Priority order for client identification
-    const forwarded = request.get("x-forwarded-for");
-    const realIp = request.get("x-real-ip");
-    const cfConnectingIp = request.get("cf-connecting-ip");
+    const forwarded = request.get('x-forwarded-for');
+    const realIp = request.get('x-real-ip');
+    const cfConnectingIp = request.get('cf-connecting-ip');
 
     // Use forwarded IP, real IP, CloudFlare IP, or connection IP
     const ip =
-      forwarded?.split(",")[0] ||
+      forwarded?.split(',')[0] ||
       realIp ||
       cfConnectingIp ||
       request.ip ||

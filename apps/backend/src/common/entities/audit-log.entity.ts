@@ -6,13 +6,7 @@
  * con capacidad de búsqueda y análisis forense
  */
 
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  Index,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Index } from 'typeorm';
 
 export enum AuditSeverity {
   LOW = 'LOW',

@@ -1,5 +1,5 @@
-import { Injectable, NestMiddleware, Logger } from "@nestjs/common";
-import { Request, Response, NextFunction } from "express";
+import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
 
 export interface AuditEvent {
   timestamp: string;
@@ -19,7 +19,7 @@ export interface AuditEvent {
 
 @Injectable()
 export class AuditMiddleware implements NestMiddleware {
-  private readonly logger = new Logger("🔍 SecurityAudit");
+  private readonly logger = new Logger('🔍 SecurityAudit');
   private readonly auditEvents: AuditEvent[] = [];
 
   use(req: Request, res: Response, next: NextFunction) {
@@ -32,14 +32,15 @@ export class AuditMiddleware implements NestMiddleware {
 
     // Capture response data
     const originalSend = res.send;
-    res.send = function(body) {
+    res.send = function (body) {
       const duration = Date.now() - startTime;
 
       // Create audit event
       const auditEvent: AuditEvent = {
         timestamp: new Date().toISOString(),
         requestId,
-        userId: (req as any)['user']?.sub || (req as any)['user']?.id || (req as any)['user']?.userId,
+        userId:
+          (req as any)['user']?.sub || (req as any)['user']?.id || (req as any)['user']?.userId,
         clientIP: getClientIP(req),
         userAgent: req.get('user-agent') || 'Unknown',
         method: req.method,
@@ -49,7 +50,7 @@ export class AuditMiddleware implements NestMiddleware {
         statusCode: res.statusCode,
         duration,
         riskLevel: calculateRiskLevel(req, res, duration),
-        securityFlags: getSecurityFlags(req, res)
+        securityFlags: getSecurityFlags(req, res),
       };
 
       // Log and store audit event
@@ -77,38 +78,39 @@ export class AuditMiddleware implements NestMiddleware {
     return {
       totalRequests: recentEvents.length,
       riskLevels: {
-        low: recentEvents.filter(e => e.riskLevel === 'LOW').length,
-        medium: recentEvents.filter(e => e.riskLevel === 'MEDIUM').length,
-        high: recentEvents.filter(e => e.riskLevel === 'HIGH').length,
-        critical: recentEvents.filter(e => e.riskLevel === 'CRITICAL').length,
+        low: recentEvents.filter((e) => e.riskLevel === 'LOW').length,
+        medium: recentEvents.filter((e) => e.riskLevel === 'MEDIUM').length,
+        high: recentEvents.filter((e) => e.riskLevel === 'HIGH').length,
+        critical: recentEvents.filter((e) => e.riskLevel === 'CRITICAL').length,
       },
       topIPs: getTopIPs(recentEvents),
-      averageResponseTime: recentEvents.reduce((sum, e) => sum + e.duration, 0) / recentEvents.length,
-      securityFlags: getSecurityFlagsSummary(recentEvents)
+      averageResponseTime:
+        recentEvents.reduce((sum, e) => sum + e.duration, 0) / recentEvents.length,
+      securityFlags: getSecurityFlagsSummary(recentEvents),
     };
   }
 }
 
 // Helper functions
 function getClientIP(req: Request): string {
-  const forwarded = req.get("x-forwarded-for");
-  const realIp = req.get("x-real-ip");
-  const cfConnectingIp = req.get("cf-connecting-ip");
+  const forwarded = req.get('x-forwarded-for');
+  const realIp = req.get('x-real-ip');
+  const cfConnectingIp = req.get('cf-connecting-ip');
 
   return (
-    forwarded?.split(",")[0] ||
+    forwarded?.split(',')[0] ||
     realIp ||
     cfConnectingIp ||
     req.ip ||
     req.connection.remoteAddress ||
-    "unknown"
+    'unknown'
   );
 }
 
 function shouldLogBody(req: Request): boolean {
   // Don't log sensitive endpoints
   const sensitiveEndpoints = ['/auth/login', '/auth/register', '/users/password'];
-  return !sensitiveEndpoints.some(endpoint => req.path.includes(endpoint));
+  return !sensitiveEndpoints.some((endpoint) => req.path.includes(endpoint));
 }
 
 function sanitizeBody(body: any): any {
@@ -126,7 +128,11 @@ function sanitizeBody(body: any): any {
   return sanitized;
 }
 
-function calculateRiskLevel(req: Request, res: Response, duration: number): AuditEvent['riskLevel'] {
+function calculateRiskLevel(
+  req: Request,
+  res: Response,
+  duration: number
+): AuditEvent['riskLevel'] {
   let riskScore = 0;
 
   // Authentication failures
@@ -142,7 +148,7 @@ function calculateRiskLevel(req: Request, res: Response, duration: number): Audi
 
   // Suspicious paths
   const suspiciousPaths = ['/admin', '/wp-admin', '/.env', '/.git'];
-  if (suspiciousPaths.some(path => req.path.includes(path))) riskScore += 50;
+  if (suspiciousPaths.some((path) => req.path.includes(path))) riskScore += 50;
 
   // Large payloads
   const contentLength = req.get('content-length');
@@ -184,24 +190,30 @@ function getSecurityFlags(req: Request, res: Response): string[] {
 }
 
 function logAuditEvent(event: AuditEvent): void {
-  const logger = new Logger("🔍 SecurityAudit");
+  const logger = new Logger('🔍 SecurityAudit');
 
   if (event.riskLevel === 'CRITICAL') {
-    logger.error(`🚨 CRITICAL SECURITY EVENT: ${event.method} ${event.path} from ${event.clientIP} - Flags: ${event.securityFlags.join(', ')}`);
+    logger.error(
+      `🚨 CRITICAL SECURITY EVENT: ${event.method} ${event.path} from ${event.clientIP} - Flags: ${event.securityFlags.join(', ')}`
+    );
   } else if (event.riskLevel === 'HIGH') {
-    logger.warn(`⚠️ HIGH RISK EVENT: ${event.method} ${event.path} from ${event.clientIP} - Flags: ${event.securityFlags.join(', ')}`);
+    logger.warn(
+      `⚠️ HIGH RISK EVENT: ${event.method} ${event.path} from ${event.clientIP} - Flags: ${event.securityFlags.join(', ')}`
+    );
   } else if (event.securityFlags.length > 0) {
-    logger.debug(`🛡️ Security Event: ${event.method} ${event.path} - Flags: ${event.securityFlags.join(', ')}`);
+    logger.debug(
+      `🛡️ Security Event: ${event.method} ${event.path} - Flags: ${event.securityFlags.join(', ')}`
+    );
   }
 
   // Store event (in production, send to external security system)
   // auditEvents.push(event);
 }
 
-function getTopIPs(events: AuditEvent[]): Array<{ip: string, count: number}> {
+function getTopIPs(events: AuditEvent[]): Array<{ ip: string; count: number }> {
   const ipCounts: Record<string, number> = {};
 
-  events.forEach(event => {
+  events.forEach((event) => {
     ipCounts[event.clientIP] = (ipCounts[event.clientIP] || 0) + 1;
   });
 
@@ -214,8 +226,8 @@ function getTopIPs(events: AuditEvent[]): Array<{ip: string, count: number}> {
 function getSecurityFlagsSummary(events: AuditEvent[]): Record<string, number> {
   const flagCounts: Record<string, number> = {};
 
-  events.forEach(event => {
-    event.securityFlags.forEach(flag => {
+  events.forEach((event) => {
+    event.securityFlags.forEach((flag) => {
       flagCounts[flag] = (flagCounts[flag] || 0) + 1;
     });
   });

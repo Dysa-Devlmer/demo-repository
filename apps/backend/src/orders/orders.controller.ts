@@ -8,12 +8,12 @@ import {
   Body,
   Param,
   ParseIntPipe,
-} from "@nestjs/common";
-import { OrdersService } from "./orders.service";
-import { CreateOrderDto } from "./dto/create-order.dto";
-import { UpdateOrderDto } from "./dto/update-order.dto";
+} from '@nestjs/common';
+import { OrdersService } from './orders.service';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
-@Controller("orders")
+@Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
@@ -22,7 +22,7 @@ export class OrdersController {
     return this.ordersService.create(dto);
   }
 
-  @Post("migrate-items")
+  @Post('migrate-items')
   async migrateItems() {
     const result = await this.ordersService.migrateOrderItems();
     return {
@@ -37,26 +37,26 @@ export class OrdersController {
     return this.ordersService.findAll();
   }
 
-  @Get(":id")
-  findOne(@Param("id", ParseIntPipe) id: number) {
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.ordersService.findOne(id);
   }
 
-  @Put(":id")
-  update(@Param("id", ParseIntPipe) id: number, @Body() dto: UpdateOrderDto) {
+  @Put(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateOrderDto) {
     return this.ordersService.update(id, dto);
   }
 
-  @Patch(":id/status")
+  @Patch(':id/status')
   updateStatus(
-    @Param("id", ParseIntPipe) id: number,
-    @Body("status") status: "pending" | "preparing" | "delivering" | "completed" | "cancelled",
+    @Param('id', ParseIntPipe) id: number,
+    @Body('status') status: 'pending' | 'preparing' | 'delivering' | 'completed' | 'cancelled'
   ) {
     return this.ordersService.update(id, { status });
   }
 
-  @Delete(":id")
-  remove(@Param("id", ParseIntPipe) id: number) {
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.ordersService.remove(id);
   }
 }

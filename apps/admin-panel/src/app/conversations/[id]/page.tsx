@@ -579,15 +579,35 @@ export default function ConversationDetailsPage() {
   const renderDeliveryStatus = (status?: string) => {
     switch (status) {
       case 'pending':
-        return <Clock className="h-3 w-3 opacity-60" title="Enviando..." />;
+        return (
+          <span title="Enviando..." aria-label="Enviando...">
+            <Clock className="h-3 w-3 opacity-60" />
+          </span>
+        );
       case 'sent':
-        return <Check className="h-3 w-3 opacity-70" title="Enviado" />;
+        return (
+          <span title="Enviado" aria-label="Enviado">
+            <Check className="h-3 w-3 opacity-70" />
+          </span>
+        );
       case 'delivered':
-        return <CheckCheck className="h-3 w-3 opacity-70" title="Entregado" />;
+        return (
+          <span title="Entregado" aria-label="Entregado">
+            <CheckCheck className="h-3 w-3 opacity-70" />
+          </span>
+        );
       case 'read':
-        return <CheckCheck className="h-3 w-3 text-blue-400" title="Leído" />;
+        return (
+          <span title="Leído" aria-label="Leído">
+            <CheckCheck className="h-3 w-3 text-blue-400" />
+          </span>
+        );
       case 'failed':
-        return <AlertCircle className="h-3 w-3 text-red-400" title="Error al enviar" />;
+        return (
+          <span title="Error al enviar" aria-label="Error al enviar">
+            <AlertCircle className="h-3 w-3 text-red-400" />
+          </span>
+        );
       default:
         return <Check className="h-3 w-3 opacity-50" />;
     }

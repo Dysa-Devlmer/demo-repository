@@ -5,35 +5,35 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
-} from "typeorm";
-import { Role } from "./role.entity";
+} from 'typeorm';
+import { Role } from './role.entity';
 
 export enum PermissionModule {
-  DASHBOARD = "dashboard",
-  CUSTOMERS = "customers",
-  ORDERS = "orders",
-  MENU = "menu",
-  RESERVATIONS = "reservations",
-  CONVERSATIONS = "conversations",
-  SETTINGS = "settings",
-  USERS = "users",
-  ROLES = "roles",
-  AUDIT = "audit",
-  REPORTS = "reports",
-  SYSTEM = "system",
+  DASHBOARD = 'dashboard',
+  CUSTOMERS = 'customers',
+  ORDERS = 'orders',
+  MENU = 'menu',
+  RESERVATIONS = 'reservations',
+  CONVERSATIONS = 'conversations',
+  SETTINGS = 'settings',
+  USERS = 'users',
+  ROLES = 'roles',
+  AUDIT = 'audit',
+  REPORTS = 'reports',
+  SYSTEM = 'system',
 }
 
 export enum PermissionAction {
-  CREATE = "create",
-  READ = "read",
-  UPDATE = "update",
-  DELETE = "delete",
-  EXPORT = "export",
-  IMPORT = "import",
-  MANAGE = "manage",
+  CREATE = 'create',
+  READ = 'read',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  EXPORT = 'export',
+  IMPORT = 'import',
+  MANAGE = 'manage',
 }
 
-@Entity("permissions")
+@Entity('permissions')
 export class Permission {
   @PrimaryGeneratedColumn()
   id: number;
@@ -48,13 +48,13 @@ export class Permission {
   description: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: PermissionModule,
   })
   module: PermissionModule;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: PermissionAction,
   })
   action: PermissionAction;

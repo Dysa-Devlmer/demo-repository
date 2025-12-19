@@ -1,11 +1,6 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-} from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { UserFromJwt } from "../jwt.strategy";
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { UserFromJwt } from '../jwt.strategy';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -13,7 +8,7 @@ export class RolesGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     // Get required roles from metadata
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>("roles", [
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -28,7 +23,11 @@ export class RolesGuard implements CanActivate {
     const user: UserFromJwt = request.user;
 
     if (!user) {
-      throw new ForbiddenException("Usuario no autenticado");
+      throw new ForbiddenException('Usuario no autenticado');
+    }
+
+    if (user.roles?.includes('admin')) {
+      return true;
     }
 
     // Check if user has any of the required roles
@@ -36,7 +35,7 @@ export class RolesGuard implements CanActivate {
 
     if (!hasRole) {
       throw new ForbiddenException(
-        `Acceso denegado. Se requieren roles: ${requiredRoles.join(", ")}`,
+        `Acceso denegado. Se requieren roles: ${requiredRoles.join(', ')}`
       );
     }
 

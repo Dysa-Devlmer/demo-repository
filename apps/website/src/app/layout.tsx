@@ -1,10 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import Analytics from '@/components/Analytics'
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 // Force dynamic rendering to avoid prerendering issues
 export const dynamic = 'force-dynamic';
@@ -89,10 +86,6 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <head>
-        {/* Preconnect to external domains */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-
         {/* Favicon and app icons */}
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.svg" />
@@ -139,8 +132,7 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          'min-h-screen bg-background font-sans antialiased',
-          inter.variable
+          'min-h-screen bg-background font-sans antialiased'
         )}
       >
         <Analytics />

@@ -18,7 +18,7 @@ export class PaymentsService {
 
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private userRepository: Repository<User>
   ) {}
 
   /**
@@ -276,7 +276,7 @@ export class PaymentsService {
 
     if (Math.abs(amount - expected) > tolerance) {
       throw new BadRequestException(
-        `Amount ${amount} doesn't match expected amount ${expected} for plan ${plan}`,
+        `Amount ${amount} doesn't match expected amount ${expected} for plan ${plan}`
       );
     }
   }

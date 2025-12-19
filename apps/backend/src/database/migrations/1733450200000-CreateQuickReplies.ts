@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateQuickReplies1733450200000 implements MigrationInterface {
-    name = 'CreateQuickReplies1733450200000'
+  name = 'CreateQuickReplies1733450200000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Create enum type for quick reply category
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Create enum type for quick reply category
+    await queryRunner.query(`
             DO $$ BEGIN
                 CREATE TYPE "public"."quick_replies_category_enum" AS ENUM('greeting', 'farewell', 'info', 'support', 'sales', 'custom');
             EXCEPTION
@@ -13,8 +13,8 @@ export class CreateQuickReplies1733450200000 implements MigrationInterface {
             END $$;
         `);
 
-        // Create quick_replies table
-        await queryRunner.query(`
+    // Create quick_replies table
+    await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "quick_replies" (
                 "id" SERIAL NOT NULL,
                 "title" character varying NOT NULL,
@@ -30,23 +30,23 @@ export class CreateQuickReplies1733450200000 implements MigrationInterface {
             )
         `);
 
-        // Create index for shortcut lookup
-        await queryRunner.query(`
+    // Create index for shortcut lookup
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_quick_replies_shortcut" ON "quick_replies" ("shortcut")
         `);
 
-        // Create index for category filtering
-        await queryRunner.query(`
+    // Create index for category filtering
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_quick_replies_category" ON "quick_replies" ("category")
         `);
 
-        // Create index for active replies
-        await queryRunner.query(`
+    // Create index for active replies
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_quick_replies_active" ON "quick_replies" ("is_active")
         `);
 
-        // Insert default quick replies
-        await queryRunner.query(`
+    // Insert default quick replies
+    await queryRunner.query(`
             INSERT INTO "quick_replies" ("title", "content", "category", "shortcut", "variables") VALUES
             ('Saludo', '¡Hola {nombre}! Bienvenido/a a ChatBotDysa. ¿En qué puedo ayudarte hoy?', 'greeting', '/saludo', '["nombre"]'),
             ('Despedida', '¡Gracias por contactarnos! Si tienes más preguntas, no dudes en escribirnos. ¡Que tengas un excelente día!', 'farewell', '/despedida', '[]'),
@@ -57,18 +57,18 @@ export class CreateQuickReplies1733450200000 implements MigrationInterface {
             ('Confirmar pedido', 'Tu pedido #{pedido} ha sido confirmado. Te notificaremos cuando esté listo. ¡Gracias por tu preferencia!', 'sales', '/confirmarpedido', '["pedido"]'),
             ('Problema técnico', 'Lamentamos los inconvenientes. Nuestro equipo técnico está trabajando para resolver el problema. Te mantendremos informado.', 'support', '/tecnico', '[]')
         `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // Remove indexes
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_quick_replies_active"`);
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_quick_replies_category"`);
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_quick_replies_shortcut"`);
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Remove indexes
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_quick_replies_active"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_quick_replies_category"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_quick_replies_shortcut"`);
 
-        // Drop table
-        await queryRunner.query(`DROP TABLE IF EXISTS "quick_replies"`);
+    // Drop table
+    await queryRunner.query(`DROP TABLE IF EXISTS "quick_replies"`);
 
-        // Remove enum type
-        await queryRunner.query(`DROP TYPE IF EXISTS "public"."quick_replies_category_enum"`);
-    }
+    // Remove enum type
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."quick_replies_category_enum"`);
+  }
 }

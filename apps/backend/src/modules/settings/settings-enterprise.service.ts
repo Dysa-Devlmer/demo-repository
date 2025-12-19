@@ -1,20 +1,8 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, MoreThan } from "typeorm";
-import {
-  Setting,
-  SettingStatus,
-  SettingCategory,
-} from "../../entities/setting.entity";
-import {
-  SettingHistory,
-  SettingChangeAction,
-} from "../../entities/setting-history.entity";
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, MoreThan } from 'typeorm';
+import { Setting, SettingStatus, SettingCategory } from '../../entities/setting.entity';
+import { SettingHistory, SettingChangeAction } from '../../entities/setting-history.entity';
 
 @Injectable()
 export class SettingsEnterpriseService {
@@ -24,7 +12,7 @@ export class SettingsEnterpriseService {
     @InjectRepository(Setting)
     private readonly settingsRepo: Repository<Setting>,
     @InjectRepository(SettingHistory)
-    private readonly historyRepo: Repository<SettingHistory>,
+    private readonly historyRepo: Repository<SettingHistory>
   ) {}
 
   /**
@@ -59,7 +47,7 @@ export class SettingsEnterpriseService {
       is_required: data.isRequired || false,
       validation_rules: data.validationRules,
       metadata: {
-        changed_by: data.changedBy || "system",
+        changed_by: data.changedBy || 'system',
         environment: process.env.NODE_ENV as any,
       },
     });
@@ -70,12 +58,12 @@ export class SettingsEnterpriseService {
     await this.createHistoryRecord({
       setting_id: saved.id,
       action: SettingChangeAction.CREATED,
-      new_value: data.isSensitive ? "[REDACTED]" : data.value,
-      changed_by: data.changedBy || "system",
-      reason: "Initial creation",
+      new_value: data.isSensitive ? '[REDACTED]' : data.value,
+      changed_by: data.changedBy || 'system',
+      reason: 'Initial creation',
     });
 
-    this.logger.log(`Setting '${data.key}' created by ${data.changedBy || "system"}`);
+    this.logger.log(`Setting '${data.key}' created by ${data.changedBy || 'system'}`);
 
     return saved;
   }
@@ -100,32 +88,29 @@ export class SettingsEnterpriseService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.settingsRepo
-      .createQueryBuilder("setting")
-      .orderBy("setting.category", "ASC")
-      .addOrderBy("setting.key", "ASC");
+      .createQueryBuilder('setting')
+      .orderBy('setting.category', 'ASC')
+      .addOrderBy('setting.key', 'ASC');
 
     if (filters?.category) {
-      queryBuilder.andWhere("setting.category = :category", {
+      queryBuilder.andWhere('setting.category = :category', {
         category: filters.category,
       });
     }
 
     if (filters?.status) {
-      queryBuilder.andWhere("setting.status = :status", {
+      queryBuilder.andWhere('setting.status = :status', {
         status: filters.status,
       });
     }
 
     if (filters?.isSensitive !== undefined) {
-      queryBuilder.andWhere("setting.is_sensitive = :isSensitive", {
+      queryBuilder.andWhere('setting.is_sensitive = :isSensitive', {
         isSensitive: filters.isSensitive,
       });
     }
 
-    const [data, total] = await queryBuilder
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+    const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
 
     // Mask sensitive values
     const maskedData = data.map((setting) => ({
@@ -186,7 +171,7 @@ export class SettingsEnterpriseService {
       status?: SettingStatus;
       changedBy?: string;
       reason?: string;
-    },
+    }
   ): Promise<Setting> {
     const setting = await this.settingsRepo.findOne({ where: { key } });
 
@@ -210,16 +195,16 @@ export class SettingsEnterpriseService {
       await this.createHistoryRecord({
         setting_id: setting.id,
         action: SettingChangeAction.UPDATED,
-        old_value: setting.is_sensitive ? "[REDACTED]" : oldValue,
-        new_value: setting.is_sensitive ? "[REDACTED]" : data.value,
-        changed_by: data.changedBy || "system",
-        reason: data.reason || "Value updated",
+        old_value: setting.is_sensitive ? '[REDACTED]' : oldValue,
+        new_value: setting.is_sensitive ? '[REDACTED]' : data.value,
+        changed_by: data.changedBy || 'system',
+        reason: data.reason || 'Value updated',
       });
     }
 
     if (data.description !== undefined) {
       setting.description = data.description;
-      changes.push("description updated");
+      changes.push('description updated');
     }
 
     if (data.status !== undefined && data.status !== setting.status) {
@@ -240,7 +225,7 @@ export class SettingsEnterpriseService {
         action,
         old_value: oldStatus,
         new_value: data.status,
-        changed_by: data.changedBy || "system",
+        changed_by: data.changedBy || 'system',
         reason: data.reason || `Status changed to ${data.status}`,
       });
     }
@@ -248,14 +233,14 @@ export class SettingsEnterpriseService {
     if (changes.length > 0) {
       setting.metadata = {
         ...setting.metadata,
-        changed_by: data.changedBy || "system",
+        changed_by: data.changedBy || 'system',
         previous_value: oldValue,
       };
 
       const updated = await this.settingsRepo.save(setting);
 
       this.logger.log(
-        `Setting '${key}' updated by ${data.changedBy || "system"}: ${changes.join(", ")}`,
+        `Setting '${key}' updated by ${data.changedBy || 'system'}: ${changes.join(', ')}`
       );
 
       return updated;
@@ -271,7 +256,7 @@ export class SettingsEnterpriseService {
     return this.update(key, {
       status: SettingStatus.ACTIVE,
       changedBy,
-      reason: "Setting activated",
+      reason: 'Setting activated',
     });
   }
 
@@ -282,7 +267,7 @@ export class SettingsEnterpriseService {
     return this.update(key, {
       status: SettingStatus.ARCHIVED,
       changedBy,
-      reason: reason || "Setting archived",
+      reason: reason || 'Setting archived',
     });
   }
 
@@ -295,28 +280,25 @@ export class SettingsEnterpriseService {
     await this.createHistoryRecord({
       setting_id: setting.id,
       action: SettingChangeAction.DELETED,
-      old_value: setting.is_sensitive ? "[REDACTED]" : setting.value,
-      changed_by: changedBy || "system",
-      reason: "Setting deleted",
+      old_value: setting.is_sensitive ? '[REDACTED]' : setting.value,
+      changed_by: changedBy || 'system',
+      reason: 'Setting deleted',
     });
 
     await this.settingsRepo.remove(setting);
 
-    this.logger.warn(`Setting '${key}' deleted by ${changedBy || "system"}`);
+    this.logger.warn(`Setting '${key}' deleted by ${changedBy || 'system'}`);
   }
 
   /**
    * AGGREGATION - Get setting history
    */
-  async getHistory(
-    key: string,
-    limit: number = 20,
-  ): Promise<SettingHistory[]> {
+  async getHistory(key: string, limit: number = 20): Promise<SettingHistory[]> {
     const setting = await this.findByKey(key, true);
 
     return this.historyRepo.find({
       where: { setting_id: setting.id },
-      order: { created_at: "DESC" },
+      order: { created_at: 'DESC' },
       take: limit,
     });
   }
@@ -324,14 +306,11 @@ export class SettingsEnterpriseService {
   /**
    * AGGREGATION - Get all changes by user
    */
-  async getChangesByUser(
-    changedBy: string,
-    limit: number = 50,
-  ): Promise<SettingHistory[]> {
+  async getChangesByUser(changedBy: string, limit: number = 50): Promise<SettingHistory[]> {
     return this.historyRepo.find({
       where: { changed_by: changedBy },
-      relations: ["setting"],
-      order: { created_at: "DESC" },
+      relations: ['setting'],
+      order: { created_at: 'DESC' },
       take: limit,
     });
   }
@@ -349,15 +328,14 @@ export class SettingsEnterpriseService {
     byCategory: Record<SettingCategory, number>;
     recentChanges: number;
   }> {
-    const [total, active, draft, archived, sensitive, required] =
-      await Promise.all([
-        this.settingsRepo.count(),
-        this.settingsRepo.count({ where: { status: SettingStatus.ACTIVE } }),
-        this.settingsRepo.count({ where: { status: SettingStatus.DRAFT } }),
-        this.settingsRepo.count({ where: { status: SettingStatus.ARCHIVED } }),
-        this.settingsRepo.count({ where: { is_sensitive: true } }),
-        this.settingsRepo.count({ where: { is_required: true } }),
-      ]);
+    const [total, active, draft, archived, sensitive, required] = await Promise.all([
+      this.settingsRepo.count(),
+      this.settingsRepo.count({ where: { status: SettingStatus.ACTIVE } }),
+      this.settingsRepo.count({ where: { status: SettingStatus.DRAFT } }),
+      this.settingsRepo.count({ where: { status: SettingStatus.ARCHIVED } }),
+      this.settingsRepo.count({ where: { is_sensitive: true } }),
+      this.settingsRepo.count({ where: { is_required: true } }),
+    ]);
 
     // Count by category
     const byCategory = {} as Record<SettingCategory, number>;
@@ -394,7 +372,7 @@ export class SettingsEnterpriseService {
    */
   async bulkUpdate(
     updates: Array<{ key: string; value: string }>,
-    changedBy?: string,
+    changedBy?: string
   ): Promise<{ success: number; failed: number; errors: string[] }> {
     let success = 0;
     let failed = 0;
@@ -405,7 +383,7 @@ export class SettingsEnterpriseService {
         await this.update(update.key, {
           value: update.value,
           changedBy,
-          reason: "Bulk update",
+          reason: 'Bulk update',
         });
         success++;
       } catch (error) {
@@ -414,9 +392,7 @@ export class SettingsEnterpriseService {
       }
     }
 
-    this.logger.log(
-      `Bulk update completed: ${success} success, ${failed} failed`,
-    );
+    this.logger.log(`Bulk update completed: ${success} success, ${failed} failed`);
 
     return { success, failed, errors };
   }
@@ -432,7 +408,7 @@ export class SettingsEnterpriseService {
     // Mask sensitive values
     return settings.map((setting) => ({
       ...setting,
-      value: setting.is_sensitive ? "[REDACTED]" : setting.value,
+      value: setting.is_sensitive ? '[REDACTED]' : setting.value,
     }));
   }
 
@@ -456,21 +432,21 @@ export class SettingsEnterpriseService {
    */
   private maskValue(value: string): string {
     if (!value || value.length < 8) {
-      return "****";
+      return '****';
     }
-    return value.substring(0, 4) + "****" + value.substring(value.length - 4);
+    return value.substring(0, 4) + '****' + value.substring(value.length - 4);
   }
 
   /**
    * Helper: Validate value against rules
    */
   private validateValue(value: string, rules: any): void {
-    if (rules.type === "email" && !this.isValidEmail(value)) {
-      throw new BadRequestException("Invalid email format");
+    if (rules.type === 'email' && !this.isValidEmail(value)) {
+      throw new BadRequestException('Invalid email format');
     }
 
-    if (rules.type === "url" && !this.isValidUrl(value)) {
-      throw new BadRequestException("Invalid URL format");
+    if (rules.type === 'url' && !this.isValidUrl(value)) {
+      throw new BadRequestException('Invalid URL format');
     }
 
     if (rules.min && value.length < rules.min) {
@@ -486,9 +462,7 @@ export class SettingsEnterpriseService {
     }
 
     if (rules.options && !rules.options.includes(value)) {
-      throw new BadRequestException(
-        `Value must be one of: ${rules.options.join(", ")}`,
-      );
+      throw new BadRequestException(`Value must be one of: ${rules.options.join(', ')}`);
     }
   }
 

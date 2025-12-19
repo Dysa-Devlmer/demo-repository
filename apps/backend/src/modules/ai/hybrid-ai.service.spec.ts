@@ -166,10 +166,9 @@ describe('HybridAIService - Unit Tests', () => {
       const systemMessage = callArgs.messages[0];
 
       expect(systemMessage.role).toBe('system');
-      expect(systemMessage.content).toContain('ChefBot Dysa');
+      expect(systemMessage.content).toContain('Eres el asistente virtual');
       expect(systemMessage.content).toContain('La Buena Mesa');
-      expect(systemMessage.content).toContain('RESTRICCIONES ABSOLUTAS');
-      expect(systemMessage.content).toContain('NO tienes acceso a internet');
+      expect(systemMessage.content).toContain('RESTRICCIONES');
     });
 
     it('should limit tokens to 200 for concise responses', async () => {

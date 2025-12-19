@@ -1,76 +1,73 @@
-import { Module, NestModule, MiddlewareConsumer } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { ThrottlerModule } from "@nestjs/throttler";
-import { CacheModule } from "@nestjs/cache-manager";
-import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
-import { getCacheConfig } from "./config/cache.config";
-import { DatabaseModule } from "./database/database.module";
-import { CustomersModule } from "./customers/customers.module";
-import { MenuModule } from "./menu/menu.module";
-import { ReservationsModule } from "./reservations/reservations.module";
-import { OrdersModule } from "./orders/orders.module";
-import { PromotionsModule } from "./promotions/promotions.module";
-import { UsersModule } from "./users/users.module";
-import { AuthModule } from "./auth/auth.module";
-import { HealthController } from "./health/health.controller";
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { CacheModule } from '@nestjs/cache-manager';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { getCacheConfig } from './config/cache.config';
+import { DatabaseModule } from './database/database.module';
+import { CustomersModule } from './customers/customers.module';
+import { MenuModule } from './menu/menu.module';
+import { ReservationsModule } from './reservations/reservations.module';
+import { OrdersModule } from './orders/orders.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { HealthController } from './health/health.controller';
 
 // Conversations Module
-import { ConversationsModule } from "./conversations/conversations.module";
+import { ConversationsModule } from './conversations/conversations.module';
 
 // New AI and Communication Modules
-import { AiModule } from "./modules/ai/ai.module";
-import { WebSocketsModule } from "./modules/websockets/websockets.module";
-import { WhatsAppModule } from "./modules/whatsapp/whatsapp.module";
-import { TwilioModule } from "./modules/twilio/twilio.module";
-import { SettingsModule } from "./modules/settings/settings.module";
+import { AiModule } from './modules/ai/ai.module';
+import { WebSocketsModule } from './modules/websockets/websockets.module';
+import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
+import { TwilioModule } from './modules/twilio/twilio.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 // Enterprise Security Middleware
-import { SecurityMiddleware } from "./common/middleware/security.middleware";
-import { AuditMiddleware } from "./common/middleware/audit.middleware";
-import { SecurityModule } from "./security/security.module";
+import { SecurityMiddleware } from './common/middleware/security.middleware';
+import { AuditMiddleware } from './common/middleware/audit.middleware';
+import { SecurityModule } from './security/security.module';
 
 // Enterprise Analytics
-import { AnalyticsController } from "./common/controllers/analytics.controller";
-import { AnalyticsService } from "./common/services/analytics.service";
+import { AnalyticsController } from './common/controllers/analytics.controller';
+import { AnalyticsService } from './common/services/analytics.service';
 
 // Demo Reset Module with Time Limit
-import { DemoModule } from "./demo/demo.module";
+import { DemoModule } from './demo/demo.module';
 
 // Common Module for Auth Guards
-import { CommonModule } from "./common/common.module";
+import { CommonModule } from './common/common.module';
 
 // Payments Module
-import { PaymentsModule } from "./payments/payments.module";
+import { PaymentsModule } from './payments/payments.module';
 
 // Dashboard Module with Snapshots
-import { DashboardModule } from "./dashboard/dashboard.module";
+import { DashboardModule } from './dashboard/dashboard.module';
 
 // Uploads Module for Widget
-import { UploadsModule } from "./uploads/uploads.module";
+import { UploadsModule } from './uploads/uploads.module';
 
 // Reports Module
-import { ReportsModule } from "./reports/reports.module";
+import { ReportsModule } from './reports/reports.module';
 
 // Leads Module
-import { LeadsModule } from "./modules/leads/leads.module";
+import { LeadsModule } from './modules/leads/leads.module';
 
 // Categories Module (Professional Category Management)
-import { CategoriesModule } from "./categories/categories.module";
+import { CategoriesModule } from './categories/categories.module';
 
 // Quick Replies Module
-import { QuickRepliesModule } from "./modules/quick-replies/quick-replies.module";
+import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module';
 
 @Module({
   imports: [
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [
-        `.env.${process.env.NODE_ENV || 'development'}`,
-        '.env',
-      ],
+      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
     }),
 
     // Enterprise Security: Rate Limiting

@@ -6,11 +6,11 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
-} from "typeorm";
-import { User } from "./user.entity";
-import { Permission } from "./permission.entity";
+} from 'typeorm';
+import { User } from './user.entity';
+import { Permission } from './permission.entity';
 
-@Entity("roles")
+@Entity('roles')
 export class Role {
   @PrimaryGeneratedColumn()
   id: number;
@@ -37,9 +37,9 @@ export class Role {
     eager: true,
   })
   @JoinTable({
-    name: "role_permissions",
-    joinColumn: { name: "roleId", referencedColumnName: "id" },
-    inverseJoinColumn: { name: "permissionId", referencedColumnName: "id" },
+    name: 'role_permissions',
+    joinColumn: { name: 'roleId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'permissionId', referencedColumnName: 'id' },
   })
   permissions: Permission[];
 

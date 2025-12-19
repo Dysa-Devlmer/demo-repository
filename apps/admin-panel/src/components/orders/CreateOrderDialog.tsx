@@ -282,13 +282,8 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated }: Create
         console.log('✅ Orden creada:', orderResponse.data);
 
         toast({
-          title: (
-            <>
-              <CheckCircle className="h-5 w-5" />
-              <span>¡Orden creada!</span>
-            </>
-          ),
-          description: `Orden creada exitosamente`,
+          title: "¡Orden creada!",
+          description: "Orden creada exitosamente",
           variant: "success",
         });
       }
@@ -367,12 +362,7 @@ export function CreateOrderDialog({ open, onOpenChange, onOrderCreated }: Create
       }
 
       toast({
-        title: (
-          <>
-            {errorIcon}
-            <span>{errorTitle}</span>
-          </>
-        ),
+        title: errorTitle,
         description: errorMessage,
         variant: errorVariant,
       });

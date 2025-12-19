@@ -10,11 +10,7 @@ import { Subscription } from '../entities/subscription.entity';
 import { CommonModule } from '../common/common.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([User, Payment, Subscription]),
-    ConfigModule,
-    CommonModule,
-  ],
+  imports: [TypeOrmModule.forFeature([User, Payment, Subscription]), ConfigModule, CommonModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, MercadoPagoService],
   exports: [PaymentsService, MercadoPagoService],

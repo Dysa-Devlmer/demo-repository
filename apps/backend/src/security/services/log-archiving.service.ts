@@ -50,7 +50,7 @@ export class LogArchivingService {
 
   constructor(
     @InjectRepository(AuditLog)
-    private readonly auditLogRepository: Repository<AuditLog>,
+    private readonly auditLogRepository: Repository<AuditLog>
   ) {
     this.initializeArchiveDirectory();
     this.loadArchiveIndex();
@@ -114,7 +114,7 @@ export class LogArchivingService {
 
       this.logger.log(
         `Automatic archiving completed: ${result.archivedCount} logs archived, ` +
-        `${result.deletedCount} logs deleted, ${result.filesCreated} files created`
+          `${result.deletedCount} logs deleted, ${result.filesCreated} files created`
       );
     } catch (error) {
       this.logger.error('Automatic archiving failed:', error.message);
@@ -165,14 +165,12 @@ export class LogArchivingService {
 
       // Delete archived logs if configured
       if (this.config.deleteAfterArchive) {
-        const logIds = oldLogs.map(log => log.id);
+        const logIds = oldLogs.map((log) => log.id);
         await this.auditLogRepository.delete(logIds);
         totalDeleted += oldLogs.length;
       }
 
-      this.logger.log(
-        `Archived batch: ${oldLogs.length} logs to ${archiveFile}`
-      );
+      this.logger.log(`Archived batch: ${oldLogs.length} logs to ${archiveFile}`);
 
       // Continue if batch was full (might be more logs)
       hasMore = oldLogs.length === this.config.batchSize;
@@ -214,10 +212,7 @@ export class LogArchivingService {
     }
 
     // Write to file
-    await fs.writeFile(
-      path.join(this.config.archivePath, actualFilename),
-      finalData
-    );
+    await fs.writeFile(path.join(this.config.archivePath, actualFilename), finalData);
 
     // Create metadata
     const metadata: ArchiveMetadata = {
@@ -245,11 +240,7 @@ export class LogArchivingService {
     const metadataFile = `${metadata.filename}.meta.json`;
     const metadataPath = path.join(this.config.archivePath, 'metadata', metadataFile);
 
-    await fs.writeFile(
-      metadataPath,
-      JSON.stringify(metadata, null, 2),
-      'utf-8'
-    );
+    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
   }
 
   /**
@@ -309,25 +300,25 @@ export class LogArchivingService {
     const totalRecords = archives.reduce((sum, a) => sum + a.recordCount, 0);
     const totalSize = archives.reduce((sum, a) => sum + a.fileSize, 0);
 
-    const oldestArchive = archives.length > 0
-      ? archives.reduce((oldest, a) =>
-          a.createdAt < oldest ? a.createdAt : oldest,
-          archives[0].createdAt
-        )
-      : null;
+    const oldestArchive =
+      archives.length > 0
+        ? archives.reduce(
+            (oldest, a) => (a.createdAt < oldest ? a.createdAt : oldest),
+            archives[0].createdAt
+          )
+        : null;
 
-    const newestArchive = archives.length > 0
-      ? archives.reduce((newest, a) =>
-          a.createdAt > newest ? a.createdAt : newest,
-          archives[0].createdAt
-        )
-      : null;
+    const newestArchive =
+      archives.length > 0
+        ? archives.reduce(
+            (newest, a) => (a.createdAt > newest ? a.createdAt : newest),
+            archives[0].createdAt
+          )
+        : null;
 
     // Estimate compression ratio (actual size vs estimated uncompressed)
     const estimatedUncompressed = totalRecords * 1000; // ~1KB per log estimate
-    const compressionRatio = estimatedUncompressed > 0
-      ? totalSize / estimatedUncompressed
-      : 0;
+    const compressionRatio = estimatedUncompressed > 0 ? totalSize / estimatedUncompressed : 0;
 
     return {
       totalArchives: archives.length,
@@ -434,7 +425,7 @@ export class LogArchivingService {
     // Filter archives by date range if specified
     let archives = Array.from(this.archiveIndex.values());
     if (options?.dateFrom || options?.dateTo) {
-      archives = archives.filter(a => {
+      archives = archives.filter((a) => {
         if (options.dateFrom && a.dateRange.to < options.dateFrom) return false;
         if (options.dateTo && a.dateRange.from > options.dateTo) return false;
         return true;

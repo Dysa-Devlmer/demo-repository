@@ -272,7 +272,10 @@ describe('MenuService - Unit Tests', () => {
       const result = await service.findOne(1);
 
       expect(result).toEqual(mockMenuItem);
-      expect(menuRepo.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(menuRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['category_ref'],
+      });
     });
 
     it('should throw NotFoundException when item not found', async () => {

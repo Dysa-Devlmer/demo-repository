@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Req,
-  UseGuards,
-  Query,
-  Param,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, UseGuards, Query, Param } from '@nestjs/common';
 import type { Request } from 'express';
 import { RateLimit, RateLimitPresets } from '../common/decorators/rate-limit.decorator';
 import { SkipCsrf } from '../auth/guards/csrf.guard';
@@ -44,8 +35,8 @@ export class DemoController {
           '📱 Test the chat widget for customer communications',
           '📊 View analytics and reports',
           '⏰ Demo expires automatically after 30 minutes',
-          '💼 Contact sales for full enterprise access'
-        ]
+          '💼 Contact sales for full enterprise access',
+        ],
       },
       timestamp: new Date().toISOString(),
     };
@@ -101,7 +92,7 @@ export class DemoController {
         salesContact: {
           email: 'sales@chatbotdysa.com',
           phone: '+1-800-CHATBOT',
-          calendar: 'https://calendly.com/chatbotdysa-sales'
+          calendar: 'https://calendly.com/chatbotdysa-sales',
         },
         enterpriseFeatures: [
           '🚀 Unlimited usage and users',
@@ -109,8 +100,8 @@ export class DemoController {
           '🔧 Custom integrations and webhooks',
           '🛡️ Enterprise security and compliance',
           '📞 24/7 priority support',
-          '☁️ Cloud hosting with 99.9% uptime'
-        ]
+          '☁️ Cloud hosting with 99.9% uptime',
+        ],
       },
       timestamp: new Date().toISOString(),
     };
@@ -143,7 +134,7 @@ export class DemoController {
           'Sample conversations cleared',
           'Test orders removed',
           'Demo reservations reset',
-          'Analytics data refreshed'
+          'Analytics data refreshed',
         ],
         timeRemaining: '25 mins',
       },
@@ -165,12 +156,14 @@ export class DemoController {
         message: ended
           ? '🎭 Demo session ended. Thank you for trying ChatBotDysa!'
           : 'Demo session not found or already ended',
-        nextSteps: ended ? [
-          '📞 Schedule a call with our sales team',
-          '📧 Get a custom enterprise quote',
-          '🚀 Start your full trial with real data',
-          '🏢 Explore enterprise features and compliance'
-        ] : []
+        nextSteps: ended
+          ? [
+              '📞 Schedule a call with our sales team',
+              '📧 Get a custom enterprise quote',
+              '🚀 Start your full trial with real data',
+              '🏢 Explore enterprise features and compliance',
+            ]
+          : [],
       },
       timestamp: new Date().toISOString(),
     };
@@ -188,7 +181,7 @@ export class DemoController {
       success: true,
       data: {
         activeSessions: sessions.length,
-        sessions: [] // No active demo sessions
+        sessions: [], // No active demo sessions
       },
       timestamp: new Date().toISOString(),
     };
@@ -206,7 +199,7 @@ export class DemoController {
       success: true,
       data: {
         message: `🧹 Cleaned up ${cleaned} expired demo sessions`,
-        cleanedSessions: cleaned
+        cleanedSessions: cleaned,
       },
       timestamp: new Date().toISOString(),
     };

@@ -10,9 +10,9 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
-} from "@nestjs/common";
-import { QuickRepliesService } from "./quick-replies.service";
-import { QuickReplyCategory } from "../../entities/quick-reply.entity";
+} from '@nestjs/common';
+import { QuickRepliesService } from './quick-replies.service';
+import { QuickReplyCategory } from '../../entities/quick-reply.entity';
 
 class CreateQuickReplyDto {
   title: string;
@@ -31,7 +31,7 @@ class UpdateQuickReplyDto {
   variables?: string[];
 }
 
-@Controller("quick-replies")
+@Controller('quick-replies')
 export class QuickRepliesController {
   constructor(private readonly quickRepliesService: QuickRepliesService) {}
 
@@ -42,18 +42,18 @@ export class QuickRepliesController {
 
   @Get()
   async findAll(
-    @Query("category") category?: QuickReplyCategory,
-    @Query("search") search?: string,
-    @Query("active_only") activeOnly?: string,
+    @Query('category') category?: QuickReplyCategory,
+    @Query('search') search?: string,
+    @Query('active_only') activeOnly?: string
   ) {
     return this.quickRepliesService.findAll({
       category,
       search,
-      active_only: activeOnly !== "false",
+      active_only: activeOnly !== 'false',
     });
   }
 
-  @Get("categories")
+  @Get('categories')
   getCategories() {
     return Object.values(QuickReplyCategory).map((value) => ({
       value,
@@ -61,8 +61,8 @@ export class QuickRepliesController {
     }));
   }
 
-  @Get("shortcut/:shortcut")
-  async findByShortcut(@Param("shortcut") shortcut: string) {
+  @Get('shortcut/:shortcut')
+  async findByShortcut(@Param('shortcut') shortcut: string) {
     const quickReply = await this.quickRepliesService.findByShortcut(shortcut);
     if (!quickReply) {
       return { found: false };
@@ -70,31 +70,25 @@ export class QuickRepliesController {
     return { found: true, quickReply };
   }
 
-  @Get(":id")
-  async findOne(@Param("id", ParseIntPipe) id: number) {
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.quickRepliesService.findOne(id);
   }
 
-  @Put(":id")
-  async update(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateQuickReplyDto,
-  ) {
+  @Put(':id')
+  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateQuickReplyDto) {
     return this.quickRepliesService.update(id, dto);
   }
 
-  @Post(":id/use")
+  @Post(':id/use')
   @HttpCode(HttpStatus.OK)
-  async use(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() variables?: Record<string, string>,
-  ) {
+  async use(@Param('id', ParseIntPipe) id: number, @Body() variables?: Record<string, string>) {
     const quickReply = await this.quickRepliesService.findOne(id);
     await this.quickRepliesService.incrementUsage(id);
 
     const processedContent = this.quickRepliesService.processContent(
       quickReply.content,
-      variables || {},
+      variables || {}
     );
 
     return {
@@ -103,26 +97,26 @@ export class QuickRepliesController {
     };
   }
 
-  @Delete(":id")
+  @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param("id", ParseIntPipe) id: number) {
+  async delete(@Param('id', ParseIntPipe) id: number) {
     await this.quickRepliesService.delete(id);
   }
 
-  @Post("seed")
+  @Post('seed')
   async seedDefaults() {
     await this.quickRepliesService.seedDefaults();
-    return { message: "Default quick replies seeded successfully" };
+    return { message: 'Default quick replies seeded successfully' };
   }
 
   private getCategoryLabel(category: QuickReplyCategory): string {
     const labels: Record<QuickReplyCategory, string> = {
-      [QuickReplyCategory.GREETING]: "Saludos",
-      [QuickReplyCategory.FAREWELL]: "Despedidas",
-      [QuickReplyCategory.INFO]: "Información",
-      [QuickReplyCategory.SUPPORT]: "Soporte",
-      [QuickReplyCategory.SALES]: "Ventas",
-      [QuickReplyCategory.CUSTOM]: "Personalizado",
+      [QuickReplyCategory.GREETING]: 'Saludos',
+      [QuickReplyCategory.FAREWELL]: 'Despedidas',
+      [QuickReplyCategory.INFO]: 'Información',
+      [QuickReplyCategory.SUPPORT]: 'Soporte',
+      [QuickReplyCategory.SALES]: 'Ventas',
+      [QuickReplyCategory.CUSTOM]: 'Personalizado',
     };
     return labels[category] || category;
   }

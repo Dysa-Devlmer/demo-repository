@@ -2,10 +2,18 @@ import { CacheModuleOptions } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-ioredis-yet';
 import { ConfigService } from '@nestjs/config';
 
-export const getCacheConfig = async (
-  configService: ConfigService,
-): Promise<CacheModuleOptions> => {
-  const isProduction = configService.get('NODE_ENV') === 'production';
+export const getCacheConfig = async (configService: ConfigService): Promise<CacheModuleOptions> => {
+  const isTest =
+    configService.get('NODE_ENV') === 'test' || Boolean(process.env.JEST_WORKER_ID);
+
+  if (isTest) {
+    return {
+      ttl: 300,
+      max: 1000,
+      isGlobal: true,
+    };
+  }
+
   const redisHost = configService.get('REDIS_HOST', '127.0.0.1');
   const redisPort = configService.get('REDIS_PORT', 16379);
   const redisPassword = configService.get('REDIS_PASSWORD');

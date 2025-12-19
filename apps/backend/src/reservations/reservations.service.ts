@@ -4,13 +4,13 @@ import {
   BadRequestException,
   ConflictException,
   Logger,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, Between, LessThan, MoreThan } from "typeorm";
-import { Reservation, ReservationStatus } from "../entities/reservation.entity";
-import { Customer } from "../entities/customer.entity";
-import { CreateReservationDto } from "./dto/create-reservation.dto";
-import { UpdateReservationDto } from "./dto/update-reservation.dto";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Between, LessThan, MoreThan } from 'typeorm';
+import { Reservation, ReservationStatus } from '../entities/reservation.entity';
+import { Customer } from '../entities/customer.entity';
+import { CreateReservationDto } from './dto/create-reservation.dto';
+import { UpdateReservationDto } from './dto/update-reservation.dto';
 
 @Injectable()
 export class ReservationsService {
@@ -20,7 +20,7 @@ export class ReservationsService {
     @InjectRepository(Reservation)
     private readonly reservationsRepo: Repository<Reservation>,
     @InjectRepository(Customer)
-    private readonly customersRepo: Repository<Customer>,
+    private readonly customersRepo: Repository<Customer>
   ) {}
 
   /**
@@ -32,15 +32,20 @@ export class ReservationsService {
       where: { id: dto.customerId },
     });
     if (!customer) {
-      throw new BadRequestException(
-        `Customer with ID ${dto.customerId} does not exist`,
-      );
+      throw new BadRequestException(`Customer with ID ${dto.customerId} does not exist`);
     }
 
     // Validate reservation date is not in the past
-    // Parse the date string directly (YYYY-MM-DD format)
-    const [year, month, day] = dto.date.split('-').map(Number);
-    const reservationDateOnly = new Date(year, month - 1, day); // month is 0-indexed
+    const parsedDate = new Date(dto.date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new BadRequestException('Invalid reservation date');
+    }
+
+    const reservationDateOnly = new Date(
+      parsedDate.getFullYear(),
+      parsedDate.getMonth(),
+      parsedDate.getDate()
+    );
 
     // Get today's date at midnight in local timezone
     const today = new Date();
@@ -48,12 +53,12 @@ export class ReservationsService {
 
     // Allow reservations for today and future dates
     if (reservationDateOnly.getTime() < todayDateOnly.getTime()) {
-      throw new BadRequestException("Reservation date cannot be in the past");
+      throw new BadRequestException('Reservation date cannot be in the past');
     }
 
     // Validate party size
     if (dto.people < 1 || dto.people > 20) {
-      throw new BadRequestException("Party size must be between 1 and 20");
+      throw new BadRequestException('Party size must be between 1 and 20');
     }
 
     // Use the date-only timestamp for storage and comparisons
@@ -74,7 +79,7 @@ export class ReservationsService {
     const currentCapacity = await this.getCurrentCapacity(reservationDate);
     if (currentCapacity + dto.people > 40) {
       throw new ConflictException(
-        `Not enough capacity for ${dto.people} people at this time. Current capacity: ${currentCapacity}/40`,
+        `Not enough capacity for ${dto.people} people at this time. Current capacity: ${currentCapacity}/40`
       );
     }
 
@@ -86,7 +91,7 @@ export class ReservationsService {
     reservation.reservation_code = reservationCode;
     reservation.reservation_date = reservationDate;
     reservation.customer_name = customer.name;
-    reservation.customer_phone = customer.phone || "";
+    reservation.customer_phone = customer.phone || '';
     reservation.customer_email = customer.email;
     reservation.party_size = dto.people;
     reservation.time = dto.time || undefined;
@@ -94,13 +99,13 @@ export class ReservationsService {
     reservation.table_number = dto.table_number || undefined;
     reservation.occasion = dto.occasion || undefined;
     reservation.status = dto.status ?? ReservationStatus.PENDING;
-    reservation.notes = dto.notes || "";
+    reservation.notes = dto.notes || '';
     reservation.special_requests = dto.special_requests || undefined;
 
     const saved = await this.reservationsRepo.save(reservation);
 
     this.logger.log(
-      `Reservation ${reservationCode} created for ${customer.name} - ${dto.people} people on ${reservationDate.toISOString().split('T')[0]}`,
+      `Reservation ${reservationCode} created for ${customer.name} - ${dto.people} people on ${reservationDate.toISOString().split('T')[0]}`
     );
 
     return saved;
@@ -121,32 +126,29 @@ export class ReservationsService {
     const skip = (page - 1) * limit;
 
     const queryBuilder = this.reservationsRepo
-      .createQueryBuilder("reservation")
-      .leftJoinAndSelect("reservation.customer", "customer")
-      .orderBy("reservation.reservation_date", "DESC");
+      .createQueryBuilder('reservation')
+      .leftJoinAndSelect('reservation.customer', 'customer')
+      .orderBy('reservation.reservation_date', 'DESC');
 
     if (filters?.status) {
-      queryBuilder.andWhere("reservation.status = :status", {
+      queryBuilder.andWhere('reservation.status = :status', {
         status: filters.status,
       });
     }
 
     if (filters?.startDate) {
-      queryBuilder.andWhere("reservation.reservation_date >= :startDate", {
+      queryBuilder.andWhere('reservation.reservation_date >= :startDate', {
         startDate: filters.startDate,
       });
     }
 
     if (filters?.endDate) {
-      queryBuilder.andWhere("reservation.reservation_date <= :endDate", {
+      queryBuilder.andWhere('reservation.reservation_date <= :endDate', {
         endDate: filters.endDate,
       });
     }
 
-    const [data, total] = await queryBuilder
-      .skip(skip)
-      .take(limit)
-      .getManyAndCount();
+    const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
 
     return {
       data,
@@ -162,7 +164,7 @@ export class ReservationsService {
   async findOne(id: number): Promise<Reservation> {
     const reservation = await this.reservationsRepo.findOne({
       where: { id },
-      relations: ["customer"],
+      relations: ['customer'],
     });
     if (!reservation) {
       throw new NotFoundException(`Reservation with ID ${id} not found`);
@@ -179,12 +181,24 @@ export class ReservationsService {
     // If updating date, validate conflicts
     if (dto.date) {
       // Parse the new date
-      const [year, month, day] = dto.date.split('-').map(Number);
-      const newDateOnly = new Date(year, month - 1, day);
+      const parsedDate = new Date(dto.date);
+      if (Number.isNaN(parsedDate.getTime())) {
+        throw new BadRequestException('Invalid reservation date');
+      }
+
+      const newDateOnly = new Date(
+        parsedDate.getFullYear(),
+        parsedDate.getMonth(),
+        parsedDate.getDate()
+      );
 
       // Get current reservation date at midnight
       const currentResDate = new Date(reservation.reservation_date);
-      const currentDateOnly = new Date(currentResDate.getFullYear(), currentResDate.getMonth(), currentResDate.getDate());
+      const currentDateOnly = new Date(
+        currentResDate.getFullYear(),
+        currentResDate.getMonth(),
+        currentResDate.getDate()
+      );
 
       // Only validate and check capacity if the date is actually changing
       if (newDateOnly.getTime() !== currentDateOnly.getTime()) {
@@ -194,13 +208,13 @@ export class ReservationsService {
 
         // Only reject if new date is in the past (not today)
         if (newDateOnly.getTime() < todayDateOnly.getTime()) {
-          throw new BadRequestException("Reservation date cannot be in the past");
+          throw new BadRequestException('Reservation date cannot be in the past');
         }
 
         const capacity = await this.getCurrentCapacity(newDateOnly);
         const partySize = dto.people || reservation.party_size;
         if (capacity + partySize > 40) {
-          throw new ConflictException("Not enough capacity at this time");
+          throw new ConflictException('Not enough capacity at this time');
         }
 
         reservation.reservation_date = newDateOnly;
@@ -209,7 +223,7 @@ export class ReservationsService {
 
     if (dto.people) {
       if (dto.people < 1 || dto.people > 20) {
-        throw new BadRequestException("Party size must be between 1 and 20");
+        throw new BadRequestException('Party size must be between 1 and 20');
       }
       reservation.party_size = dto.people;
     }
@@ -245,7 +259,7 @@ export class ReservationsService {
     const updated = await this.reservationsRepo.save(reservation);
 
     this.logger.log(
-      `Reservation ${reservation.reservation_code} updated - Status: ${updated.status}`,
+      `Reservation ${reservation.reservation_code} updated - Status: ${updated.status}`
     );
 
     return updated;
@@ -258,11 +272,11 @@ export class ReservationsService {
     const reservation = await this.findOne(id);
 
     if (reservation.status === ReservationStatus.COMPLETED) {
-      throw new BadRequestException("Cannot cancel completed reservation");
+      throw new BadRequestException('Cannot cancel completed reservation');
     }
 
     if (reservation.status === ReservationStatus.CANCELLED) {
-      throw new BadRequestException("Reservation is already cancelled");
+      throw new BadRequestException('Reservation is already cancelled');
     }
 
     reservation.status = ReservationStatus.CANCELLED;
@@ -301,9 +315,7 @@ export class ReservationsService {
     const reservation = await this.findOne(id);
 
     if (reservation.status !== ReservationStatus.CONFIRMED) {
-      throw new BadRequestException(
-        "Only confirmed reservations can be seated",
-      );
+      throw new BadRequestException('Only confirmed reservations can be seated');
     }
 
     reservation.status = ReservationStatus.SEATED;
@@ -317,7 +329,7 @@ export class ReservationsService {
     const reservation = await this.findOne(id);
 
     if (reservation.status !== ReservationStatus.SEATED) {
-      throw new BadRequestException("Only seated reservations can be completed");
+      throw new BadRequestException('Only seated reservations can be completed');
     }
 
     reservation.status = ReservationStatus.COMPLETED;
@@ -338,9 +350,9 @@ export class ReservationsService {
       where: {
         reservation_date: Between(startOfDay, endOfDay),
       },
-      relations: ["customer"],
+      relations: ['customer'],
       order: {
-        reservation_date: "ASC",
+        reservation_date: 'ASC',
       },
     });
   }
@@ -358,9 +370,9 @@ export class ReservationsService {
         reservation_date: Between(now, futureDate),
         status: ReservationStatus.CONFIRMED,
       },
-      relations: ["customer"],
+      relations: ['customer'],
       order: {
-        reservation_date: "ASC",
+        reservation_date: 'ASC',
       },
     });
   }
@@ -420,9 +432,7 @@ export class ReservationsService {
     reservation.status = newStatus;
     const updated = await this.reservationsRepo.save(reservation);
 
-    this.logger.log(
-      `Reservation ${reservation.reservation_code} status updated to ${newStatus}`,
-    );
+    this.logger.log(`Reservation ${reservation.reservation_code} status updated to ${newStatus}`);
 
     return updated;
   }
@@ -460,6 +470,6 @@ export class ReservationsService {
       },
     });
 
-    return reservations.reduce((sum, res) => sum + res.party_size, 0);
+    return (reservations ?? []).reduce((sum, res) => sum + res.party_size, 0);
   }
 }

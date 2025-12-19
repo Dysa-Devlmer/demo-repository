@@ -7,30 +7,30 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
-} from "typeorm";
-import { Customer } from "./customer.entity";
-import { Message } from "./message.entity";
+} from 'typeorm';
+import { Customer } from './customer.entity';
+import { Message } from './message.entity';
 
 export enum ConversationStatus {
-  ACTIVE = "active",
-  RESOLVED = "resolved",
-  CLOSED = "closed",
-  ESCALATED = "escalated",
+  ACTIVE = 'active',
+  RESOLVED = 'resolved',
+  CLOSED = 'closed',
+  ESCALATED = 'escalated',
 }
 
 export enum ConversationChannel {
-  WHATSAPP = "whatsapp",
-  WEB_WIDGET = "web_widget",
-  PHONE = "phone",
+  WHATSAPP = 'whatsapp',
+  WEB_WIDGET = 'web_widget',
+  PHONE = 'phone',
 }
 
 export enum ConversationMode {
-  AUTO = "auto",      // Bot responde automáticamente
-  MANUAL = "manual",  // Solo agente humano responde
-  HYBRID = "hybrid",  // Bot responde, pero agente puede intervenir
+  AUTO = 'auto', // Bot responde automáticamente
+  MANUAL = 'manual', // Solo agente humano responde
+  HYBRID = 'hybrid', // Bot responde, pero agente puede intervenir
 }
 
-@Entity("conversations")
+@Entity('conversations')
 export class Conversation {
   @PrimaryGeneratedColumn()
   id: number;
@@ -39,28 +39,28 @@ export class Conversation {
   session_id: string;
 
   @ManyToOne(() => Customer, (customer) => customer.conversations, {
-    onDelete: "CASCADE",
+    onDelete: 'CASCADE',
     eager: true,
   })
-  @JoinColumn({ name: "customer_id" })
+  @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: ConversationChannel,
     default: ConversationChannel.WEB_WIDGET,
   })
   channel: ConversationChannel;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: ConversationStatus,
     default: ConversationStatus.ACTIVE,
   })
   status: ConversationStatus;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: ConversationMode,
     default: ConversationMode.AUTO,
   })
@@ -72,7 +72,7 @@ export class Conversation {
   @Column({ nullable: true })
   agent_id?: string; // if escalated to human agent
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   context?: {
     intent?: string;
     entities?: any[];
@@ -82,14 +82,14 @@ export class Conversation {
     pending_action?: string;
   };
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata?: {
     user_agent?: string;
     ip_address?: string;
     location?: string;
     language?: string;
     timezone?: string;
-    device_type?: "desktop" | "mobile" | "tablet";
+    device_type?: 'desktop' | 'mobile' | 'tablet';
   };
 
   @Column({ nullable: true })

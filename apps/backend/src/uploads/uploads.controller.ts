@@ -30,7 +30,7 @@ const storage = diskStorage({
   },
   filename: (req, file, cb) => {
     // Generar nombre único: timestamp_random_originalname
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = extname(file.originalname);
     const nameWithoutExt = file.originalname.replace(ext, '').replace(/[^a-zA-Z0-9]/g, '_');
     cb(null, `${nameWithoutExt}_${uniqueSuffix}${ext}`);
@@ -40,7 +40,10 @@ const storage = diskStorage({
 // Filtro para validar tipos de archivo
 const imageFileFilter = (req, file, cb) => {
   if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
-    return cb(new BadRequestException('Solo se permiten archivos de imagen (JPG, PNG, GIF, WEBP)'), false);
+    return cb(
+      new BadRequestException('Solo se permiten archivos de imagen (JPG, PNG, GIF, WEBP)'),
+      false
+    );
   }
   cb(null, true);
 };
@@ -81,7 +84,8 @@ export class UploadsController {
   @Post('image')
   @ApiOperation({
     summary: 'Subir imagen',
-    description: 'Endpoint para subir imágenes desde el widget de chat. Soporta JPG, PNG, GIF, WEBP. Tamaño máximo: 10 MB'
+    description:
+      'Endpoint para subir imágenes desde el widget de chat. Soporta JPG, PNG, GIF, WEBP. Tamaño máximo: 10 MB',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

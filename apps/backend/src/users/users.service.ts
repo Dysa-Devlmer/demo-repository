@@ -1,15 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, In } from "typeorm";
-import { User } from "../auth/entities/user.entity";
-import { Role } from "../auth/entities/role.entity";
-import * as bcrypt from "bcrypt";
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In } from 'typeorm';
+import { User } from '../auth/entities/user.entity';
+import { Role } from '../auth/entities/role.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(Role) private readonly roleRepo: Repository<Role>,
+    @InjectRepository(Role) private readonly roleRepo: Repository<Role>
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -23,21 +23,17 @@ export class UsersService {
       where: { id },
       relations: ['roles', 'roles.permissions'],
     });
-    if (!user) throw new NotFoundException("User not found");
+    if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  async create(
-    email: string,
-    password: string,
-    role: "user" | "admin" = "user",
-  ) {
+  async create(email: string, password: string, role: 'user' | 'admin' = 'user') {
     const hashed = await bcrypt.hash(password, 10);
     const user = this.userRepo.create({ email, password: hashed, role });
     return this.userRepo.save(user);
   }
 
-  async updateRole(id: number, role: "user" | "admin") {
+  async updateRole(id: number, role: 'user' | 'admin') {
     const user = await this.findById(id);
     user.role = role;
     return this.userRepo.save(user);
@@ -51,13 +47,13 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepo.findOne({
       where: { email },
-      select: ["id", "email", "password", "role"],
+      select: ['id', 'email', 'password', 'role'],
     });
   }
 
   async updateProfile(
     id: number,
-    data: { firstName?: string; lastName?: string; phone?: string },
+    data: { firstName?: string; lastName?: string; phone?: string }
   ): Promise<User> {
     const user = await this.findById(id);
 
@@ -82,7 +78,7 @@ export class UsersService {
       email?: string;
       phone?: string;
       status?: 'active' | 'inactive';
-    },
+    }
   ): Promise<User> {
     const user = await this.findById(id);
 

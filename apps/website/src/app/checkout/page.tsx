@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle2, Zap, Shield, Clock, Building2, Server, Check, X, ArrowRight, Star } from 'lucide-react'
 import { trackBeginCheckout, trackSelectPlan, trackClick } from '@/lib/analytics'
@@ -66,15 +66,7 @@ export default function CheckoutPage() {
     return () => clearInterval(timer)
   }, [])
 
-  // Track begin checkout on page load
-  useEffect(() => {
-    const plan = plans.find(p => p.id === selectedPlan)
-    if (plan) {
-      trackBeginCheckout(selectedPlan as any, plan.price)
-    }
-  }, [])
-
-  const plans: Plan[] = [
+  const plans = useMemo<Plan[]>(() => ([
     {
       id: 'saas-multi',
       name: 'SaaS Multi-Tenant',
@@ -163,7 +155,15 @@ export default function CheckoutPage() {
       cta: 'Agendar Demo',
       ctaAction: 'demo'
     }
-  ]
+  ]), [])
+
+  // Track begin checkout on page load
+  useEffect(() => {
+    const plan = plans.find(p => p.id === selectedPlan)
+    if (plan) {
+      trackBeginCheckout(selectedPlan as any, plan.price)
+    }
+  }, [plans, selectedPlan])
 
   const handleSelectPlan = (planId: string) => {
     setSelectedPlan(planId)
@@ -384,7 +384,7 @@ export default function CheckoutPage() {
                 {plan.id === 'saas-multi' && (
                   <div className="mt-4 text-center">
                     <p className="text-sm text-gray-400">
-                      💬 "Perfecto para empezar. Lo activé y seguí trabajando el mismo día."
+                      💬 &ldquo;Perfecto para empezar. Lo activé y seguí trabajando el mismo día.&rdquo;
                     </p>
                     <p className="text-xs text-gray-500 mt-1">- Giuseppe, Don Luigi</p>
                   </div>

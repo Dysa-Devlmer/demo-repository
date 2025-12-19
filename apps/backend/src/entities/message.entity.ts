@@ -5,66 +5,66 @@ import {
   ManyToOne,
   CreateDateColumn,
   JoinColumn,
-} from "typeorm";
-import { Conversation } from "./conversation.entity";
+} from 'typeorm';
+import { Conversation } from './conversation.entity';
 
 export enum MessageType {
-  TEXT = "text",
-  IMAGE = "image",
-  FILE = "file",
-  AUDIO = "audio",
-  VIDEO = "video",
-  LOCATION = "location",
-  SYSTEM = "system",
-  MENU = "menu",
-  BUTTON = "button",
+  TEXT = 'text',
+  IMAGE = 'image',
+  FILE = 'file',
+  AUDIO = 'audio',
+  VIDEO = 'video',
+  LOCATION = 'location',
+  SYSTEM = 'system',
+  MENU = 'menu',
+  BUTTON = 'button',
 }
 
 export enum MessageRole {
-  USER = "user",
-  BOT = "bot",
-  AGENT = "agent",
-  SYSTEM = "system",
+  USER = 'user',
+  BOT = 'bot',
+  AGENT = 'agent',
+  SYSTEM = 'system',
 }
 
 export enum MessageDeliveryStatus {
-  PENDING = "pending",   // Mensaje creado, aún no enviado
-  SENT = "sent",         // Enviado al servidor de WhatsApp
-  DELIVERED = "delivered", // Entregado al dispositivo del usuario
-  READ = "read",         // Leído por el usuario
-  FAILED = "failed",     // Error al enviar
+  PENDING = 'pending', // Mensaje creado, aún no enviado
+  SENT = 'sent', // Enviado al servidor de WhatsApp
+  DELIVERED = 'delivered', // Entregado al dispositivo del usuario
+  READ = 'read', // Leído por el usuario
+  FAILED = 'failed', // Error al enviar
 }
 
-@Entity("messages")
+@Entity('messages')
 export class Message {
   @PrimaryGeneratedColumn()
   id: number;
 
   // Explicit FK column - required for QueryBuilder INSERT
-  @Column({ name: "conversation_id", nullable: true })
+  @Column({ name: 'conversation_id', nullable: true })
   conversation_id: number;
 
   @ManyToOne(() => Conversation, (conversation) => conversation.messages, {
-    onDelete: "CASCADE",
+    onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: "conversation_id" })
+  @JoinColumn({ name: 'conversation_id' })
   conversation: Conversation;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: MessageRole,
     default: MessageRole.USER,
   })
   role: MessageRole;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: MessageType,
     default: MessageType.TEXT,
   })
   type: MessageType;
 
-  @Column({ type: "text" })
+  @Column({ type: 'text' })
   content: string;
 
   @Column({ nullable: true })
@@ -79,7 +79,7 @@ export class Message {
   @Column({ nullable: true })
   sender_id?: string; // WhatsApp phone, agent ID, etc.
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata?: {
     whatsapp_message_id?: string;
     processing_time?: number;
@@ -99,7 +99,7 @@ export class Message {
   is_delivered: boolean;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: MessageDeliveryStatus,
     default: MessageDeliveryStatus.PENDING,
   })

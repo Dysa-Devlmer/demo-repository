@@ -4,20 +4,16 @@ import {
   UnauthorizedException,
   BadRequestException,
   ForbiddenException,
-} from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, MoreThan } from "typeorm";
-import { User, UserStatus } from "./entities/user.entity";
-import { Role } from "./entities/role.entity";
-import {
-  AuditLog,
-  AuditAction,
-  AuditSeverity,
-} from "./entities/audit-log.entity";
-import * as bcrypt from "bcryptjs";
-import { LoginDto } from "./dto/login.dto";
-import { RegisterDto } from "./dto/register.dto";
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, MoreThan } from 'typeorm';
+import { User, UserStatus } from './entities/user.entity';
+import { Role } from './entities/role.entity';
+import { AuditLog, AuditAction, AuditSeverity } from '../common/entities/audit-log.entity';
+import * as bcrypt from 'bcryptjs';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 export interface LoginRequest {
   email: string;
@@ -55,19 +51,19 @@ export class AuthService {
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(AuditLog)
     private readonly auditRepository: Repository<AuditLog>,
-    private readonly jwtService: JwtService,
+    private readonly jwtService: JwtService
   ) {}
 
   // Legacy method for backward compatibility
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { email },
-      relations: ["roles", "roles.permissions"],
+      relations: ['roles', 'roles.permissions'],
     });
     if (user && (await bcrypt.compare(password, user.password))) {
       return user;
     }
-    throw new UnauthorizedException("Credenciales inválidas");
+    throw new UnauthorizedException('Credenciales inválidas');
   }
 
   // Legacy login method for backward compatibility
@@ -85,44 +81,44 @@ export class AuthService {
     // Find user
     const user = await this.userRepository.findOne({
       where: { email },
-      relations: ["roles", "roles.permissions"],
+      relations: ['roles', 'roles.permissions'],
     });
 
     if (!user) {
-      await this.logAuditEvent(AuditAction.LOGIN_FAILED, "User", null, {
+      await this.logAuditEvent(AuditAction.FAILED_LOGIN, 'User', null, {
         email,
-        reason: "User not found",
+        reason: 'User not found',
         ipAddress,
         userAgent,
       });
-      throw new UnauthorizedException("Credenciales inválidas");
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // Check account status
     if (user.status !== UserStatus.ACTIVE) {
-      await this.logAuditEvent(AuditAction.LOGIN_FAILED, "User", user.id, {
+      await this.logAuditEvent(AuditAction.FAILED_LOGIN, 'User', user.id, {
         reason: `Account status: ${user.status}`,
         ipAddress,
         userAgent,
       });
-      throw new ForbiddenException("Cuenta inactiva o suspendida");
+      throw new ForbiddenException('Cuenta inactiva o suspendida');
     }
 
     // Check account lockout
     if (user.isAccountLocked()) {
-      await this.logAuditEvent(AuditAction.LOGIN_FAILED, "User", user.id, {
-        reason: "Account locked",
+      await this.logAuditEvent(AuditAction.FAILED_LOGIN, 'User', user.id, {
+        reason: 'Account locked',
         ipAddress,
         userAgent,
       });
-      throw new ForbiddenException("Cuenta bloqueada temporalmente");
+      throw new ForbiddenException('Cuenta bloqueada temporalmente');
     }
 
     // Validate password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       await this.handleFailedLogin(user, ipAddress, userAgent);
-      throw new UnauthorizedException("Credenciales inválidas");
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     // Reset failed attempts on successful login
@@ -137,14 +133,14 @@ export class AuthService {
       permissions,
     };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: "1h" });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
     const refreshToken = this.jwtService.sign(
-      { sub: user.id, type: "refresh" },
-      { expiresIn: "7d" },
+      { sub: user.id, type: 'refresh' },
+      { expiresIn: '7d' }
     );
 
     // Log successful login
-    await this.logAuditEvent(AuditAction.LOGIN, "User", user.id, {
+    await this.logAuditEvent(AuditAction.LOGIN, 'User', user.id, {
       ipAddress,
       userAgent,
     });
@@ -170,7 +166,7 @@ export class AuthService {
       where: { email: dto.email },
     });
     if (exists) {
-      throw new BadRequestException("El correo ya está registrado");
+      throw new BadRequestException('El correo ya está registrado');
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
@@ -182,19 +178,19 @@ export class AuthService {
 
     await this.userRepository.save(user);
 
-    await this.logAuditEvent(AuditAction.USER_CREATED, "User", user.id, {
+    await this.logAuditEvent(AuditAction.CREATE, 'User', user.id, {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
     });
 
-    return { message: "Usuario registrado exitosamente" };
+    return { message: 'Usuario registrado exitosamente' };
   }
 
   async validateUserFromPayload(payload: JwtPayload): Promise<User | null> {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },
-      relations: ["roles", "roles.permissions"],
+      relations: ['roles', 'roles.permissions'],
     });
 
     if (!user || user.status !== UserStatus.ACTIVE) {
@@ -204,23 +200,21 @@ export class AuthService {
     return user;
   }
 
-  async refreshToken(
-    refreshToken: string,
-  ): Promise<{ accessToken: string; expiresIn: number }> {
+  async refreshToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
     try {
       const payload = this.jwtService.verify(refreshToken);
 
-      if (payload.type !== "refresh") {
-        throw new UnauthorizedException("Token inválido");
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Token inválido');
       }
 
       const user = await this.userRepository.findOne({
         where: { id: payload.sub },
-        relations: ["roles", "roles.permissions"],
+        relations: ['roles', 'roles.permissions'],
       });
 
       if (!user || user.status !== UserStatus.ACTIVE) {
-        throw new UnauthorizedException("Usuario inválido");
+        throw new UnauthorizedException('Usuario inválido');
       }
 
       const permissions = this.extractPermissions(user);
@@ -231,23 +225,19 @@ export class AuthService {
         permissions,
       };
 
-      const accessToken = this.jwtService.sign(newPayload, { expiresIn: "1h" });
+      const accessToken = this.jwtService.sign(newPayload, { expiresIn: '1h' });
 
       return {
         accessToken,
         expiresIn: 3600,
       };
     } catch (error) {
-      throw new UnauthorizedException("Token de actualización inválido");
+      throw new UnauthorizedException('Token de actualización inválido');
     }
   }
 
-  async logout(
-    userId: number,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<void> {
-    await this.logAuditEvent(AuditAction.LOGOUT, "User", userId, {
+  async logout(userId: number, ipAddress?: string, userAgent?: string): Promise<void> {
+    await this.logAuditEvent(AuditAction.LOGOUT, 'User', userId, {
       ipAddress,
       userAgent,
     });
@@ -258,32 +248,29 @@ export class AuthService {
     currentPassword: string,
     newPassword: string,
     ipAddress?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<void> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
-      throw new BadRequestException("Usuario no encontrado");
+      throw new BadRequestException('Usuario no encontrado');
     }
 
-    const isCurrentPasswordValid = await bcrypt.compare(
-      currentPassword,
-      user.password,
-    );
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isCurrentPasswordValid) {
-      throw new BadRequestException("Contraseña actual incorrecta");
+      throw new BadRequestException('Contraseña actual incorrecta');
     }
 
     if (!this.isPasswordStrong(newPassword)) {
       throw new BadRequestException(
-        "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales"
+        'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales'
       );
     }
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 12);
     await this.userRepository.update(userId, { password: hashedNewPassword });
 
-    await this.logAuditEvent(AuditAction.PASSWORD_CHANGED, "User", userId, {
+    await this.logAuditEvent(AuditAction.UPDATE, 'User', userId, {
       ipAddress,
       userAgent,
     });
@@ -292,13 +279,13 @@ export class AuthService {
   async forgotPassword(
     email: string,
     ipAddress?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({ where: { email } });
 
     // Always return success for security (don't reveal if email exists)
     if (!user) {
-      return { message: "Si el correo existe, recibirás un enlace de recuperación" };
+      return { message: 'Si el correo existe, recibirás un enlace de recuperación' };
     }
 
     // Generate secure reset token
@@ -311,8 +298,8 @@ export class AuthService {
       passwordResetExpires: resetExpires,
     });
 
-    await this.logAuditEvent(AuditAction.PASSWORD_CHANGED, "User", user.id, {
-      action: "reset_requested",
+    await this.logAuditEvent(AuditAction.UPDATE, 'User', user.id, {
+      action: 'reset_requested',
       ipAddress,
       userAgent,
     });
@@ -321,14 +308,14 @@ export class AuthService {
     // const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
     // await this.emailService.sendPasswordResetEmail(user.email, resetUrl);
 
-    return { message: "Si el correo existe, recibirás un enlace de recuperación" };
+    return { message: 'Si el correo existe, recibirás un enlace de recuperación' };
   }
 
   async resetPassword(
     token: string,
     newPassword: string,
     ipAddress?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({
       where: {
@@ -338,12 +325,12 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException("Token inválido o expirado");
+      throw new BadRequestException('Token inválido o expirado');
     }
 
     if (!this.isPasswordStrong(newPassword)) {
       throw new BadRequestException(
-        "La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales"
+        'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas, números y caracteres especiales'
       );
     }
 
@@ -357,13 +344,13 @@ export class AuthService {
       accountLockedUntil: null as any,
     });
 
-    await this.logAuditEvent(AuditAction.PASSWORD_CHANGED, "User", user.id, {
-      method: "reset",
+    await this.logAuditEvent(AuditAction.UPDATE, 'User', user.id, {
+      method: 'reset',
       ipAddress,
       userAgent,
     });
 
-    return { message: "Contraseña actualizada exitosamente" };
+    return { message: 'Contraseña actualizada exitosamente' };
   }
 
   private isPasswordStrong(password: string): boolean {
@@ -374,32 +361,26 @@ export class AuthService {
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
     return (
-      password.length >= minLength &&
-      hasUpperCase &&
-      hasLowerCase &&
-      hasNumbers &&
-      hasSpecialChar
+      password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChar
     );
   }
 
   private async handleFailedLogin(
     user: User,
     ipAddress?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<void> {
     const updatedAttempts = user.failedLoginAttempts + 1;
     const updateData: Partial<User> = { failedLoginAttempts: updatedAttempts };
 
     if (updatedAttempts >= this.MAX_LOGIN_ATTEMPTS) {
-      updateData.accountLockedUntil = new Date(
-        Date.now() + this.LOCKOUT_DURATION,
-      );
+      updateData.accountLockedUntil = new Date(Date.now() + this.LOCKOUT_DURATION);
     }
 
     await this.userRepository.update(user.id, updateData);
 
-    await this.logAuditEvent(AuditAction.LOGIN_FAILED, "User", user.id, {
-      reason: "Invalid password",
+    await this.logAuditEvent(AuditAction.FAILED_LOGIN, 'User', user.id, {
+      reason: 'Invalid password',
       failedAttempts: updatedAttempts,
       ipAddress,
       userAgent,
@@ -409,7 +390,7 @@ export class AuthService {
   private async handleSuccessfulLogin(
     user: User,
     ipAddress?: string,
-    userAgent?: string,
+    userAgent?: string
   ): Promise<void> {
     await this.userRepository.update(user.id, {
       failedLoginAttempts: 0,
@@ -436,11 +417,20 @@ export class AuthService {
     resource: string,
     resourceId: number | null,
     metadata?: any,
-    userId?: number,
+    userId?: number
   ): Promise<void> {
     try {
+      const actionMap: Record<string, AuditAction> = {
+        login: AuditAction.LOGIN,
+        logout: AuditAction.LOGOUT,
+        login_failed: AuditAction.FAILED_LOGIN,
+        user_created: AuditAction.CREATE,
+        password_changed: AuditAction.UPDATE,
+      };
+      const normalizedAction = actionMap[String(action)] ?? action;
+
       const auditLog = this.auditRepository.create({
-        action,
+        action: normalizedAction,
         resource,
         resourceId: resourceId?.toString(),
         userId,
@@ -453,18 +443,18 @@ export class AuthService {
       await this.auditRepository.save(auditLog);
     } catch (error) {
       // Don't throw errors for audit logging failures
-      console.error("Failed to log audit event:", error);
+      console.error('Failed to log audit event:', error);
     }
   }
 
   private getAuditSeverity(action: AuditAction): AuditSeverity {
     switch (action) {
-      case AuditAction.LOGIN_FAILED:
-      case AuditAction.PASSWORD_CHANGED:
+      case AuditAction.FAILED_LOGIN:
+      case AuditAction.UPDATE:
         return AuditSeverity.MEDIUM;
-      case AuditAction.USER_DELETED:
-      case AuditAction.SYSTEM_BACKUP:
-      case AuditAction.SYSTEM_RESTORE:
+      case AuditAction.DELETE:
+      case AuditAction.DATA_EXPORT:
+      case AuditAction.BULK_OPERATION:
         return AuditSeverity.HIGH;
       default:
         return AuditSeverity.LOW;

@@ -34,13 +34,15 @@ export class RealtimeNotificationService {
 
   constructor(
     @Inject(forwardRef(() => WebSocketsGateway))
-    private readonly wsGateway: WebSocketsGateway,
+    private readonly wsGateway: WebSocketsGateway
   ) {}
 
   /**
    * Send notification to admin panel in real-time
    */
-  async notifyAdmins(notification: Omit<RealtimeNotification, 'id' | 'timestamp' | 'read'>): Promise<void> {
+  async notifyAdmins(
+    notification: Omit<RealtimeNotification, 'id' | 'timestamp' | 'read'>
+  ): Promise<void> {
     const fullNotification: RealtimeNotification = {
       ...notification,
       id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -236,7 +238,11 @@ export class RealtimeNotificationService {
   /**
    * Send system alert
    */
-  async sendSystemAlert(title: string, message: string, priority: 'normal' | 'high' | 'critical' = 'normal'): Promise<void> {
+  async sendSystemAlert(
+    title: string,
+    message: string,
+    priority: 'normal' | 'high' | 'critical' = 'normal'
+  ): Promise<void> {
     await this.notifyAdmins({
       type: NotificationType.SYSTEM_ALERT,
       title,

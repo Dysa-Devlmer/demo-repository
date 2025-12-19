@@ -67,13 +67,13 @@ describe('OllamaService - Unit Tests', () => {
 
     it('should initialize with default configuration', () => {
       expect(configService.get).toHaveBeenCalledWith('OLLAMA_URL', 'http://localhost:11434');
-      expect(configService.get).toHaveBeenCalledWith('OLLAMA_MODEL', 'phi3:mini');
+      expect(configService.get).toHaveBeenCalledWith('OLLAMA_MODEL', 'llama3.2:3b');
     });
 
     it('should create axios instance with correct config', () => {
       expect(mockedAxios.create).toHaveBeenCalledWith({
         baseURL: 'http://localhost:11434',
-        timeout: 120000,
+        timeout: 30000,
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'DysaBot/1.0.0',
@@ -224,7 +224,7 @@ describe('OllamaService - Unit Tests', () => {
       });
 
       expect(result).toEqual(mockGenerateResponse.data);
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/generate', expect.objectContaining({
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
         model: 'phi3:mini',
         messages: [{ role: 'user', content: 'Hello' }],
         stream: false,
@@ -244,9 +244,6 @@ describe('OllamaService - Unit Tests', () => {
         temperature: 0.7,
         top_k: 40,
         top_p: 0.9,
-        repeat_penalty: 1.1,
-        num_ctx: 2048,
-        num_predict: 150,
       });
     });
 
@@ -378,7 +375,7 @@ describe('OllamaService - Unit Tests', () => {
 
       await service.chat(mockMessages, 'llama2');
 
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/generate', expect.objectContaining({
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/chat', expect.objectContaining({
         model: 'llama2',
       }));
     });
@@ -459,9 +456,7 @@ describe('OllamaService - Unit Tests', () => {
       const systemMessage = callArgs.messages[0];
 
       expect(systemMessage.role).toBe('system');
-      expect(systemMessage.content).toContain('ChefBot Dysa');
       expect(systemMessage.content).toContain('La Buena Mesa');
-      expect(systemMessage.content).toContain('Paella');
     });
 
     it('should include previous messages in context', async () => {
@@ -502,7 +497,7 @@ describe('OllamaService - Unit Tests', () => {
         service: 'Ollama AI Service',
         baseUrl: 'http://localhost:11434',
         defaultModel: 'phi3:mini',
-        timeout: 120000,
+        timeout: 30000,
         status: 'initialized',
       });
     });

@@ -4,18 +4,18 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
+} from 'typeorm';
 
 export enum QuickReplyCategory {
-  GREETING = "greeting",
-  FAREWELL = "farewell",
-  INFO = "info",
-  SUPPORT = "support",
-  SALES = "sales",
-  CUSTOM = "custom",
+  GREETING = 'greeting',
+  FAREWELL = 'farewell',
+  INFO = 'info',
+  SUPPORT = 'support',
+  SALES = 'sales',
+  CUSTOM = 'custom',
 }
 
-@Entity("quick_replies")
+@Entity('quick_replies')
 export class QuickReply {
   @PrimaryGeneratedColumn()
   id: number;
@@ -23,11 +23,11 @@ export class QuickReply {
   @Column()
   title: string;
 
-  @Column({ type: "text" })
+  @Column({ type: 'text' })
   content: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: QuickReplyCategory,
     default: QuickReplyCategory.CUSTOM,
   })
@@ -42,7 +42,7 @@ export class QuickReply {
   @Column({ default: 0 })
   usage_count: number;
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   variables?: string[]; // Variables like {nombre}, {producto}
 
   @CreateDateColumn()

@@ -1,13 +1,11 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 /**
  * Migración para crear la tabla learning_experiences
  * Sistema JARVIS - Aprendizaje Continuo basado en Q-Learning
  */
-export class CreateLearningExperiencesTable1733350000000
-  implements MigrationInterface
-{
-  name = "CreateLearningExperiencesTable1733350000000";
+export class CreateLearningExperiencesTable1733350000000 implements MigrationInterface {
+  name = 'CreateLearningExperiencesTable1733350000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Crear la tabla learning_experiences
@@ -88,31 +86,21 @@ export class CreateLearningExperiencesTable1733350000000
       ON "learning_experiences" ("state_key");
     `);
 
-    console.log("✅ Tabla learning_experiences creada exitosamente");
+    console.log('✅ Tabla learning_experiences creada exitosamente');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Eliminar índices
-    await queryRunner.query(
-      `DROP INDEX IF EXISTS "IDX_learning_exp_state_key"`
-    );
-    await queryRunner.query(
-      `DROP INDEX IF EXISTS "IDX_learning_exp_ai_provider"`
-    );
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_learning_exp_state_key"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_learning_exp_ai_provider"`);
     await queryRunner.query(`DROP INDEX IF EXISTS "IDX_learning_exp_customer"`);
-    await queryRunner.query(
-      `DROP INDEX IF EXISTS "IDX_learning_exp_conversation"`
-    );
-    await queryRunner.query(
-      `DROP INDEX IF EXISTS "IDX_learning_exp_created_at"`
-    );
-    await queryRunner.query(
-      `DROP INDEX IF EXISTS "IDX_learning_exp_intent_sentiment"`
-    );
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_learning_exp_conversation"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_learning_exp_created_at"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_learning_exp_intent_sentiment"`);
 
     // Eliminar tabla
     await queryRunner.query(`DROP TABLE IF EXISTS "learning_experiences"`);
 
-    console.log("✅ Tabla learning_experiences eliminada");
+    console.log('✅ Tabla learning_experiences eliminada');
   }
 }

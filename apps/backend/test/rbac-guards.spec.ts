@@ -39,7 +39,7 @@ describe('RolesGuard', () => {
   describe('canActivate', () => {
     it('should allow access if no roles are required', () => {
       const mockContext = createMockExecutionContext({
-        user: { roles: [{ name: 'user' }] },
+        user: { roles: ['user'] },
       });
 
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
@@ -49,7 +49,7 @@ describe('RolesGuard', () => {
 
     it('should allow ADMIN user access to ADMIN endpoint', () => {
       const mockContext = createMockExecutionContext({
-        user: { roles: [{ name: 'admin' }] },
+        user: { roles: ['admin'] },
       });
 
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([ROLES.ADMIN]);
@@ -59,7 +59,7 @@ describe('RolesGuard', () => {
 
     it('should allow MANAGER user access to MANAGER endpoint', () => {
       const mockContext = createMockExecutionContext({
-        user: { roles: [{ name: 'manager' }] },
+        user: { roles: ['manager'] },
       });
 
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([ROLES.ADMIN, ROLES.MANAGER]);
@@ -69,27 +69,27 @@ describe('RolesGuard', () => {
 
     it('should deny USER access to ADMIN endpoint', () => {
       const mockContext = createMockExecutionContext({
-        user: { roles: [{ name: 'user' }] },
+        user: { roles: ['user'] },
       });
 
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([ROLES.ADMIN]);
 
-      expect(guard.canActivate(mockContext)).toBe(false);
+      expect(() => guard.canActivate(mockContext)).toThrow('Acceso denegado');
     });
 
     it('should deny STAFF access to ADMIN-only endpoint', () => {
       const mockContext = createMockExecutionContext({
-        user: { roles: [{ name: 'staff' }] },
+        user: { roles: ['staff'] },
       });
 
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([ROLES.ADMIN]);
 
-      expect(guard.canActivate(mockContext)).toBe(false);
+      expect(() => guard.canActivate(mockContext)).toThrow('Acceso denegado');
     });
 
     it('should allow ADMIN access to any endpoint', () => {
       const mockContext = createMockExecutionContext({
-        user: { roles: [{ name: 'admin' }] },
+        user: { roles: ['admin'] },
       });
 
       const endpoints = [
@@ -114,7 +114,7 @@ describe('RolesGuard', () => {
 
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([ROLES.ADMIN]);
 
-      expect(guard.canActivate(mockContext)).toBe(false);
+      expect(() => guard.canActivate(mockContext)).toThrow('Acceso denegado');
     });
 
     it('should deny access if no user in request', () => {
@@ -122,7 +122,7 @@ describe('RolesGuard', () => {
 
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([ROLES.ADMIN]);
 
-      expect(guard.canActivate(mockContext)).toBe(false);
+      expect(() => guard.canActivate(mockContext)).toThrow('Usuario no autenticado');
     });
   });
 });

@@ -10,13 +10,16 @@ import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 
 // Simple in-memory demo sessions (for production, use Redis or database)
-const demoSessions = new Map<string, {
-  id: string;
-  startTime: Date;
-  endTime: Date;
-  clientInfo: { ip: string; userAgent: string };
-  usage: { endpoints: string[]; requestCount: number };
-}>();
+const demoSessions = new Map<
+  string,
+  {
+    id: string;
+    startTime: Date;
+    endTime: Date;
+    clientInfo: { ip: string; userAgent: string };
+    usage: { endpoints: string[]; requestCount: number };
+  }
+>();
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -24,7 +27,7 @@ export class AuthGuard implements CanActivate {
 
   constructor(
     private readonly jwtService: JwtService,
-    private readonly reflector: Reflector,
+    private readonly reflector: Reflector
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -71,9 +74,9 @@ export class AuthGuard implements CanActivate {
       return authHeader.substring(5);
     }
     return (
-      request.headers['x-demo-token'] as string ||
-      request.headers['x-demo-session'] as string ||
-      request.query.demoToken as string ||
+      (request.headers['x-demo-token'] as string) ||
+      (request.headers['x-demo-session'] as string) ||
+      (request.query.demoToken as string) ||
       null
     );
   }
@@ -154,11 +157,11 @@ export class AuthGuard implements CanActivate {
       '/api/demo/status',
     ];
 
-    return publicPaths.some(publicPath => path.startsWith(publicPath));
+    return publicPaths.some((publicPath) => path.startsWith(publicPath));
   }
 
   private getEndpointName(path: string, method: string): string {
-    const pathSegments = path.split('/').filter(segment => segment);
+    const pathSegments = path.split('/').filter((segment) => segment);
 
     if (pathSegments.length >= 2) {
       return `${method.toLowerCase()}_${pathSegments[1]}_${pathSegments[2] || 'index'}`;

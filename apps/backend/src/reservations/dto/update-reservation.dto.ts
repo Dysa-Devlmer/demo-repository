@@ -1,4 +1,4 @@
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpdateReservationDto {
   @IsOptional()
@@ -31,8 +31,8 @@ export class UpdateReservationDto {
   occasion?: string;
 
   @IsOptional()
-  @IsEnum(["pending", "confirmed", "seated", "completed", "cancelled", "no_show"])
-  status?: "pending" | "confirmed" | "seated" | "completed" | "cancelled" | "no_show";
+  @IsEnum(['pending', 'confirmed', 'seated', 'completed', 'cancelled', 'no_show'])
+  status?: 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'no_show';
 
   @IsOptional()
   @IsString()

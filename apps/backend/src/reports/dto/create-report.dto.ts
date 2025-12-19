@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsArray,
-  IsObject,
-  Length,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsArray, IsObject, Length } from 'class-validator';
 import {
   ReportType,
   ReportFormat,

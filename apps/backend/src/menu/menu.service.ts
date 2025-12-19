@@ -1,15 +1,15 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { MenuItem } from "../entities/menu-item.entity";
-import { CreateMenuItemDto } from "./dto/create-menu-item.dto";
-import { UpdateMenuItemDto } from "./dto/update-menu-item.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { MenuItem } from '../entities/menu-item.entity';
+import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 
 @Injectable()
 export class MenuService {
   constructor(
     @InjectRepository(MenuItem)
-    private readonly menuRepo: Repository<MenuItem>,
+    private readonly menuRepo: Repository<MenuItem>
   ) {}
 
   async create(dto: CreateMenuItemDto): Promise<MenuItem> {
@@ -24,7 +24,7 @@ export class MenuService {
     });
 
     // Transformar datos para usar nombres reales de categorías
-    return items.map(item => ({
+    return items.map((item) => ({
       ...item,
       category: item.category_ref?.name || item.category || 'Sin categoría',
     }));

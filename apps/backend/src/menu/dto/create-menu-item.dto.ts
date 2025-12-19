@@ -9,13 +9,13 @@ import {
   IsArray,
   IsObject,
   IsInt,
-} from "class-validator";
-import { MenuCategory, DietaryType } from "../../entities/menu-item.entity";
+} from 'class-validator';
+import { MenuCategory, DietaryType } from '../../entities/menu-item.entity';
 
 enum PreparationArea {
-  KITCHEN = "kitchen",
-  BAR = "bar",
-  BOTH = "both",
+  KITCHEN = 'kitchen',
+  BAR = 'bar',
+  BOTH = 'both',
 }
 
 export class CreateMenuItemDto {

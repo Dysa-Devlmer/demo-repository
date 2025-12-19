@@ -3,11 +3,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import { CustomerMemory, MemoryType, ConfidenceLevel } from './customer-memory.entity';
 
+type MemoryPattern = {
+  pattern: RegExp;
+  key: string;
+  value?: string;
+  valueExtract?: boolean;
+};
+
 /**
  * Patrones de extracción de memoria
  * El bot detecta estas frases y extrae información relevante
  */
-const MEMORY_PATTERNS = {
+const MEMORY_PATTERNS: Record<string, MemoryPattern[]> = {
   // Preferencias alimenticias
   dietary: [
     { pattern: /soy vegetarian[oa]/i, key: 'dietary', value: 'vegetariano' },
@@ -23,13 +30,25 @@ const MEMORY_PATTERNS = {
 
   // Direcciones
   address: [
-    { pattern: /(?:mi dirección es|vivo en|estoy en|enviar a|delivery a)\s*[:\-]?\s*(.+)/i, key: 'delivery_address', valueExtract: true },
-    { pattern: /(?:calle|avenida|av\.|pasaje)\s+.+\s+\d+/i, key: 'address_detected', valueExtract: true },
+    {
+      pattern: /(?:mi dirección es|vivo en|estoy en|enviar a|delivery a)\s*[:\-]?\s*(.+)/i,
+      key: 'delivery_address',
+      valueExtract: true,
+    },
+    {
+      pattern: /(?:calle|avenida|av\.|pasaje)\s+.+\s+\d+/i,
+      key: 'address_detected',
+      valueExtract: true,
+    },
   ],
 
   // Comunicación
   communication: [
-    { pattern: /(?:puedes|puede)\s+tutearme|háblame\s+de\s+tú/i, key: 'formality', value: 'informal' },
+    {
+      pattern: /(?:puedes|puede)\s+tutearme|háblame\s+de\s+tú/i,
+      key: 'formality',
+      value: 'informal',
+    },
     { pattern: /(?:trátame|tratame)\s+de\s+usted/i, key: 'formality', value: 'formal' },
     { pattern: /(?:llámame|llamame)\s+(\w+)/i, key: 'preferred_name', valueExtract: true },
     { pattern: /(?:mi nombre es|me llamo)\s+(\w+)/i, key: 'customer_name', valueExtract: true },
@@ -37,14 +56,30 @@ const MEMORY_PATTERNS = {
 
   // Pedidos frecuentes
   orders: [
-    { pattern: /(?:siempre pido|lo de siempre|mi favorito es)\s*[:\-]?\s*(.+)/i, key: 'usual_order', valueExtract: true },
-    { pattern: /(?:quiero|dame)\s+(?:lo mismo|lo de siempre)/i, key: 'repeat_order', value: 'true' },
+    {
+      pattern: /(?:siempre pido|lo de siempre|mi favorito es)\s*[:\-]?\s*(.+)/i,
+      key: 'usual_order',
+      valueExtract: true,
+    },
+    {
+      pattern: /(?:quiero|dame)\s+(?:lo mismo|lo de siempre)/i,
+      key: 'repeat_order',
+      value: 'true',
+    },
   ],
 
   // Personal
   personal: [
-    { pattern: /(?:mi cumpleaños es|cumplo años)\s+(?:el\s+)?(\d{1,2})\s+(?:de\s+)?(\w+)/i, key: 'birthday', valueExtract: true },
-    { pattern: /(?:tengo|somos)\s+(\d+)\s+(?:personas|invitados)/i, key: 'party_size_usual', valueExtract: true },
+    {
+      pattern: /(?:mi cumpleaños es|cumplo años)\s+(?:el\s+)?(\d{1,2})\s+(?:de\s+)?(\w+)/i,
+      key: 'birthday',
+      valueExtract: true,
+    },
+    {
+      pattern: /(?:tengo|somos)\s+(\d+)\s+(?:personas|invitados)/i,
+      key: 'party_size_usual',
+      valueExtract: true,
+    },
   ],
 };
 
@@ -52,10 +87,10 @@ const MEMORY_PATTERNS = {
  * Q-Learning Constants
  */
 const Q_LEARNING = {
-  LEARNING_RATE: 0.1,      // Alpha - qué tan rápido aprende
-  DISCOUNT_FACTOR: 0.95,   // Gamma - importancia de recompensas futuras
-  EXPLORATION_RATE: 0.1,   // Epsilon - probabilidad de explorar vs explotar
-  INITIAL_Q_VALUE: 0.5,    // Valor Q inicial
+  LEARNING_RATE: 0.1, // Alpha - qué tan rápido aprende
+  DISCOUNT_FACTOR: 0.95, // Gamma - importancia de recompensas futuras
+  EXPLORATION_RATE: 0.1, // Epsilon - probabilidad de explorar vs explotar
+  INITIAL_Q_VALUE: 0.5, // Valor Q inicial
 };
 
 export interface MemoryContext {
@@ -94,7 +129,7 @@ export class CustomerMemoryService {
 
   constructor(
     @InjectRepository(CustomerMemory)
-    private readonly memoryRepository: Repository<CustomerMemory>,
+    private readonly memoryRepository: Repository<CustomerMemory>
   ) {
     this.logger.log('🧠 CustomerMemoryService (JARVIS) initialized');
   }
@@ -142,12 +177,18 @@ export class CustomerMemoryService {
 
   private categoryToMemoryType(category: string): MemoryType {
     switch (category) {
-      case 'dietary': return MemoryType.PREFERENCE;
-      case 'address': return MemoryType.ADDRESS;
-      case 'communication': return MemoryType.COMMUNICATION;
-      case 'orders': return MemoryType.ORDER;
-      case 'personal': return MemoryType.PERSONAL;
-      default: return MemoryType.PREFERENCE;
+      case 'dietary':
+        return MemoryType.PREFERENCE;
+      case 'address':
+        return MemoryType.ADDRESS;
+      case 'communication':
+        return MemoryType.COMMUNICATION;
+      case 'orders':
+        return MemoryType.ORDER;
+      case 'personal':
+        return MemoryType.PERSONAL;
+      default:
+        return MemoryType.PREFERENCE;
     }
   }
 
@@ -161,7 +202,7 @@ export class CustomerMemoryService {
   async saveMemory(
     customerId: number,
     memory: ExtractedMemory,
-    context: MemoryContext,
+    context: MemoryContext
   ): Promise<CustomerMemory> {
     // Buscar si ya existe esta memoria
     const existing = await this.memoryRepository.findOne({
@@ -187,7 +228,9 @@ export class CustomerMemoryService {
         // Aumentar confianza con uso
         existing.confidence = this.calculateConfidence(existing.usageCount);
 
-        this.logger.log(`📝 Memory updated: ${memory.key} = "${memory.value}" (confidence: ${existing.confidence})`);
+        this.logger.log(
+          `📝 Memory updated: ${memory.key} = "${memory.value}" (confidence: ${existing.confidence})`
+        );
 
         await this.memoryRepository.save(existing);
         this.invalidateCache(customerId);
@@ -245,7 +288,7 @@ export class CustomerMemoryService {
       type?: MemoryType;
       minConfidence?: ConfidenceLevel;
       activeOnly?: boolean;
-    },
+    }
   ): Promise<CustomerMemory[]> {
     // Verificar cache
     const cached = this.getFromCache(customerId);
@@ -253,17 +296,18 @@ export class CustomerMemoryService {
       let filtered = cached;
 
       if (options?.type) {
-        filtered = filtered.filter(m => m.memoryType === options.type);
+        filtered = filtered.filter((m) => m.memoryType === options.type);
       }
       if (options?.activeOnly !== false) {
-        filtered = filtered.filter(m => m.isActive);
+        filtered = filtered.filter((m) => m.isActive);
       }
 
       return filtered;
     }
 
     // Buscar en DB
-    const query = this.memoryRepository.createQueryBuilder('memory')
+    const query = this.memoryRepository
+      .createQueryBuilder('memory')
       .where('memory.customer_id = :customerId', { customerId })
       .orderBy('memory.usage_count', 'DESC');
 
@@ -350,10 +394,7 @@ export class CustomerMemoryService {
   /**
    * Actualiza el valor Q de una memoria basado en recompensa
    */
-  async updateQValue(
-    memoryId: number,
-    reward: number,
-  ): Promise<void> {
+  async updateQValue(memoryId: number, reward: number): Promise<void> {
     const memory = await this.memoryRepository.findOne({
       where: { id: memoryId },
     });
@@ -371,7 +412,9 @@ export class CustomerMemoryService {
     await this.memoryRepository.save(memory);
     this.invalidateCache(memory.customerId);
 
-    this.logger.debug(`📊 Q-Value updated: ${memory.memoryKey} ${oldQ.toFixed(3)} → ${newQ.toFixed(3)} (reward: ${reward})`);
+    this.logger.debug(
+      `📊 Q-Value updated: ${memory.memoryKey} ${oldQ.toFixed(3)} → ${newQ.toFixed(3)} (reward: ${reward})`
+    );
   }
 
   /**
@@ -380,7 +423,7 @@ export class CustomerMemoryService {
   async recordFeedback(
     customerId: number,
     wasHelpful: boolean,
-    usedMemoryIds: number[],
+    usedMemoryIds: number[]
   ): Promise<void> {
     const reward = wasHelpful ? 1 : -0.5;
 
@@ -388,17 +431,16 @@ export class CustomerMemoryService {
       await this.updateQValue(memoryId, reward);
     }
 
-    this.logger.log(`📈 Feedback recorded for ${usedMemoryIds.length} memories (helpful: ${wasHelpful})`);
+    this.logger.log(
+      `📈 Feedback recorded for ${usedMemoryIds.length} memories (helpful: ${wasHelpful})`
+    );
   }
 
   /**
    * Selecciona las mejores memorias usando Q-Learning
    * Usa epsilon-greedy para balancear exploración/explotación
    */
-  async selectBestMemories(
-    customerId: number,
-    maxMemories: number = 5,
-  ): Promise<CustomerMemory[]> {
+  async selectBestMemories(customerId: number, maxMemories: number = 5): Promise<CustomerMemory[]> {
     const memories = await this.getCustomerMemories(customerId, {
       activeOnly: true,
     });
@@ -412,9 +454,7 @@ export class CustomerMemoryService {
     }
 
     // Explotación: usar Q-values
-    return memories
-      .sort((a, b) => b.qValue - a.qValue)
-      .slice(0, maxMemories);
+    return memories.sort((a, b) => b.qValue - a.qValue).slice(0, maxMemories);
   }
 
   private shuffleArray<T>(array: T[]): T[] {
@@ -457,7 +497,7 @@ export class CustomerMemoryService {
     const topMemories = memories
       .sort((a, b) => b.usageCount - a.usageCount)
       .slice(0, 10)
-      .map(m => ({
+      .map((m) => ({
         key: m.memoryKey,
         usageCount: m.usageCount,
         qValue: m.qValue,
@@ -475,12 +515,14 @@ export class CustomerMemoryService {
   /**
    * Obtiene la Q-Table para análisis
    */
-  async getQTable(): Promise<{
-    customerId: number;
-    memoryKey: string;
-    qValue: number;
-    usageCount: number;
-  }[]> {
+  async getQTable(): Promise<
+    {
+      customerId: number;
+      memoryKey: string;
+      qValue: number;
+      usageCount: number;
+    }[]
+  > {
     const memories = await this.memoryRepository.find({
       where: {
         isActive: true,
@@ -491,7 +533,7 @@ export class CustomerMemoryService {
       take: 50,
     });
 
-    return memories.map(m => ({
+    return memories.map((m) => ({
       customerId: m.customerId,
       memoryKey: m.memoryKey,
       qValue: m.qValue,

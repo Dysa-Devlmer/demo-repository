@@ -1,16 +1,16 @@
-import { Injectable } from "@nestjs/common";
-import * as winston from "winston";
-import * as path from "path";
-import * as fs from "fs";
+import { Injectable } from '@nestjs/common';
+import * as winston from 'winston';
+import * as path from 'path';
+import * as fs from 'fs';
 
 export enum LogLevel {
-  ERROR = "error",
-  WARN = "warn",
-  INFO = "info",
-  HTTP = "http",
-  VERBOSE = "verbose",
-  DEBUG = "debug",
-  SILLY = "silly",
+  ERROR = 'error',
+  WARN = 'warn',
+  INFO = 'info',
+  HTTP = 'http',
+  VERBOSE = 'verbose',
+  DEBUG = 'debug',
+  SILLY = 'silly',
 }
 
 export interface LogContext {
@@ -39,14 +39,14 @@ export class LoggerService {
 
   private initializeLogger() {
     // Ensure logs directory exists
-    const logDir = path.join(process.cwd(), "logs");
+    const logDir = path.join(process.cwd(), 'logs');
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
     }
 
     // Custom format for structured logging
     const logFormat = winston.format.combine(
-      winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss.SSS" }),
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss.SSS' }),
       winston.format.errors({ stack: true }),
       winston.format.json(),
       winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
@@ -62,73 +62,72 @@ export class LoggerService {
         }
 
         return JSON.stringify(logEntry);
-      }),
+      })
     );
 
     // Console format for development
     const consoleFormat = winston.format.combine(
-      winston.format.timestamp({ format: "HH:mm:ss" }),
+      winston.format.timestamp({ format: 'HH:mm:ss' }),
       winston.format.colorize(),
       winston.format.printf(({ timestamp, level, message, module, action }) => {
-        const moduleInfo = module && action ? `[${module}:${action}]` : "";
+        const moduleInfo = module && action ? `[${module}:${action}]` : '';
         return `${timestamp} ${level} ${moduleInfo} ${message}`;
-      }),
+      })
     );
 
     this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || "info",
+      level: process.env.LOG_LEVEL || 'info',
       format: logFormat,
       defaultMeta: {
-        service: "chatbotdysa-api",
-        version: process.env.npm_package_version || "1.0.0",
-        environment: process.env.NODE_ENV || "development",
-        hostname: require("os").hostname(),
+        service: 'chatbotdysa-api',
+        version: process.env.npm_package_version || '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        hostname: require('os').hostname(),
         pid: process.pid,
       },
       transports: [
         // Console transport for development
         new winston.transports.Console({
-          format:
-            process.env.NODE_ENV === "production" ? logFormat : consoleFormat,
-          level: process.env.NODE_ENV === "production" ? "info" : "debug",
+          format: process.env.NODE_ENV === 'production' ? logFormat : consoleFormat,
+          level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
         }),
 
         // Application logs
         new winston.transports.File({
-          filename: path.join(logDir, "app.log"),
-          level: "info",
+          filename: path.join(logDir, 'app.log'),
+          level: 'info',
           maxsize: 10485760, // 10MB
           maxFiles: 5,
         }),
 
         // Error logs
         new winston.transports.File({
-          filename: path.join(logDir, "error.log"),
-          level: "error",
+          filename: path.join(logDir, 'error.log'),
+          level: 'error',
           maxsize: 10485760, // 10MB
           maxFiles: 5,
         }),
 
         // Access logs (HTTP requests)
         new winston.transports.File({
-          filename: path.join(logDir, "access.log"),
-          level: "http",
+          filename: path.join(logDir, 'access.log'),
+          level: 'http',
           maxsize: 10485760, // 10MB
           maxFiles: 10,
         }),
 
         // Audit logs (security and business events)
         new winston.transports.File({
-          filename: path.join(logDir, "audit.log"),
-          level: "info",
+          filename: path.join(logDir, 'audit.log'),
+          level: 'info',
           maxsize: 10485760, // 10MB
           maxFiles: 10,
           format: winston.format.combine(
             winston.format.timestamp(),
             winston.format.json(),
             winston.format((info) => {
-              return info.type === "audit" ? info : false;
-            })(),
+              return info.type === 'audit' ? info : false;
+            })()
           ),
         }),
       ],
@@ -136,7 +135,7 @@ export class LoggerService {
       // Handle uncaught exceptions
       exceptionHandlers: [
         new winston.transports.File({
-          filename: path.join(logDir, "exceptions.log"),
+          filename: path.join(logDir, 'exceptions.log'),
           maxsize: 10485760,
           maxFiles: 3,
         }),
@@ -145,7 +144,7 @@ export class LoggerService {
       // Handle unhandled promise rejections
       rejectionHandlers: [
         new winston.transports.File({
-          filename: path.join(logDir, "rejections.log"),
+          filename: path.join(logDir, 'rejections.log'),
           maxsize: 10485760,
           maxFiles: 3,
         }),
@@ -156,7 +155,7 @@ export class LoggerService {
   // Standard logging methods
   error(message: string, context?: LogContext, error?: Error) {
     const meta: any = {
-      type: "application",
+      type: 'application',
       ...context,
     };
 
@@ -173,28 +172,28 @@ export class LoggerService {
 
   warn(message: string, context?: LogContext) {
     this.logger.warn(message, {
-      type: "application",
+      type: 'application',
       ...context,
     });
   }
 
   info(message: string, context?: LogContext) {
     this.logger.info(message, {
-      type: "application",
+      type: 'application',
       ...context,
     });
   }
 
   debug(message: string, context?: LogContext) {
     this.logger.debug(message, {
-      type: "application",
+      type: 'application',
       ...context,
     });
   }
 
   verbose(message: string, context?: LogContext) {
     this.logger.verbose(message, {
-      type: "application",
+      type: 'application',
       ...context,
     });
   }
@@ -207,14 +206,14 @@ export class LoggerService {
       statusCode: response.statusCode,
       responseTime,
       ip: request.ip || request.connection?.remoteAddress,
-      userAgent: request.get("user-agent"),
+      userAgent: request.get('user-agent'),
       requestId: request.id,
     };
 
     const message = `${request.method} ${request.originalUrl || request.url} ${response.statusCode} - ${responseTime}ms`;
 
     this.logger.http(message, {
-      type: "http",
+      type: 'http',
       ...context,
     });
   }
@@ -227,14 +226,14 @@ export class LoggerService {
       action: string;
       resource: string;
       resourceId?: string;
-      result: "success" | "failure" | "blocked";
+      result: 'success' | 'failure' | 'blocked';
       reason?: string;
       oldValue?: any;
       newValue?: any;
-    },
+    }
   ) {
     this.logger.info(`AUDIT: ${event}`, {
-      type: "audit",
+      type: 'audit',
       event,
       ...context,
     });
@@ -243,15 +242,15 @@ export class LoggerService {
   // Security event logging
   logSecurity(
     event: string,
-    severity: "low" | "medium" | "high" | "critical",
+    severity: 'low' | 'medium' | 'high' | 'critical',
     context: LogContext & {
       threat?: string;
       blocked?: boolean;
       countryCode?: string;
-    },
+    }
   ) {
     this.logger.warn(`SECURITY: ${event}`, {
-      type: "security",
+      type: 'security',
       severity,
       event,
       ...context,
@@ -264,12 +263,12 @@ export class LoggerService {
     value: number,
     unit: string,
     context?: LogContext & {
-      aggregation?: "sum" | "avg" | "count" | "gauge";
+      aggregation?: 'sum' | 'avg' | 'count' | 'gauge';
       tags?: Record<string, string>;
-    },
+    }
   ) {
     this.logger.info(`METRIC: ${metric}`, {
-      type: "metric",
+      type: 'metric',
       metric,
       value,
       unit,
@@ -286,10 +285,10 @@ export class LoggerService {
       errorCount?: number;
       memoryUsed?: number;
       cpuUsed?: number;
-    },
+    }
   ) {
     this.logger.info(`PERFORMANCE: ${operation}`, {
-      type: "performance",
+      type: 'performance',
       operation,
       duration,
       ...context,
@@ -302,13 +301,13 @@ export class LoggerService {
     duration: number,
     context?: LogContext & {
       table?: string;
-      operation?: "SELECT" | "INSERT" | "UPDATE" | "DELETE";
+      operation?: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE';
       rowsAffected?: number;
       parameters?: any[];
-    },
+    }
   ) {
     this.logger.debug(`DATABASE: ${query}`, {
-      type: "database",
+      type: 'database',
       query: query.substring(0, 1000), // Truncate long queries
       duration,
       ...context,
@@ -317,17 +316,17 @@ export class LoggerService {
 
   // API rate limit logging
   logRateLimit(
-    event: "hit" | "exceeded",
+    event: 'hit' | 'exceeded',
     context: LogContext & {
       limit: number;
       remaining: number;
       resetTime?: number;
       endpoint: string;
-    },
+    }
   ) {
-    const level = event === "exceeded" ? "warn" : "info";
+    const level = event === 'exceeded' ? 'warn' : 'info';
     this.logger[level](`RATE_LIMIT: ${event}`, {
-      type: "rate_limit",
+      type: 'rate_limit',
       event,
       ...context,
     });
@@ -343,10 +342,10 @@ export class LoggerService {
       responseTime?: number;
       messageId?: string;
       cost?: number;
-    },
+    }
   ) {
     this.logger.info(`INTEGRATION: ${service} - ${event}`, {
-      type: "integration",
+      type: 'integration',
       service,
       event,
       ...context,
@@ -364,10 +363,10 @@ export class LoggerService {
       amount?: number;
       status?: string;
       duration?: number;
-    },
+    }
   ) {
     this.logger.info(`BUSINESS: ${process} - ${step}`, {
-      type: "business",
+      type: 'business',
       process,
       step,
       ...context,

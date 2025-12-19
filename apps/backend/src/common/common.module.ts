@@ -15,9 +15,9 @@ import { WebSocketsModule } from '../modules/websockets/websockets.module';
         return {
           secret: jwtSecret,
           signOptions: {
-            expiresIn: "1h",
-            issuer: "chatbotdysa-enterprise",
-            audience: "chatbotdysa-clients"
+            expiresIn: '1h',
+            issuer: 'chatbotdysa-enterprise',
+            audience: 'chatbotdysa-clients',
           },
         };
       },

@@ -5,25 +5,25 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
-import { Reservation } from "./reservation.entity";
+} from 'typeorm';
+import { Reservation } from './reservation.entity';
 
 export enum TableStatus {
-  AVAILABLE = "available",
-  OCCUPIED = "occupied",
-  RESERVED = "reserved",
-  OUT_OF_SERVICE = "out_of_service",
+  AVAILABLE = 'available',
+  OCCUPIED = 'occupied',
+  RESERVED = 'reserved',
+  OUT_OF_SERVICE = 'out_of_service',
 }
 
 export enum TableSection {
-  INDOOR = "indoor",
-  OUTDOOR = "outdoor",
-  PRIVATE = "private",
-  BAR = "bar",
-  VIP = "vip",
+  INDOOR = 'indoor',
+  OUTDOOR = 'outdoor',
+  PRIVATE = 'private',
+  BAR = 'bar',
+  VIP = 'vip',
 }
 
-@Entity("tables")
+@Entity('tables')
 export class Table {
   @PrimaryGeneratedColumn()
   id: number;
@@ -31,21 +31,21 @@ export class Table {
   @Column({ unique: true, length: 20 })
   table_number: string;
 
-  @Column({ type: "int" })
+  @Column({ type: 'int' })
   capacity: number;
 
-  @Column({ type: "int", default: 2 })
+  @Column({ type: 'int', default: 2 })
   min_capacity: number;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: TableStatus,
     default: TableStatus.AVAILABLE,
   })
   status: TableStatus;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: TableSection,
     default: TableSection.INDOOR,
   })
@@ -63,13 +63,13 @@ export class Table {
   @Column({ default: false })
   is_quiet: boolean;
 
-  @Column({ type: "decimal", precision: 8, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 8, scale: 2, nullable: true })
   x_position?: number; // Para representación visual
 
-  @Column({ type: "decimal", precision: 8, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 8, scale: 2, nullable: true })
   y_position?: number; // Para representación visual
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   amenities?: {
     has_power_outlet?: boolean;
     has_high_chair?: boolean;
@@ -77,7 +77,7 @@ export class Table {
     special_features?: string[];
   };
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata?: {
     last_cleaned?: Date;
     maintenance_notes?: string;

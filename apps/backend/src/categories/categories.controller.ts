@@ -79,7 +79,7 @@ export class CategoriesController {
   @RequirePermissions('menu.update', 'categories.update')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateCategoryDto: UpdateCategoryDto,
+    @Body() updateCategoryDto: UpdateCategoryDto
   ) {
     return await this.categoriesService.update(id, updateCategoryDto);
   }
@@ -93,7 +93,7 @@ export class CategoriesController {
   @RequirePermissions('menu.update', 'categories.update')
   async partialUpdate(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateCategoryDto: UpdateCategoryDto,
+    @Body() updateCategoryDto: UpdateCategoryDto
   ) {
     return await this.categoriesService.update(id, updateCategoryDto);
   }
@@ -128,9 +128,7 @@ export class CategoriesController {
    */
   @Patch('reorder')
   @RequirePermissions('menu.update', 'categories.manage')
-  async updateDisplayOrder(
-    @Body() orderUpdates: Array<{ id: number; display_order: number }>,
-  ) {
+  async updateDisplayOrder(@Body() orderUpdates: Array<{ id: number; display_order: number }>) {
     return await this.categoriesService.updateDisplayOrder(orderUpdates);
   }
 }

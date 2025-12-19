@@ -10,9 +10,7 @@
 
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddCategorySystemAndPreparationArea1732228800000
-  implements MigrationInterface
-{
+export class AddCategorySystemAndPreparationArea1732228800000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1. Crear ENUM para preparation_area
     await queryRunner.query(`

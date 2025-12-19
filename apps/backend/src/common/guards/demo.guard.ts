@@ -19,8 +19,8 @@ export class DemoGuard implements CanActivate {
 
     // Get demo token from header or query
     const demoToken =
-      request.headers['x-demo-token'] as string ||
-      request.query.demoToken as string ||
+      (request.headers['x-demo-token'] as string) ||
+      (request.query.demoToken as string) ||
       request.headers['authorization']?.replace('Demo ', '');
 
     // Skip demo check for public endpoints and auth
@@ -46,12 +46,12 @@ export class DemoGuard implements CanActivate {
         actions: [
           'Contact sales for full access',
           'Start a new demo session',
-          'Schedule enterprise consultation'
+          'Schedule enterprise consultation',
         ],
         salesContact: {
           email: 'sales@chatbotdysa.com',
-          phone: '+1-800-CHATBOT'
-        }
+          phone: '+1-800-CHATBOT',
+        },
       });
     }
 
@@ -82,12 +82,12 @@ export class DemoGuard implements CanActivate {
       '/api/demo/status',
     ];
 
-    return publicPaths.some(publicPath => path.startsWith(publicPath));
+    return publicPaths.some((publicPath) => path.startsWith(publicPath));
   }
 
   private getEndpointName(path: string, method: string): string {
     // Extract meaningful endpoint name for tracking
-    const pathSegments = path.split('/').filter(segment => segment);
+    const pathSegments = path.split('/').filter((segment) => segment);
 
     if (pathSegments.length >= 2) {
       return `${method.toLowerCase()}_${pathSegments[1]}_${pathSegments[2] || 'index'}`;

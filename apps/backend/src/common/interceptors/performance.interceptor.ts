@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request } from 'express';
@@ -25,28 +19,22 @@ export class PerformanceInterceptor implements NestInterceptor {
 
         // Log slow requests (> 100ms for enterprise standards)
         if (responseTime > 100) {
-          this.logger.warn(
-            `SLOW REQUEST: ${method} ${url} took ${responseTime}ms`,
-            {
-              method,
-              url,
-              responseTime,
-              userAgent: request.get('user-agent'),
-              ip: request.ip,
-            }
-          );
+          this.logger.warn(`SLOW REQUEST: ${method} ${url} took ${responseTime}ms`, {
+            method,
+            url,
+            responseTime,
+            userAgent: request.get('user-agent'),
+            ip: request.ip,
+          });
         }
 
         // Log all requests in development
         if (process.env.NODE_ENV === 'development') {
-          this.logger.debug(
-            `${method} ${url} - ${responseTime}ms`,
-            {
-              method,
-              url,
-              responseTime,
-            }
-          );
+          this.logger.debug(`${method} ${url} - ${responseTime}ms`, {
+            method,
+            url,
+            responseTime,
+          });
         }
       })
     );

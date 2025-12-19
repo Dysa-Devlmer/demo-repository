@@ -1,8 +1,8 @@
 // apps/backend/src/auth/jwt.strategy.ts
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { PassportStrategy } from "@nestjs/passport";
-import { ExtractJwt, Strategy } from "passport-jwt";
-import { AuthService } from "./auth.service";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { AuthService } from './auth.service';
 
 export interface JwtPayload {
   sub: number;
@@ -23,7 +23,7 @@ export interface UserFromJwt {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly authService: AuthService) {
-    const secret = process.env.JWT_SECRET || "default-secret-key";
+    const secret = process.env.JWT_SECRET || 'default-secret-key';
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -37,7 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.authService.validateUserFromPayload(payload);
 
     if (!user) {
-      throw new UnauthorizedException("Token inválido o usuario inactivo");
+      throw new UnauthorizedException('Token inválido o usuario inactivo');
     }
 
     // Return enriched user context for req.user

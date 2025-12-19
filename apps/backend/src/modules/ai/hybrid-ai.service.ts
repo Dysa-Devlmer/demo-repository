@@ -11,9 +11,9 @@ export interface AIResponse {
   tokensUsed?: number;
   responseTime: number;
   cached?: boolean;
-  experienceId?: number;  // ID de la experiencia para feedback posterior
-  features?: ExperienceFeatures;  // Features analizados del mensaje
-  memoriesUsed?: number;  // Número de memorias del cliente usadas
+  experienceId?: number; // ID de la experiencia para feedback posterior
+  features?: ExperienceFeatures; // Features analizados del mensaje
+  memoriesUsed?: number; // Número de memorias del cliente usadas
 }
 
 export interface ConversationMessage {
@@ -37,7 +37,7 @@ export class HybridAIService {
     private readonly configService: ConfigService,
     private readonly ollamaService: OllamaService,
     private readonly learningMemory: LearningMemoryService,
-    private readonly customerMemory: CustomerMemoryService,
+    private readonly customerMemory: CustomerMemoryService
   ) {
     const openaiKey = this.configService.get<string>('OPENAI_API_KEY');
 
@@ -46,7 +46,9 @@ export class HybridAIService {
         apiKey: openaiKey,
       });
       this.useOpenAI = true;
-      this.logger.log('✅ HybridAI initialized with OpenAI GPT-4o-mini (primary) + Ollama (fallback) + JARVIS Learning');
+      this.logger.log(
+        '✅ HybridAI initialized with OpenAI GPT-4o-mini (primary) + Ollama (fallback) + JARVIS Learning'
+      );
     } else {
       this.useOpenAI = false;
       this.logger.warn('⚠️  OpenAI not configured, using Ollama only + JARVIS Learning');
@@ -63,14 +65,16 @@ export class HybridAIService {
       conversationId?: number;
       customerId?: number;
       channel?: string;
-    },
+    }
   ): Promise<AIResponse> {
     const startTime = Date.now();
     let memoriesUsed = 0;
 
     // 0. Analizar mensaje con JARVIS Learning
     const features = this.learningMemory.analyzeMessage(userMessage);
-    this.logger.debug(`📊 JARVIS Analysis: intent=${features.intent}, sentiment=${features.sentiment.toFixed(2)}, complexity=${features.complexity}`);
+    this.logger.debug(
+      `📊 JARVIS Analysis: intent=${features.intent}, sentiment=${features.sentiment.toFixed(2)}, complexity=${features.complexity}`
+    );
 
     // 0.5 Extraer y guardar memorias del mensaje del cliente
     if (context.customerId) {
@@ -87,7 +91,10 @@ export class HybridAIService {
           this.logger.log(`🧠 Extracted ${extractedMemories.length} memories from message`);
         }
       } catch (error) {
-        this.logger.warn('Failed to extract memories:', error instanceof Error ? error.message : 'Unknown error');
+        this.logger.warn(
+          'Failed to extract memories:',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
       }
     }
 
@@ -139,7 +146,7 @@ export class HybridAIService {
 
       return {
         content: suggestedResponse,
-        provider: 'ollama',  // Reportamos como ollama para estadísticas
+        provider: 'ollama', // Reportamos como ollama para estadísticas
         responseTime: Date.now() - startTime,
         cached: false,
         experienceId: experience.id,
@@ -158,7 +165,10 @@ export class HybridAIService {
           this.logger.debug(`📚 Using ${memoriesUsed} customer memories for response`);
         }
       } catch (error) {
-        this.logger.warn('Failed to get customer memories:', error instanceof Error ? error.message : 'Unknown error');
+        this.logger.warn(
+          'Failed to get customer memories:',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
       }
     }
 
@@ -182,7 +192,10 @@ export class HybridAIService {
           features,
         };
       } catch (error) {
-        this.logger.warn('OpenAI failed, falling back to Ollama:', error instanceof Error ? error.message : 'Unknown error');
+        this.logger.warn(
+          'OpenAI failed, falling back to Ollama:',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
         // response permanece null, continuará con Ollama
       }
     }
@@ -190,10 +203,7 @@ export class HybridAIService {
     // 4. Fallback a Ollama
     if (!response) {
       try {
-        const content = await this.ollamaService.generateRestaurantResponse(
-          userMessage,
-          context,
-        );
+        const content = await this.ollamaService.generateRestaurantResponse(userMessage, context);
 
         response = {
           content,
@@ -202,7 +212,10 @@ export class HybridAIService {
           features,
         };
       } catch (error) {
-        this.logger.error('Both AI providers failed, using fallback:', error instanceof Error ? error.message : 'Unknown error');
+        this.logger.error(
+          'Both AI providers failed, using fallback:',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
 
         // 5. Fallback final: respuestas pre-programadas
         response = {
@@ -231,7 +244,10 @@ export class HybridAIService {
       response.experienceId = experience.id;
       this.logger.debug(`🧠 JARVIS Experience saved: #${experience.id}`);
     } catch (error) {
-      this.logger.warn('Failed to save learning experience:', error instanceof Error ? error.message : 'Unknown error');
+      this.logger.warn(
+        'Failed to save learning experience:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
     }
 
     return response;
@@ -240,13 +256,16 @@ export class HybridAIService {
   /**
    * Registra feedback para una experiencia (para aprendizaje)
    */
-  async recordFeedback(experienceId: number, feedback: {
-    qualityScore?: number;
-    positiveContinuation?: boolean;
-    escalatedToHuman?: boolean;
-    resultedInAction?: boolean;
-    actionType?: string;
-  }): Promise<void> {
+  async recordFeedback(
+    experienceId: number,
+    feedback: {
+      qualityScore?: number;
+      positiveContinuation?: boolean;
+      escalatedToHuman?: boolean;
+      resultedInAction?: boolean;
+      actionType?: string;
+    }
+  ): Promise<void> {
     await this.learningMemory.recordFeedback(experienceId, feedback);
   }
 
@@ -272,7 +291,7 @@ export class HybridAIService {
   private buildAdaptiveSystemPrompt(
     context: RestaurantContext,
     features: ExperienceFeatures,
-    customerMemoriesPrompt: string = '',
+    customerMemoriesPrompt: string = ''
   ): string {
     const restaurantName = context.restaurantInfo?.name || 'nuestro restaurante';
 
@@ -352,19 +371,28 @@ ${lengthStyle}
 - Si el cliente usa mayúsculas o signos de exclamación, muestra entusiasmo también
 
 📋 INFORMACIÓN DEL RESTAURANTE:
-${context.restaurantInfo ? `
+${
+  context.restaurantInfo
+    ? `
 - Nombre: ${context.restaurantInfo.name}
 - Teléfono: ${context.restaurantInfo.phone || '+56965419765'}
 - Horarios: ${context.restaurantInfo.hours || '24/7'}
 - Dirección: ${context.restaurantInfo.address || 'Consultar'}
-` : ''}
+`
+    : ''
+}
 
-${context.menuItems && context.menuItems.length > 0 ? `
+${
+  context.menuItems && context.menuItems.length > 0
+    ? `
 🍽️ MENÚ (${context.menuItems.length} productos):
-${context.menuItems.slice(0, 15).map(item =>
-  `- ${item.name}: $${item.price}${item.available === false ? ' (Agotado)' : ''}`
-).join('\n')}
-` : ''}
+${context.menuItems
+  .slice(0, 15)
+  .map((item) => `- ${item.name}: $${item.price}${item.available === false ? ' (Agotado)' : ''}`)
+  .join('\n')}
+`
+    : ''
+}
 
 ${context.customerName ? `👤 Cliente: ${context.customerName}` : ''}
 
@@ -410,20 +438,20 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
   private buildMessages(
     systemPrompt: string,
     userMessage: string,
-    context: RestaurantContext,
+    context: RestaurantContext
   ): ConversationMessage[] {
-    const messages: ConversationMessage[] = [
-      { role: 'system', content: systemPrompt },
-    ];
+    const messages: ConversationMessage[] = [{ role: 'system', content: systemPrompt }];
 
     // Agregar mensajes previos (máximo 10 para no exceder contexto)
     if (context.previousMessages && context.previousMessages.length > 0) {
       const recentMessages = context.previousMessages.slice(-10);
-      messages.push(...recentMessages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-        timestamp: new Date(),
-      })));
+      messages.push(
+        ...recentMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(),
+        }))
+      );
     }
 
     // Agregar mensaje actual
@@ -440,7 +468,7 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
    * Genera respuesta con OpenAI GPT-4o-mini
    */
   private async generateWithOpenAI(
-    messages: ConversationMessage[],
+    messages: ConversationMessage[]
   ): Promise<Omit<AIResponse, 'responseTime'>> {
     if (!this.openai) {
       throw new Error('OpenAI not initialized');
@@ -449,7 +477,7 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
     try {
       const completion = await this.openai.chat.completions.create({
         model: this.openaiModel,
-        messages: messages.map(m => ({
+        messages: messages.map((m) => ({
           role: m.role,
           content: m.content,
         })),
@@ -480,21 +508,29 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
   /**
    * Obtiene una respuesta de fallback pre-programada
    */
-  private getFallbackResponse(
-    userMessage: string,
-    context: RestaurantContext,
-  ): string {
+  private getFallbackResponse(userMessage: string, context: RestaurantContext): string {
     const lowerMessage = userMessage.toLowerCase();
     const restaurantName = context.restaurantInfo?.name || 'nuestro restaurante';
 
     // Respuestas comunes pre-programadas
-    if (lowerMessage.includes('hola') || lowerMessage.includes('buenos') || lowerMessage.includes('buenas')) {
+    if (
+      lowerMessage.includes('hola') ||
+      lowerMessage.includes('buenos') ||
+      lowerMessage.includes('buenas')
+    ) {
       return `¡Hola! 👋 Bienvenido a ${restaurantName}. ¿Te gustaría conocer nuestro menú, hacer una reserva o realizar un pedido?`;
     }
 
-    if (lowerMessage.includes('menú') || lowerMessage.includes('menu') || lowerMessage.includes('platos')) {
+    if (
+      lowerMessage.includes('menú') ||
+      lowerMessage.includes('menu') ||
+      lowerMessage.includes('platos')
+    ) {
       if (context.menuItems && context.menuItems.length > 0) {
-        return `Te muestro nuestro menú:\n\n${context.menuItems.slice(0, 5).map(item => `🍽️ ${item.name} - $${item.price}`).join('\n')}\n\n¿Te gustaría saber más sobre algún plato?`;
+        return `Te muestro nuestro menú:\n\n${context.menuItems
+          .slice(0, 5)
+          .map((item) => `🍽️ ${item.name} - $${item.price}`)
+          .join('\n')}\n\n¿Te gustaría saber más sobre algún plato?`;
       }
       return `Tenemos un menú delicioso. ¿Qué tipo de comida te gustaría? 🍽️`;
     }
@@ -503,7 +539,11 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
       return `Con gusto te ayudo con tu reserva 📅. ¿Para cuántas personas y qué día te gustaría reservar?`;
     }
 
-    if (lowerMessage.includes('pedido') || lowerMessage.includes('delivery') || lowerMessage.includes('ordenar')) {
+    if (
+      lowerMessage.includes('pedido') ||
+      lowerMessage.includes('delivery') ||
+      lowerMessage.includes('ordenar')
+    ) {
       return `¡Perfecto! 🛵 ¿Qué te gustaría ordenar? Puedo ayudarte a armar tu pedido del menú.`;
     }
 
@@ -512,7 +552,13 @@ IMPORTANTE: Responde como lo haría un humano real que trabaja en el restaurante
       return `Nuestros horarios son: ${hours} ⏰`;
     }
 
-    if (lowerMessage.includes('dirección') || lowerMessage.includes('direccion') || lowerMessage.includes('ubicación') || lowerMessage.includes('ubicacion') || lowerMessage.includes('donde')) {
+    if (
+      lowerMessage.includes('dirección') ||
+      lowerMessage.includes('direccion') ||
+      lowerMessage.includes('ubicación') ||
+      lowerMessage.includes('ubicacion') ||
+      lowerMessage.includes('donde')
+    ) {
       const address = context.restaurantInfo?.address || 'Consulta con nosotros';
       return `Estamos ubicados en: ${address} 📍`;
     }

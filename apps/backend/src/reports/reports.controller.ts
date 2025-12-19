@@ -39,7 +39,7 @@ import { ReportType, ReportStatus } from '../entities/report.entity';
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,
-    private readonly storageService: ReportStorageService,
+    private readonly storageService: ReportStorageService
   ) {}
 
   @Post()
@@ -88,7 +88,7 @@ export class ReportsController {
   findAll(
     @Query('type') type?: ReportType,
     @Query('status') status?: ReportStatus,
-    @User() user?: any,
+    @User() user?: any
   ) {
     return this.reportsService.findAll({ type, status });
   }
@@ -129,7 +129,8 @@ export class ReportsController {
   @RequireRoles(ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF)
   @ApiOperation({
     summary: 'Get reports by type',
-    description: 'Get all active reports of a specific type. Requires admin, manager or staff role.',
+    description:
+      'Get all active reports of a specific type. Requires admin, manager or staff role.',
   })
   @ApiParam({
     name: 'type',

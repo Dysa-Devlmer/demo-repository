@@ -14,7 +14,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 export class CategoriesService {
   constructor(
     @InjectRepository(Category)
-    private readonly categoryRepository: Repository<Category>,
+    private readonly categoryRepository: Repository<Category>
   ) {}
 
   /**
@@ -28,7 +28,7 @@ export class CategoriesService {
 
     if (existingByName) {
       throw new ConflictException(
-        `Ya existe una categoría con el nombre "${createCategoryDto.name}"`,
+        `Ya existe una categoría con el nombre "${createCategoryDto.name}"`
       );
     }
 
@@ -38,7 +38,7 @@ export class CategoriesService {
 
     if (existingBySlug) {
       throw new ConflictException(
-        `Ya existe una categoría con el slug "${createCategoryDto.slug}"`,
+        `Ya existe una categoría con el slug "${createCategoryDto.slug}"`
       );
     }
 
@@ -97,10 +97,7 @@ export class CategoriesService {
   /**
    * Actualiza una categoría
    */
-  async update(
-    id: number,
-    updateCategoryDto: UpdateCategoryDto,
-  ): Promise<Category> {
+  async update(id: number, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     const category = await this.findOne(id);
 
     // Si se está actualizando el nombre, verificar que no exista otro con ese nombre
@@ -111,7 +108,7 @@ export class CategoriesService {
 
       if (existingByName && existingByName.id !== id) {
         throw new ConflictException(
-          `Ya existe una categoría con el nombre "${updateCategoryDto.name}"`,
+          `Ya existe una categoría con el nombre "${updateCategoryDto.name}"`
         );
       }
     }
@@ -124,7 +121,7 @@ export class CategoriesService {
 
       if (existingBySlug && existingBySlug.id !== id) {
         throw new ConflictException(
-          `Ya existe una categoría con el slug "${updateCategoryDto.slug}"`,
+          `Ya existe una categoría con el slug "${updateCategoryDto.slug}"`
         );
       }
     }
@@ -179,14 +176,14 @@ export class CategoriesService {
    * Actualiza el orden de visualización de múltiples categorías
    */
   async updateDisplayOrder(
-    orderUpdates: Array<{ id: number; display_order: number }>,
+    orderUpdates: Array<{ id: number; display_order: number }>
   ): Promise<Category[]> {
     const categories = await Promise.all(
       orderUpdates.map(async (update) => {
         const category = await this.findOne(update.id);
         category.display_order = update.display_order;
         return await this.categoryRepository.save(category);
-      }),
+      })
     );
 
     return categories;

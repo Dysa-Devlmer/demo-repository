@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsInt, IsBoolean, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  IsBoolean,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { PreparationArea } from '../../entities/category.entity';
 
 export class CreateCategoryDto {

@@ -1,11 +1,11 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class CreateCustomerMemories1733450300000 implements MigrationInterface {
-    name = 'CreateCustomerMemories1733450300000'
+  name = 'CreateCustomerMemories1733450300000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        // Crear enum para tipos de memoria
-        await queryRunner.query(`
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    // Crear enum para tipos de memoria
+    await queryRunner.query(`
             DO $$ BEGIN
                 CREATE TYPE "public"."customer_memory_type_enum" AS ENUM('preference', 'address', 'communication', 'order', 'personal');
             EXCEPTION
@@ -13,8 +13,8 @@ export class CreateCustomerMemories1733450300000 implements MigrationInterface {
             END $$;
         `);
 
-        // Crear enum para niveles de confianza
-        await queryRunner.query(`
+    // Crear enum para niveles de confianza
+    await queryRunner.query(`
             DO $$ BEGIN
                 CREATE TYPE "public"."customer_memory_confidence_enum" AS ENUM('low', 'medium', 'high', 'confirmed');
             EXCEPTION
@@ -22,8 +22,8 @@ export class CreateCustomerMemories1733450300000 implements MigrationInterface {
             END $$;
         `);
 
-        // Crear tabla customer_memories
-        await queryRunner.query(`
+    // Crear tabla customer_memories
+    await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "customer_memories" (
                 "id" SERIAL PRIMARY KEY,
                 "customer_id" INTEGER NOT NULL,
@@ -47,38 +47,38 @@ export class CreateCustomerMemories1733450300000 implements MigrationInterface {
             )
         `);
 
-        // Crear índices para búsqueda eficiente
-        await queryRunner.query(`
+    // Crear índices para búsqueda eficiente
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_customer_memories_customer_type"
             ON "customer_memories" ("customer_id", "memory_type")
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_customer_memories_customer_key"
             ON "customer_memories" ("customer_id", "memory_key")
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_customer_memories_active"
             ON "customer_memories" ("is_active")
             WHERE "is_active" = true
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS "IDX_customer_memories_q_value"
             ON "customer_memories" ("q_value" DESC)
             WHERE "is_active" = true
         `);
 
-        // Crear índice único para evitar duplicados
-        await queryRunner.query(`
+    // Crear índice único para evitar duplicados
+    await queryRunner.query(`
             CREATE UNIQUE INDEX IF NOT EXISTS "IDX_customer_memories_unique"
             ON "customer_memories" ("customer_id", "memory_type", "memory_key")
             WHERE "is_active" = true
         `);
 
-        // Trigger para actualizar updated_at
-        await queryRunner.query(`
+    // Trigger para actualizar updated_at
+    await queryRunner.query(`
             CREATE OR REPLACE FUNCTION update_customer_memories_updated_at()
             RETURNS TRIGGER AS $$
             BEGIN
@@ -88,32 +88,34 @@ export class CreateCustomerMemories1733450300000 implements MigrationInterface {
             $$ language 'plpgsql';
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             DROP TRIGGER IF EXISTS trigger_customer_memories_updated_at ON customer_memories;
             CREATE TRIGGER trigger_customer_memories_updated_at
                 BEFORE UPDATE ON customer_memories
                 FOR EACH ROW
                 EXECUTE FUNCTION update_customer_memories_updated_at();
         `);
-    }
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // Eliminar trigger
-        await queryRunner.query(`DROP TRIGGER IF EXISTS trigger_customer_memories_updated_at ON customer_memories`);
-        await queryRunner.query(`DROP FUNCTION IF EXISTS update_customer_memories_updated_at()`);
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Eliminar trigger
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS trigger_customer_memories_updated_at ON customer_memories`
+    );
+    await queryRunner.query(`DROP FUNCTION IF EXISTS update_customer_memories_updated_at()`);
 
-        // Eliminar índices
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_unique"`);
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_q_value"`);
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_active"`);
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_customer_key"`);
-        await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_customer_type"`);
+    // Eliminar índices
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_unique"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_q_value"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_active"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_customer_key"`);
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_customer_memories_customer_type"`);
 
-        // Eliminar tabla
-        await queryRunner.query(`DROP TABLE IF EXISTS "customer_memories"`);
+    // Eliminar tabla
+    await queryRunner.query(`DROP TABLE IF EXISTS "customer_memories"`);
 
-        // Eliminar enums
-        await queryRunner.query(`DROP TYPE IF EXISTS "public"."customer_memory_confidence_enum"`);
-        await queryRunner.query(`DROP TYPE IF EXISTS "public"."customer_memory_type_enum"`);
-    }
+    // Eliminar enums
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."customer_memory_confidence_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "public"."customer_memory_type_enum"`);
+  }
 }

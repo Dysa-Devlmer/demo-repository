@@ -130,8 +130,13 @@ describe('ReservationsService - Unit Tests', () => {
 
       expect(customersRepo.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(reservationsRepo.count).toHaveBeenCalled();
-      expect(reservationsRepo.create).toHaveBeenCalled();
-      expect(reservationsRepo.save).toHaveBeenCalledWith(mockReservation);
+      expect(reservationsRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customer: mockCustomer,
+          party_size: createReservationDto.people,
+          status: createReservationDto.status,
+        })
+      );
       expect(result).toEqual(mockReservation);
       expect(result.reservation_code).toMatch(/^RES-/);
     });
@@ -152,7 +157,7 @@ describe('ReservationsService - Unit Tests', () => {
       const pastDto = { ...createReservationDto, date: pastDate.toISOString() };
 
       await expect(service.create(pastDto)).rejects.toThrow(BadRequestException);
-      await expect(service.create(pastDto)).rejects.toThrow('Reservation date must be in the future');
+      await expect(service.create(pastDto)).rejects.toThrow('Reservation date cannot be in the past');
     });
 
     it('should throw BadRequestException if party size is less than 1', async () => {
@@ -725,7 +730,7 @@ describe('ReservationsService - Unit Tests', () => {
 
       const result = await service.create(dto);
 
-      expect(result.special_requests).toBeNull();
+      expect(result.special_requests).toBeUndefined();
     });
 
     it('should handle reservation without notes', async () => {

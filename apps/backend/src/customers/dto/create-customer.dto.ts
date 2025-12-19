@@ -6,8 +6,8 @@ import {
   IsEnum,
   IsObject,
   IsBoolean,
-} from "class-validator";
-import { CustomerSource } from "../../entities/customer.entity";
+} from 'class-validator';
+import { CustomerSource } from '../../entities/customer.entity';
 
 export class CreateCustomerDto {
   @IsString()

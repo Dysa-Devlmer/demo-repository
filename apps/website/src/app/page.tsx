@@ -748,9 +748,9 @@ export default function HomePage() {
 
                 {/* Quote text */}
                 <blockquote className="relative text-gray-700 mb-8 text-lg leading-relaxed italic">
-                  <span className="text-yellow-500 font-bold text-2xl">"</span>
+                  <span className="text-yellow-500 font-bold text-2xl">&ldquo;</span>
                   {story.quote}
-                  <span className="text-yellow-500 font-bold text-2xl">"</span>
+                  <span className="text-yellow-500 font-bold text-2xl">&rdquo;</span>
                 </blockquote>
 
                 {/* Author info with gradient border */}

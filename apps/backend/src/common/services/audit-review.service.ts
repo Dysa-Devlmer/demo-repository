@@ -8,11 +8,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In, MoreThan, LessThan, Not } from 'typeorm';
-import {
-  AuditLog,
-  AuditSeverity,
-  AuditAction,
-} from '../entities/audit-log.entity';
+import { AuditLog, AuditSeverity, AuditAction } from '../entities/audit-log.entity';
 
 export interface AuditLogFilter {
   userId?: number;
@@ -88,7 +84,7 @@ export class AuditReviewService {
 
   constructor(
     @InjectRepository(AuditLog)
-    private auditLogRepository: Repository<AuditLog>,
+    private auditLogRepository: Repository<AuditLog>
   ) {}
 
   /**
@@ -204,14 +200,9 @@ export class AuditReviewService {
     const offset = filter.offset || 0;
 
     // Ejecutar query
-    const [logs, total] = await queryBuilder
-      .skip(offset)
-      .take(limit)
-      .getManyAndCount();
+    const [logs, total] = await queryBuilder.skip(offset).take(limit).getManyAndCount();
 
-    this.logger.log(
-      `Audit logs queried: ${logs.length} of ${total} total results`,
-    );
+    this.logger.log(`Audit logs queried: ${logs.length} of ${total} total results`);
 
     return {
       logs,
@@ -227,7 +218,7 @@ export class AuditReviewService {
   async getStatistics(
     period: 'today' | 'yesterday' | 'week' | 'month' | 'custom',
     customStart?: Date,
-    customEnd?: Date,
+    customEnd?: Date
   ): Promise<AuditStatistics> {
     const now = new Date();
     let startDate: Date;
@@ -240,18 +231,14 @@ export class AuditReviewService {
       case 'yesterday':
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
-        startDate = new Date(
-          yesterday.getFullYear(),
-          yesterday.getMonth(),
-          yesterday.getDate(),
-        );
+        startDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
         endDate = new Date(
           yesterday.getFullYear(),
           yesterday.getMonth(),
           yesterday.getDate(),
           23,
           59,
-          59,
+          59
         );
         break;
       case 'week':
@@ -426,7 +413,8 @@ export class AuditReviewService {
     const errorRate = totalEvents > 0 ? (failedEvents / totalEvents) * 100 : 0;
 
     return {
-      period: period === 'custom' ? `${startDate.toISOString()} to ${endDate.toISOString()}` : period,
+      period:
+        period === 'custom' ? `${startDate.toISOString()} to ${endDate.toISOString()}` : period,
       totalEvents,
       successfulEvents,
       failedEvents,
@@ -470,7 +458,7 @@ export class AuditReviewService {
     targetUser?: string,
     targetIP?: string,
     startDate?: Date,
-    endDate?: Date,
+    endDate?: Date
   ): Promise<ForensicReport> {
     const investigationId = `INV-${Date.now()}`;
     const start = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -522,9 +510,7 @@ export class AuditReviewService {
     }> = [];
 
     // Anomaly 1: Multiple failed logins
-    const failedLogins = events.filter(
-      (e) => e.action === AuditAction.FAILED_LOGIN,
-    );
+    const failedLogins = events.filter((e) => e.action === AuditAction.FAILED_LOGIN);
     if (failedLogins.length >= 5) {
       anomalies.push({
         type: 'MULTIPLE_FAILED_LOGINS',
@@ -576,9 +562,7 @@ export class AuditReviewService {
 
     // Summary
     const uniqueIPs = [...new Set(events.map((e) => e.ip))];
-    const accessedResources = [
-      ...new Set(events.map((e) => e.endpoint)),
-    ];
+    const accessedResources = [...new Set(events.map((e) => e.endpoint))];
 
     return {
       investigationId,
@@ -601,11 +585,7 @@ export class AuditReviewService {
   /**
    * Marcar log como revisado
    */
-  async markAsReviewed(
-    logId: number,
-    reviewedBy: number,
-    notes?: string,
-  ): Promise<void> {
+  async markAsReviewed(logId: number, reviewedBy: number, notes?: string): Promise<void> {
     await this.auditLogRepository.update(logId, {
       reviewed: true,
       reviewedBy,

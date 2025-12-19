@@ -1,9 +1,9 @@
-import { Injectable, Logger, HttpException, HttpStatus } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import axios, { AxiosInstance } from "axios";
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import axios, { AxiosInstance } from 'axios';
 
 export interface OllamaMessage {
-  role: "system" | "user" | "assistant";
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
@@ -108,36 +108,30 @@ export class OllamaService {
   private readonly timeout: number = 30000; // 30 segundos - optimizado para respuestas rápidas
 
   constructor(private configService: ConfigService) {
-    this.baseUrl = this.configService.get<string>(
-      "OLLAMA_URL",
-      "http://localhost:11434",
-    );
-    this.defaultModel = this.configService.get<string>(
-      "OLLAMA_MODEL",
-      "llama3.2:3b",
-    );
+    this.baseUrl = this.configService.get<string>('OLLAMA_URL', 'http://localhost:11434');
+    this.defaultModel = this.configService.get<string>('OLLAMA_MODEL', 'llama3.2:3b');
 
     this.httpClient = axios.create({
       baseURL: this.baseUrl,
       timeout: this.timeout,
       headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "DysaBot/1.0.0",
+        'Content-Type': 'application/json',
+        'User-Agent': 'DysaBot/1.0.0',
       },
     });
 
     this.httpClient.interceptors.request.use(
       (config) => {
         this.logger.debug(
-          `Making request to Ollama: ${config.method?.toUpperCase()} ${config.url}`,
+          `Making request to Ollama: ${config.method?.toUpperCase()} ${config.url}`
         );
         return config;
       },
       (error) => {
         const err = error instanceof Error ? error : new Error(String(error));
-        this.logger.error("Request error:", err.message);
+        this.logger.error('Request error:', err.message);
         return Promise.reject(new Error(err.message));
-      },
+      }
     );
 
     this.httpClient.interceptors.response.use(
@@ -147,40 +141,38 @@ export class OllamaService {
       },
       (error) => {
         const err = error instanceof Error ? error : new Error(String(error));
-        this.logger.error("Response error:", err.message);
+        this.logger.error('Response error:', err.message);
         return Promise.reject(new Error(err.message));
-      },
+      }
     );
   }
 
   async isOllamaRunning(): Promise<boolean> {
     try {
-      const response = await this.httpClient.get("/api/version", {
+      const response = await this.httpClient.get('/api/version', {
         timeout: 5000,
       });
-      this.logger.log("Ollama is running", response.data);
+      this.logger.log('Ollama is running', response.data);
       return true;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.warn("Ollama is not running or not accessible:", err.message);
+      this.logger.warn('Ollama is not running or not accessible:', err.message);
       return false;
     }
   }
 
   async listModels(): Promise<string[]> {
     try {
-      const response =
-        await this.httpClient.get<OllamaModelsResponse>("/api/tags");
-      const models =
-        response.data.models?.map((model: OllamaModel) => model.name) || [];
-      this.logger.debug(`Available models: ${models.join(", ")}`);
+      const response = await this.httpClient.get<OllamaModelsResponse>('/api/tags');
+      const models = response.data.models?.map((model: OllamaModel) => model.name) || [];
+      this.logger.debug(`Available models: ${models.join(', ')}`);
       return models;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error("Failed to list models:", err.message);
+      this.logger.error('Failed to list models:', err.message);
       throw new HttpException(
-        "Failed to connect to Ollama service",
-        HttpStatus.SERVICE_UNAVAILABLE,
+        'Failed to connect to Ollama service',
+        HttpStatus.SERVICE_UNAVAILABLE
       );
     }
   }
@@ -189,7 +181,7 @@ export class OllamaService {
     try {
       this.logger.log(`Pulling model: ${modelName}`);
 
-      const response = await this.httpClient.post("/api/pull", {
+      const response = await this.httpClient.post('/api/pull', {
         name: modelName,
       });
 
@@ -206,23 +198,19 @@ export class OllamaService {
     }
   }
 
-  async generateResponse(
-    request: OllamaGenerateRequest,
-  ): Promise<OllamaResponse> {
+  async generateResponse(request: OllamaGenerateRequest): Promise<OllamaResponse> {
     try {
       // Asegurar que el modelo está disponible
       const models = await this.listModels();
       const targetModel = request.model || this.defaultModel;
 
       if (!models.includes(targetModel)) {
-        this.logger.warn(
-          `Model ${targetModel} not found, attempting to pull...`,
-        );
+        this.logger.warn(`Model ${targetModel} not found, attempting to pull...`);
         const pulled = await this.pullModel(targetModel);
         if (!pulled) {
           throw new HttpException(
             `Model ${targetModel} not available and could not be pulled`,
-            HttpStatus.NOT_FOUND,
+            HttpStatus.NOT_FOUND
           );
         }
       }
@@ -243,25 +231,22 @@ export class OllamaService {
       };
 
       // Usar /api/chat si hay messages, /api/generate si hay prompt
-      const endpoint = ollamaRequest.messages ? "/api/chat" : "/api/generate";
-      const response = await this.httpClient.post<any>(
-        endpoint,
-        ollamaRequest,
-      );
+      const endpoint = ollamaRequest.messages ? '/api/chat' : '/api/generate';
+      const response = await this.httpClient.post<any>(endpoint, ollamaRequest);
 
       // Para /api/chat: response.data.message.content
       // Para /api/generate: response.data.response
       if (response.data) {
         if (response.data.message) {
-          this.logger.debug("Generated response successfully via /api/chat");
+          this.logger.debug('Generated response successfully via /api/chat');
           return response.data;
         } else if (response.data.response) {
-          this.logger.debug("Generated response successfully via /api/generate");
+          this.logger.debug('Generated response successfully via /api/generate');
           // Convertir formato de /api/generate a formato esperado
           return {
             ...response.data,
             message: {
-              role: "assistant",
+              role: 'assistant',
               content: response.data.response,
             },
           };
@@ -269,8 +254,8 @@ export class OllamaService {
       }
 
       throw new HttpException(
-        "Invalid response from Ollama service",
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        'Invalid response from Ollama service',
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     } catch (error) {
       if (error instanceof HttpException) {
@@ -278,26 +263,23 @@ export class OllamaService {
       }
 
       const err = error as AxiosErrorWithCode;
-      this.logger.error("Failed to generate response:", err.message);
+      this.logger.error('Failed to generate response:', err.message);
 
-      if (err.code === "ECONNREFUSED") {
+      if (err.code === 'ECONNREFUSED') {
         throw new HttpException(
-          "Cannot connect to Ollama service. Make sure Ollama is running.",
-          HttpStatus.SERVICE_UNAVAILABLE,
+          'Cannot connect to Ollama service. Make sure Ollama is running.',
+          HttpStatus.SERVICE_UNAVAILABLE
         );
       }
 
-      if (err.code === "ETIMEDOUT") {
+      if (err.code === 'ETIMEDOUT') {
         throw new HttpException(
-          "Ollama service timeout. The request took too long to process.",
-          HttpStatus.REQUEST_TIMEOUT,
+          'Ollama service timeout. The request took too long to process.',
+          HttpStatus.REQUEST_TIMEOUT
         );
       }
 
-      throw new HttpException(
-        "Failed to generate AI response",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException('Failed to generate AI response', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -309,47 +291,47 @@ export class OllamaService {
         stream: false,
       });
 
-      return response.message?.content || "No response generated";
+      return response.message?.content || 'No response generated';
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error("Chat error:", err.message);
+      this.logger.error('Chat error:', err.message);
       throw err;
     }
   }
 
   async generateRestaurantResponse(
     userMessage: string,
-    context: RestaurantContext,
+    context: RestaurantContext
   ): Promise<string> {
     const systemPrompt = this.buildRestaurantSystemPrompt(context);
 
     const messages: OllamaMessage[] = [
-      { role: "system", content: systemPrompt },
+      { role: 'system', content: systemPrompt },
       ...(context.previousMessages || []),
-      { role: "user", content: userMessage },
+      { role: 'user', content: userMessage },
     ];
 
     return await this.chat(messages);
   }
 
   private buildRestaurantSystemPrompt(context: RestaurantContext): string {
-    const restaurantName = context.restaurantInfo?.name || "ChatBotDysa";
+    const restaurantName = context.restaurantInfo?.name || 'ChatBotDysa';
 
     // Build categories list
-    let categoriesInfo = "";
+    let categoriesInfo = '';
     if (context.categories && context.categories.length > 0) {
-      categoriesInfo = `\nCATEGORÍAS DEL MENÚ:\n${context.categories.map(cat => `- ${cat}`).join('\n')}`;
+      categoriesInfo = `\nCATEGORÍAS DEL MENÚ:\n${context.categories.map((cat) => `- ${cat}`).join('\n')}`;
     }
 
     // Build menu items list
-    let menuInfo = "";
+    let menuInfo = '';
     if (context.menuItems && context.menuItems.length > 0) {
-      const availableItems = context.menuItems.filter(item => item.available);
+      const availableItems = context.menuItems.filter((item) => item.available);
       menuInfo = `\n\nMENÚ DISPONIBLE (${availableItems.length} productos):\n`;
 
       // Group by category
       const byCategory = {};
-      availableItems.forEach(item => {
+      availableItems.forEach((item) => {
         if (!byCategory[item.category]) {
           byCategory[item.category] = [];
         }
@@ -368,10 +350,14 @@ export class OllamaService {
     return `Eres el asistente virtual de ${restaurantName}. Habla siempre en español y usa un tono profesional y amable usando "usted".
 
 DATOS DEL RESTAURANTE:
-${context.restaurantInfo ? `- Nombre: ${context.restaurantInfo.name}
-- Teléfono: ${context.restaurantInfo.phone || "+56965419765"}
-- Horario: ${context.restaurantInfo.hours || "24/7"}
-- Dirección: ${context.restaurantInfo.address || "Sistema ChatBotDysa"}` : ''}
+${
+  context.restaurantInfo
+    ? `- Nombre: ${context.restaurantInfo.name}
+- Teléfono: ${context.restaurantInfo.phone || '+56965419765'}
+- Horario: ${context.restaurantInfo.hours || '24/7'}
+- Dirección: ${context.restaurantInfo.address || 'Sistema ChatBotDysa'}`
+    : ''
+}
 ${categoriesInfo}
 ${menuInfo}
 
@@ -388,16 +374,15 @@ REGLAS IMPORTANTES:
 10. Completa SIEMPRE tu respuesta - no la dejes cortada
 
 TONO: Profesional, amable, directo y eficiente.`;
-
   }
 
   getHealthStatus() {
     return {
-      service: "Ollama AI Service",
+      service: 'Ollama AI Service',
       baseUrl: this.baseUrl,
       defaultModel: this.defaultModel,
       timeout: this.timeout,
-      status: "initialized",
+      status: 'initialized',
     };
   }
 }

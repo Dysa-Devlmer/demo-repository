@@ -59,8 +59,8 @@ export class CsrfGuard implements CanActivate {
 
   private extractCsrfToken(request: Request): string | null {
     return (
-      request.headers['x-csrf-token'] as string ||
-      request.headers['x-xsrf-token'] as string ||
+      (request.headers['x-csrf-token'] as string) ||
+      (request.headers['x-xsrf-token'] as string) ||
       request.body?._token ||
       null
     );
@@ -68,10 +68,7 @@ export class CsrfGuard implements CanActivate {
 
   private validateCsrfToken(token: string, sessionToken: string): boolean {
     try {
-      return crypto.timingSafeEqual(
-        Buffer.from(token, 'utf8'),
-        Buffer.from(sessionToken, 'utf8')
-      );
+      return crypto.timingSafeEqual(Buffer.from(token, 'utf8'), Buffer.from(sessionToken, 'utf8'));
     } catch {
       return false;
     }

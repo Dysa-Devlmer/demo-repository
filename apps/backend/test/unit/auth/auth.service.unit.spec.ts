@@ -11,9 +11,18 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 
 import { AuthService } from '../../../src/auth/auth.service';
-import { User } from '../../../src/entities/user.entity';
+import { User, UserStatus } from '../../../src/auth/entities/user.entity';
+import { Role } from '../../../src/auth/entities/role.entity';
+import { AuditLog } from '../../../src/common/entities/audit-log.entity';
 import { LoginDto } from '../../../src/auth/dto/login.dto';
 import { RegisterDto } from '../../../src/auth/dto/register.dto';
+
+jest.mock('bcryptjs', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
+const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 describe('AuthService (Unit)', () => {
   let service: AuthService;
@@ -28,11 +37,13 @@ describe('AuthService (Unit)', () => {
     password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewreZiOX/xOyUQHe', // hashedPassword
     firstName: 'Test',
     lastName: 'User',
-    roles: ['user'],
-    permissions: ['users.read'],
-    isActive: true,
+    roles: [{ name: 'user', permissions: [] }],
+    status: UserStatus.ACTIVE,
     createdAt: new Date(),
     updatedAt: new Date(),
+    isAccountLocked: () => false,
+    failedLoginAttempts: 0,
+    accountLockedUntil: null,
   };
 
   const mockLoginDto: LoginDto = {
@@ -60,6 +71,21 @@ describe('AuthService (Unit)', () => {
             create: jest.fn(),
             save: jest.fn(),
             findOneBy: jest.fn(),
+            update: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Role),
+          useValue: {
+            findOne: jest.fn(),
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(AuditLog),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
           },
         },
         {
@@ -102,36 +128,48 @@ describe('AuthService (Unit)', () => {
     it('should successfully login with valid credentials', async () => {
       // Arrange
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as User);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+      jest
+        .spyOn(jwtService, 'sign')
+        .mockReturnValueOnce('access-token')
+        .mockReturnValueOnce('refresh-token');
 
       // Act
       const result = await service.login(mockLoginDto);
 
       // Assert
       expect(result).toEqual({
-        token: mockJwtToken,
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresIn: 3600,
         user: {
           id: mockUser.id,
           email: mockUser.email,
           firstName: mockUser.firstName,
           lastName: mockUser.lastName,
+          avatar: mockUser.avatar,
           roles: mockUser.roles,
-          permissions: mockUser.permissions,
         },
-        expiresIn: '7d',
+        permissions: [],
       });
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: mockLoginDto.email },
+        relations: ['roles', 'roles.permissions'],
       });
-      expect(bcrypt.compare).toHaveBeenCalledWith(mockLoginDto.password, mockUser.password);
-      expect(jwtService.sign).toHaveBeenCalledWith({
+      expect(mockedBcrypt.compare).toHaveBeenCalledWith(
+        mockLoginDto.password,
+        mockUser.password
+      );
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        {
         sub: mockUser.id,
         email: mockUser.email,
-        roles: mockUser.roles,
-        permissions: mockUser.permissions,
-      });
+        roles: ['user'],
+        permissions: [],
+        },
+        { expiresIn: '1h' }
+      );
     });
 
     it('should throw UnauthorizedException when user not found', async () => {
@@ -139,29 +177,33 @@ describe('AuthService (Unit)', () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.login(mockLoginDto)).rejects.toThrow('Invalid credentials');
+      await expect(service.login(mockLoginDto)).rejects.toThrow('Credenciales inválidas');
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: mockLoginDto.email },
+        relations: ['roles', 'roles.permissions'],
       });
     });
 
     it('should throw UnauthorizedException when password is invalid', async () => {
       // Arrange
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as User);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false as never);
+      mockedBcrypt.compare.mockResolvedValue(false as never);
 
       // Act & Assert
-      await expect(service.login(mockLoginDto)).rejects.toThrow('Invalid credentials');
-      expect(bcrypt.compare).toHaveBeenCalledWith(mockLoginDto.password, mockUser.password);
+      await expect(service.login(mockLoginDto)).rejects.toThrow('Credenciales inválidas');
+      expect(mockedBcrypt.compare).toHaveBeenCalledWith(
+        mockLoginDto.password,
+        mockUser.password
+      );
     });
 
     it('should throw UnauthorizedException when user is inactive', async () => {
       // Arrange
-      const inactiveUser = { ...mockUser, isActive: false };
+      const inactiveUser = { ...mockUser, status: UserStatus.SUSPENDED };
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(inactiveUser as User);
 
       // Act & Assert
-      await expect(service.login(mockLoginDto)).rejects.toThrow('Account is deactivated');
+      await expect(service.login(mockLoginDto)).rejects.toThrow('Cuenta inactiva o suspendida');
     });
 
     // Enterprise Security Test
@@ -173,7 +215,7 @@ describe('AuthService (Unit)', () => {
       try {
         await service.login(mockLoginDto);
       } catch (error) {
-        expect(error.message).toBe('Invalid credentials');
+        expect(error.message).toBe('Credenciales inválidas');
         expect(error.message).not.toContain('user not found');
         expect(error.message).not.toContain('does not exist');
       }
@@ -185,33 +227,26 @@ describe('AuthService (Unit)', () => {
       // Arrange
       const hashedPassword = '$2a$12$hashedPassword';
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue(hashedPassword as never);
+      mockedBcrypt.hash.mockResolvedValue(hashedPassword as never);
       jest.spyOn(userRepository, 'create').mockReturnValue(mockUser as User);
       jest.spyOn(userRepository, 'save').mockResolvedValue(mockUser as User);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
 
       // Act
       const result = await service.register(mockRegisterDto);
 
       // Assert
-      expect(result).toEqual({
-        token: mockJwtToken,
-        user: {
-          id: mockUser.id,
-          email: mockUser.email,
-          firstName: mockUser.firstName,
-          lastName: mockUser.lastName,
-          roles: mockUser.roles,
-          permissions: mockUser.permissions,
-        },
-        expiresIn: '7d',
-      });
+      expect(result).toEqual({ message: 'Usuario registrado exitosamente' });
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: mockRegisterDto.email },
       });
-      expect(bcrypt.hash).toHaveBeenCalledWith(mockRegisterDto.password, 12);
-      expect(userRepository.create).toHaveBeenCalled();
+      expect(mockedBcrypt.hash).toHaveBeenCalledWith(mockRegisterDto.password, 12);
+      expect(userRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: mockRegisterDto.email,
+          status: UserStatus.ACTIVE,
+        })
+      );
       expect(userRepository.save).toHaveBeenCalled();
     });
 
@@ -220,7 +255,7 @@ describe('AuthService (Unit)', () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as User);
 
       // Act & Assert
-      await expect(service.register(mockRegisterDto)).rejects.toThrow('Email already exists');
+      await expect(service.register(mockRegisterDto)).rejects.toThrow('El correo ya está registrado');
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: mockRegisterDto.email },
       });
@@ -230,34 +265,30 @@ describe('AuthService (Unit)', () => {
     it('should hash password with correct salt rounds', async () => {
       // Arrange
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword' as never);
+      mockedBcrypt.hash.mockResolvedValue('hashedPassword' as never);
       jest.spyOn(userRepository, 'create').mockReturnValue(mockUser as User);
       jest.spyOn(userRepository, 'save').mockResolvedValue(mockUser as User);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
 
       // Act
       await service.register(mockRegisterDto);
 
       // Assert
-      expect(bcrypt.hash).toHaveBeenCalledWith(mockRegisterDto.password, 12);
+      expect(mockedBcrypt.hash).toHaveBeenCalledWith(mockRegisterDto.password, 12);
     });
 
-    // Enterprise Security Test
-    it('should assign default user roles and permissions', async () => {
+    it('should set active status by default', async () => {
       // Arrange
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword' as never);
+      mockedBcrypt.hash.mockResolvedValue('hashedPassword' as never);
 
       const createSpy = jest.spyOn(userRepository, 'create').mockImplementation((userData) => {
         return {
           ...userData,
-          roles: ['user'],
-          permissions: ['users.read'],
+          status: UserStatus.ACTIVE,
         } as User;
       });
 
       jest.spyOn(userRepository, 'save').mockResolvedValue(mockUser as User);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
 
       // Act
       await service.register(mockRegisterDto);
@@ -266,58 +297,56 @@ describe('AuthService (Unit)', () => {
       expect(createSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           email: mockRegisterDto.email,
-          roles: ['user'],
-          permissions: ['users.read'],
-          isActive: true,
+          status: UserStatus.ACTIVE,
         })
       );
     });
   });
 
   describe('validateUser', () => {
-    it('should return user data when token is valid', async () => {
-      // Arrange
-      const payload = {
+    it('should return user when credentials are valid', async () => {
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as User);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+
+      const result = await service.validateUser(mockLoginDto.email, mockLoginDto.password);
+
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should throw UnauthorizedException when credentials are invalid', async () => {
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+
+      await expect(
+        service.validateUser(mockLoginDto.email, mockLoginDto.password)
+      ).rejects.toThrow('Credenciales inválidas');
+    });
+  });
+
+  describe('validateUserFromPayload', () => {
+    it('should return user when payload is valid and active', async () => {
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as User);
+
+      const result = await service.validateUserFromPayload({
         sub: mockUser.id,
         email: mockUser.email,
-        roles: mockUser.roles,
-        permissions: mockUser.permissions,
-      };
-      jest.spyOn(jwtService, 'verify').mockReturnValue(payload);
-      jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(mockUser as User);
+        roles: ['user'],
+        permissions: [],
+      });
 
-      // Act
-      const result = await service.validateUser(mockJwtToken);
+      expect(result).toEqual(mockUser);
+    });
 
-      // Assert
-      expect(result).toEqual({
-        id: mockUser.id,
+    it('should return null when user is missing or inactive', async () => {
+      jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+
+      const result = await service.validateUserFromPayload({
+        sub: mockUser.id,
         email: mockUser.email,
-        firstName: mockUser.firstName,
-        lastName: mockUser.lastName,
-        roles: mockUser.roles,
-        permissions: mockUser.permissions,
-      });
-    });
-
-    it('should throw UnauthorizedException when token is invalid', async () => {
-      // Arrange
-      jest.spyOn(jwtService, 'verify').mockImplementation(() => {
-        throw new Error('Invalid token');
+        roles: ['user'],
+        permissions: [],
       });
 
-      // Act & Assert
-      await expect(service.validateUser('invalid-token')).rejects.toThrow('Invalid token');
-    });
-
-    it('should throw UnauthorizedException when user no longer exists', async () => {
-      // Arrange
-      const payload = { sub: mockUser.id, email: mockUser.email };
-      jest.spyOn(jwtService, 'verify').mockReturnValue(payload);
-      jest.spyOn(userRepository, 'findOneBy').mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(service.validateUser(mockJwtToken)).rejects.toThrow('User not found');
+      expect(result).toBeNull();
     });
   });
 
@@ -326,8 +355,11 @@ describe('AuthService (Unit)', () => {
     it('should complete login within performance threshold', async () => {
       // Arrange
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as User);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+      jest
+        .spyOn(jwtService, 'sign')
+        .mockReturnValueOnce('access-token')
+        .mockReturnValueOnce('refresh-token');
 
       // Act
       const startTime = Date.now();
@@ -341,8 +373,8 @@ describe('AuthService (Unit)', () => {
     it('should handle concurrent login requests', async () => {
       // Arrange
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(mockUser as User);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
+      mockedBcrypt.compare.mockResolvedValue(true as never);
+      jest.spyOn(jwtService, 'sign').mockReturnValue('access-token');
 
       // Act
       const concurrentLogins = Array(10).fill(null).map(() => service.login(mockLoginDto));
@@ -351,7 +383,7 @@ describe('AuthService (Unit)', () => {
       // Assert
       expect(results).toHaveLength(10);
       results.forEach(result => {
-        expect(result.token).toBe(mockJwtToken);
+        expect(result.accessToken).toBe('access-token');
       });
     });
   });
@@ -379,10 +411,9 @@ describe('AuthService (Unit)', () => {
       const longPassword = 'a'.repeat(1000);
       const longPasswordDto = { ...mockRegisterDto, password: longPassword };
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword' as never);
+      mockedBcrypt.hash.mockResolvedValue('hashedPassword' as never);
       jest.spyOn(userRepository, 'create').mockReturnValue(mockUser as User);
       jest.spyOn(userRepository, 'save').mockResolvedValue(mockUser as User);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
 
       // Act & Assert
       await expect(service.register(longPasswordDto)).resolves.toBeDefined();
@@ -400,9 +431,10 @@ describe('AuthService (Unit)', () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.login(maliciousDto)).rejects.toThrow('Invalid credentials');
+      await expect(service.login(maliciousDto)).rejects.toThrow('Credenciales inválidas');
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { email: maliciousDto.email },
+        relations: ['roles', 'roles.permissions'],
       });
     });
 
@@ -414,10 +446,9 @@ describe('AuthService (Unit)', () => {
         lastName: '<img src=x onerror=alert("xss")>',
       };
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(bcrypt, 'hash').mockResolvedValue('hashedPassword' as never);
+      mockedBcrypt.hash.mockResolvedValue('hashedPassword' as never);
       jest.spyOn(userRepository, 'create').mockReturnValue(mockUser as User);
       jest.spyOn(userRepository, 'save').mockResolvedValue(mockUser as User);
-      jest.spyOn(jwtService, 'sign').mockReturnValue(mockJwtToken);
 
       // Act
       const result = await service.register(xssDto);

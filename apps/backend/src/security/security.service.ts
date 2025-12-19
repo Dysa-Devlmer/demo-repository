@@ -1,11 +1,11 @@
-import { Injectable } from "@nestjs/common";
-import { WinstonLogger } from "../common/logger/winston.logger";
-import { I18nService } from "../i18n/i18n.service";
-import rateLimit from "express-rate-limit";
-import helmet from "helmet";
-import cors from "cors";
-import * as crypto from "crypto";
-import { Request, Response, NextFunction } from "express";
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { WinstonLogger } from '../common/logger/winston.logger';
+import { I18nService } from '../i18n/i18n.service';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
+import cors from 'cors';
+import * as crypto from 'crypto';
+import { Request, Response, NextFunction } from 'express';
 
 export interface SecurityConfig {
   rateLimit: {
@@ -55,13 +55,13 @@ export interface SecurityConfig {
 export interface SecurityAlert {
   id: string;
   type:
-    | "rate_limit"
-    | "brute_force"
-    | "suspicious_activity"
-    | "xss_attempt"
-    | "sql_injection"
-    | "other";
-  severity: "low" | "medium" | "high" | "critical";
+    | 'rate_limit'
+    | 'brute_force'
+    | 'suspicious_activity'
+    | 'xss_attempt'
+    | 'sql_injection'
+    | 'other';
+  severity: 'low' | 'medium' | 'high' | 'critical';
   ip: string;
   userAgent?: string;
   endpoint?: string;
@@ -72,40 +72,33 @@ export interface SecurityAlert {
 }
 
 @Injectable()
-export class SecurityService {
+export class SecurityService implements OnModuleDestroy {
   private readonly logger = new WinstonLogger();
   private config: SecurityConfig;
-  private failedAttempts: Map<
-    string,
-    { count: number; firstAttempt: Date; lockedUntil?: Date }
-  > = new Map();
+  private failedAttempts: Map<string, { count: number; firstAttempt: Date; lockedUntil?: Date }> =
+    new Map();
   private suspiciousIPs: Set<string> = new Set();
   private encryptionKey: string;
   private alerts: SecurityAlert[] = [];
+  private cleanupIntervals: NodeJS.Timeout[] = [];
 
   constructor(private readonly i18n: I18nService) {
     this.config = {
       rateLimit: {
         windowMs: 15 * 60 * 1000, // 15 minutes
-        max: parseInt(process.env.RATE_LIMIT_MAX || "100"),
-        message: "Too many requests from this IP, please try again later.",
+        max: parseInt(process.env.RATE_LIMIT_MAX || '100'),
+        message: 'Too many requests from this IP, please try again later.',
         standardHeaders: true,
         legacyHeaders: false,
       },
       cors: {
         origin: process.env.CORS_ORIGIN
-          ? process.env.CORS_ORIGIN === "*"
+          ? process.env.CORS_ORIGIN === '*'
             ? true
-            : process.env.CORS_ORIGIN.split(",")
-          : ["http://localhost:3000", "http://localhost:3001"],
-        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allowedHeaders: [
-          "Content-Type",
-          "Authorization",
-          "X-Requested-With",
-          "Accept",
-          "Origin",
-        ],
+            : process.env.CORS_ORIGIN.split(',')
+          : ['http://localhost:3000', 'http://localhost:3001'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
         credentials: true,
         optionsSuccessStatus: 200,
         maxAge: 86400, // 24 hours
@@ -133,47 +126,49 @@ export class SecurityService {
         lifetime: 24 * 60 * 60 * 1000, // 24 hours
       },
       encryption: {
-        algorithm: "aes-256-gcm",
+        algorithm: 'aes-256-gcm',
         keyLength: 32,
         ivLength: 16,
       },
     };
 
-    this.encryptionKey =
-      process.env.ENCRYPTION_KEY || this.generateEncryptionKey();
+    this.encryptionKey = process.env.ENCRYPTION_KEY || this.generateEncryptionKey();
     this.initializeSecurity();
   }
 
   private async initializeSecurity() {
     try {
       // Clean up old failed attempts periodically
-      setInterval(
+      const failedAttemptsInterval = setInterval(
         () => {
           this.cleanupFailedAttempts();
         },
-        60 * 60 * 1000,
+        60 * 60 * 1000
       ); // Every hour
+      this.cleanupIntervals.push(failedAttemptsInterval);
 
       // Clean up old alerts
-      setInterval(
+      const alertsInterval = setInterval(
         () => {
           this.cleanupOldAlerts();
         },
-        24 * 60 * 60 * 1000,
+        24 * 60 * 60 * 1000
       ); // Daily
+      this.cleanupIntervals.push(alertsInterval);
 
-      this.logger.log("Security service initialized", "SecurityService", {
+      this.logger.log('Security service initialized', 'SecurityService', {
         rateLimitMax: this.config.rateLimit.max,
         corsOrigins: this.config.cors.origin,
         encryptionEnabled: !!this.encryptionKey,
       });
     } catch (error) {
-      this.logger.error(
-        "Failed to initialize security service",
-        error.stack,
-        "SecurityService",
-      );
+      this.logger.error('Failed to initialize security service', error.stack, 'SecurityService');
     }
+  }
+
+  onModuleDestroy() {
+    this.cleanupIntervals.forEach((intervalId) => clearInterval(intervalId));
+    this.cleanupIntervals = [];
   }
 
   getRateLimitMiddleware() {
@@ -185,17 +180,17 @@ export class SecurityService {
       legacyHeaders: this.config.rateLimit.legacyHeaders,
       handler: async (req: any, res: any) => {
         await this.createSecurityAlert({
-          type: "rate_limit",
-          severity: "medium",
+          type: 'rate_limit',
+          severity: 'medium',
           ip: this.getClientIP(req),
-          userAgent: req.get("User-Agent"),
+          userAgent: req.get('User-Agent'),
           endpoint: req.path,
           blocked: true,
           description: `Rate limit exceeded for IP: ${this.getClientIP(req)}`,
         });
 
         res.status(429).json({
-          error: "Rate limit exceeded",
+          error: 'Rate limit exceeded',
           message: this.config.rateLimit.message,
           retryAfter: Math.ceil(this.config.rateLimit.windowMs / 1000),
         });
@@ -209,13 +204,9 @@ export class SecurityService {
         ? {
             directives: {
               defaultSrc: ["'self'"],
-              styleSrc: [
-                "'self'",
-                "'unsafe-inline'",
-                "https://fonts.googleapis.com",
-              ],
-              fontSrc: ["'self'", "https://fonts.gstatic.com"],
-              imgSrc: ["'self'", "data:", "https:"],
+              styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+              fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+              imgSrc: ["'self'", 'data:', 'https:'],
               scriptSrc: ["'self'"],
               objectSrc: ["'none'"],
               upgradeInsecureRequests: [],
@@ -225,10 +216,10 @@ export class SecurityService {
       crossOriginEmbedderPolicy: this.config.helmet.crossOriginEmbedderPolicy,
       crossOriginOpenerPolicy: this.config.helmet.crossOriginOpenerPolicy,
       crossOriginResourcePolicy: this.config.helmet.crossOriginResourcePolicy
-        ? { policy: "cross-origin" }
+        ? { policy: 'cross-origin' }
         : false,
       dnsPrefetchControl: this.config.helmet.dnsPrefetchControl,
-      frameguard: this.config.helmet.frameguard ? { action: "deny" } : false,
+      frameguard: this.config.helmet.frameguard ? { action: 'deny' } : false,
       hidePoweredBy: this.config.helmet.hidePoweredBy,
       hsts: this.config.helmet.hsts
         ? {
@@ -240,11 +231,8 @@ export class SecurityService {
       ieNoOpen: this.config.helmet.ieNoOpen,
       noSniff: this.config.helmet.noSniff,
       originAgentCluster: this.config.helmet.originAgentCluster,
-      permittedCrossDomainPolicies:
-        this.config.helmet.permittedCrossDomainPolicies,
-      referrerPolicy: this.config.helmet.referrerPolicy
-        ? { policy: "no-referrer" }
-        : false,
+      permittedCrossDomainPolicies: this.config.helmet.permittedCrossDomainPolicies,
+      referrerPolicy: this.config.helmet.referrerPolicy ? { policy: 'no-referrer' } : false,
       xssFilter: this.config.helmet.xssFilter,
     });
   }
@@ -265,13 +253,13 @@ export class SecurityService {
           callback(null, true);
         } else {
           this.createSecurityAlert({
-            type: "suspicious_activity",
-            severity: "medium",
-            ip: "unknown",
+            type: 'suspicious_activity',
+            severity: 'medium',
+            ip: 'unknown',
             description: `CORS violation: Unauthorized origin ${origin}`,
             blocked: true,
           });
-          callback(new Error("Not allowed by CORS"));
+          callback(new Error('Not allowed by CORS'));
         }
       },
       methods: this.config.cors.methods,
@@ -291,23 +279,21 @@ export class SecurityService {
       const attempt = this.failedAttempts.get(key);
 
       if (attempt && attempt.lockedUntil && now < attempt.lockedUntil) {
-        const remainingTime = Math.ceil(
-          (attempt.lockedUntil.getTime() - now.getTime()) / 1000,
-        );
+        const remainingTime = Math.ceil((attempt.lockedUntil.getTime() - now.getTime()) / 1000);
 
         this.createSecurityAlert({
-          type: "brute_force",
-          severity: "high",
+          type: 'brute_force',
+          severity: 'high',
           ip,
-          userAgent: req.get("User-Agent"),
+          userAgent: req.get('User-Agent'),
           endpoint: req.path,
           blocked: true,
           description: `Brute force protection: IP ${ip} is locked`,
         });
 
         return res.status(429).json({
-          error: "Account temporarily locked",
-          message: "Too many failed attempts. Please try again later.",
+          error: 'Account temporarily locked',
+          message: 'Too many failed attempts. Please try again later.',
           retryAfter: remainingTime,
         });
       }
@@ -335,16 +321,16 @@ export class SecurityService {
         const lockDuration = Math.min(
           this.config.bruteForce.minWait *
             Math.pow(2, attempt.count - this.config.bruteForce.freeRetries),
-          this.config.bruteForce.maxWait,
+          this.config.bruteForce.maxWait
         );
 
         attempt.lockedUntil = new Date(now.getTime() + lockDuration);
 
         this.createSecurityAlert({
-          type: "brute_force",
-          severity: "high",
+          type: 'brute_force',
+          severity: 'high',
           ip,
-          userAgent: req.get("User-Agent"),
+          userAgent: req.get('User-Agent'),
           endpoint: req.path,
           blocked: false,
           description: `Brute force detected: ${attempt.count} failed attempts from IP ${ip}`,
@@ -371,33 +357,29 @@ export class SecurityService {
       ];
 
       const checkForXSS = (obj: any): boolean => {
-        if (typeof obj === "string") {
+        if (typeof obj === 'string') {
           return xssPatterns.some((pattern) => pattern.test(obj));
-        } else if (typeof obj === "object" && obj !== null) {
+        } else if (typeof obj === 'object' && obj !== null) {
           return Object.values(obj).some((value) => checkForXSS(value));
         }
         return false;
       };
 
-      if (
-        checkForXSS(req.body) ||
-        checkForXSS(req.query) ||
-        checkForXSS(req.params)
-      ) {
+      if (checkForXSS(req.body) || checkForXSS(req.query) || checkForXSS(req.params)) {
         this.createSecurityAlert({
-          type: "xss_attempt",
-          severity: "high",
+          type: 'xss_attempt',
+          severity: 'high',
           ip: this.getClientIP(req),
-          userAgent: req.get("User-Agent"),
+          userAgent: req.get('User-Agent'),
           endpoint: req.path,
           payload: { body: req.body, query: req.query, params: req.params },
           blocked: true,
-          description: "XSS attempt detected in request",
+          description: 'XSS attempt detected in request',
         });
 
         return res.status(400).json({
-          error: "Invalid request",
-          message: "Potentially malicious content detected",
+          error: 'Invalid request',
+          message: 'Potentially malicious content detected',
         });
       }
 
@@ -416,12 +398,10 @@ export class SecurityService {
       ];
 
       const checkForSQLInjection = (obj: any): boolean => {
-        if (typeof obj === "string") {
+        if (typeof obj === 'string') {
           return sqlPatterns.some((pattern) => pattern.test(obj));
-        } else if (typeof obj === "object" && obj !== null) {
-          return Object.values(obj).some((value) =>
-            checkForSQLInjection(value),
-          );
+        } else if (typeof obj === 'object' && obj !== null) {
+          return Object.values(obj).some((value) => checkForSQLInjection(value));
         }
         return false;
       };
@@ -432,19 +412,19 @@ export class SecurityService {
         checkForSQLInjection(req.params)
       ) {
         this.createSecurityAlert({
-          type: "sql_injection",
-          severity: "critical",
+          type: 'sql_injection',
+          severity: 'critical',
           ip: this.getClientIP(req),
-          userAgent: req.get("User-Agent"),
+          userAgent: req.get('User-Agent'),
           endpoint: req.path,
           payload: { body: req.body, query: req.query, params: req.params },
           blocked: true,
-          description: "SQL injection attempt detected",
+          description: 'SQL injection attempt detected',
         });
 
         return res.status(400).json({
-          error: "Invalid request",
-          message: "Potentially malicious content detected",
+          error: 'Invalid request',
+          message: 'Potentially malicious content detected',
         });
       }
 
@@ -458,68 +438,61 @@ export class SecurityService {
       const cipher = crypto.createCipheriv(
         this.config.encryption.algorithm,
         Buffer.from(this.encryptionKey.slice(0, 32)),
-        iv,
+        iv
       );
 
-      let encrypted = cipher.update(text, "utf8", "hex");
-      encrypted += cipher.final("hex");
+      let encrypted = cipher.update(text, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
 
-      return iv.toString("hex") + ":" + encrypted;
+      return iv.toString('hex') + ':' + encrypted;
     } catch (error) {
-      this.logger.error("Encryption failed", error.stack, "SecurityService");
-      throw new Error(this.i18n.t("errors.encryptionFailed"));
+      this.logger.error('Encryption failed', error.stack, 'SecurityService');
+      throw new Error(this.i18n.t('errors.encryptionFailed'));
     }
   }
 
   decrypt(encryptedText: string): string {
     try {
-      const parts = encryptedText.split(":");
+      const parts = encryptedText.split(':');
       if (parts.length !== 2) {
-        throw new Error(this.i18n.t("errors.invalidEncryptedFormat"));
+        throw new Error(this.i18n.t('errors.invalidEncryptedFormat'));
       }
 
-      const iv = Buffer.from(parts[0], "hex");
+      const iv = Buffer.from(parts[0], 'hex');
       const encryptedData = parts[1];
 
       const decipher = crypto.createDecipheriv(
         this.config.encryption.algorithm,
         Buffer.from(this.encryptionKey.slice(0, 32)),
-        iv,
+        iv
       );
 
-      let decrypted = decipher.update(encryptedData, "hex", "utf8");
-      decrypted += decipher.final("utf8");
+      let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
 
       return decrypted;
     } catch (error) {
-      this.logger.error("Decryption failed", error.stack, "SecurityService");
-      throw new Error(this.i18n.t("errors.decryptionFailed"));
+      this.logger.error('Decryption failed', error.stack, 'SecurityService');
+      throw new Error(this.i18n.t('errors.decryptionFailed'));
     }
   }
 
   generateSecureToken(length: number = 32): string {
-    return crypto.randomBytes(length).toString("hex");
+    return crypto.randomBytes(length).toString('hex');
   }
 
-  hashPassword(
-    password: string,
-    salt?: string,
-  ): { hash: string; salt: string } {
-    const saltValue = salt || crypto.randomBytes(16).toString("hex");
-    const hash = crypto
-      .pbkdf2Sync(password, saltValue, 10000, 64, "sha512")
-      .toString("hex");
+  hashPassword(password: string, salt?: string): { hash: string; salt: string } {
+    const saltValue = salt || crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(password, saltValue, 10000, 64, 'sha512').toString('hex');
     return { hash, salt: saltValue };
   }
 
   verifyPassword(password: string, hash: string, salt: string): boolean {
-    const expectedHash = crypto
-      .pbkdf2Sync(password, salt, 10000, 64, "sha512")
-      .toString("hex");
+    const expectedHash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
     return hash === expectedHash;
   }
 
-  private createSecurityAlert(alert: Omit<SecurityAlert, "id" | "timestamp">) {
+  private createSecurityAlert(alert: Omit<SecurityAlert, 'id' | 'timestamp'>) {
     const fullAlert: SecurityAlert = {
       ...alert,
       id: this.generateSecureToken(16),
@@ -545,27 +518,24 @@ export class SecurityService {
   }
 
   private getClientIP(req: Request): string {
-    const forwarded = req.get("x-forwarded-for");
-    const realIP = req.get("x-real-ip");
+    const forwarded = req.get('x-forwarded-for');
+    const realIP = req.get('x-real-ip');
     const remoteAddress = req.connection?.remoteAddress;
 
     if (forwarded) {
-      return forwarded.split(",")[0].trim();
+      return forwarded.split(',')[0].trim();
     }
     if (realIP) {
       return realIP;
     }
-    return remoteAddress || "unknown";
+    return remoteAddress || 'unknown';
   }
 
   private generateEncryptionKey(): string {
-    const key = crypto
-      .randomBytes(this.config.encryption.keyLength)
-      .toString("hex");
+    const key = crypto.randomBytes(this.config.encryption.keyLength).toString('hex');
     this.logger.warn(
-      "Generated new encryption key. Store this securely: ENCRYPTION_KEY=" +
-        key,
-      "SecurityService",
+      'Generated new encryption key. Store this securely: ENCRYPTION_KEY=' + key,
+      'SecurityService'
     );
     return key;
   }
@@ -575,10 +545,7 @@ export class SecurityService {
     const expired: string[] = [];
 
     for (const [key, attempt] of this.failedAttempts.entries()) {
-      if (
-        now.getTime() - attempt.firstAttempt.getTime() >
-        this.config.bruteForce.lifetime
-      ) {
+      if (now.getTime() - attempt.firstAttempt.getTime() > this.config.bruteForce.lifetime) {
         expired.push(key);
       }
     }
@@ -586,10 +553,7 @@ export class SecurityService {
     expired.forEach((key) => this.failedAttempts.delete(key));
 
     if (expired.length > 0) {
-      this.logger.log(
-        `Cleaned up ${expired.length} expired failed attempts`,
-        "SecurityService",
-      );
+      this.logger.log(`Cleaned up ${expired.length} expired failed attempts`, 'SecurityService');
     }
   }
 
@@ -602,10 +566,7 @@ export class SecurityService {
 
     const removedCount = initialCount - this.alerts.length;
     if (removedCount > 0) {
-      this.logger.log(
-        `Cleaned up ${removedCount} old security alerts`,
-        "SecurityService",
-      );
+      this.logger.log(`Cleaned up ${removedCount} old security alerts`, 'SecurityService');
     }
   }
 
@@ -633,14 +594,14 @@ export class SecurityService {
           acc[alert.type] = (acc[alert.type] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       ),
       bySeverity: this.alerts.reduce(
         (acc, alert) => {
           acc[alert.severity] = (acc[alert.severity] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>,
+        {} as Record<string, number>
       ),
       failedAttempts: this.failedAttempts.size,
       suspiciousIPs: this.suspiciousIPs.size,
@@ -649,7 +610,7 @@ export class SecurityService {
 
   updateSecurityConfig(newConfig: Partial<SecurityConfig>) {
     this.config = { ...this.config, ...newConfig };
-    this.logger.log("Security configuration updated", "SecurityService");
+    this.logger.log('Security configuration updated', 'SecurityService');
   }
 
   getSecurityConfig(): SecurityConfig {

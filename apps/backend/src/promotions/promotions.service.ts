@@ -1,15 +1,15 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, MoreThanOrEqual, LessThanOrEqual } from "typeorm";
-import { Promotion } from "../entities/promotion.entity";
-import { CreatePromotionDto } from "./dto/create-promotion.dto";
-import { UpdatePromotionDto } from "./dto/update-promotion.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Promotion } from '../entities/promotion.entity';
+import { CreatePromotionDto } from './dto/create-promotion.dto';
+import { UpdatePromotionDto } from './dto/update-promotion.dto';
 
 @Injectable()
 export class PromotionsService {
   constructor(
     @InjectRepository(Promotion)
-    private readonly promoRepo: Repository<Promotion>,
+    private readonly promoRepo: Repository<Promotion>
   ) {}
 
   async create(dto: CreatePromotionDto): Promise<Promotion> {
@@ -19,7 +19,7 @@ export class PromotionsService {
 
   async findAll(): Promise<Promotion[]> {
     return this.promoRepo.find({
-      order: { created_at: "DESC" },
+      order: { created_at: 'DESC' },
     });
   }
 
@@ -31,7 +31,7 @@ export class PromotionsService {
         valid_from: LessThanOrEqual(now),
         valid_until: MoreThanOrEqual(now),
       },
-      order: { valid_until: "ASC" },
+      order: { valid_until: 'ASC' },
     });
   }
 

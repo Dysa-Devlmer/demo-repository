@@ -8,27 +8,27 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
-} from "typeorm";
-import { OrderItem } from "./order-item.entity";
-import { Category, PreparationArea } from "./category.entity";
+} from 'typeorm';
+import { OrderItem } from './order-item.entity';
+import { Category, PreparationArea } from './category.entity';
 
 export enum MenuCategory {
-  APPETIZER = "appetizer",
-  MAIN_COURSE = "main_course",
-  DESSERT = "dessert",
-  BEVERAGE = "beverage",
-  SPECIAL = "special",
+  APPETIZER = 'appetizer',
+  MAIN_COURSE = 'main_course',
+  DESSERT = 'dessert',
+  BEVERAGE = 'beverage',
+  SPECIAL = 'special',
 }
 
 export enum DietaryType {
-  REGULAR = "regular",
-  VEGETARIAN = "vegetarian",
-  VEGAN = "vegan",
-  GLUTEN_FREE = "gluten_free",
-  KETO = "keto",
+  REGULAR = 'regular',
+  VEGETARIAN = 'vegetarian',
+  VEGAN = 'vegan',
+  GLUTEN_FREE = 'gluten_free',
+  KETO = 'keto',
 }
 
-@Entity("menu_items")
+@Entity('menu_items')
 export class MenuItem {
   @PrimaryGeneratedColumn()
   id: number;
@@ -36,21 +36,21 @@ export class MenuItem {
   @Column({ length: 100 })
   name: string;
 
-  @Column({ type: "text", nullable: true })
+  @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column("decimal", { precision: 8, scale: 2 })
+  @Column('decimal', { precision: 8, scale: 2 })
   price: number;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: MenuCategory,
     default: MenuCategory.MAIN_COURSE,
   })
   category: MenuCategory;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: DietaryType,
     default: DietaryType.REGULAR,
   })
@@ -59,10 +59,10 @@ export class MenuItem {
   @Column({ nullable: true })
   image?: string;
 
-  @Column({ type: "simple-array", nullable: true })
+  @Column({ type: 'simple-array', nullable: true })
   ingredients?: string[];
 
-  @Column({ type: "simple-array", nullable: true })
+  @Column({ type: 'simple-array', nullable: true })
   allergens?: string[];
 
   @Column({ nullable: true })
@@ -75,10 +75,10 @@ export class MenuItem {
 
   // Área de preparación: cocina, barra o ambas
   @Column({
-    type: "enum",
-    enum: ["kitchen", "bar", "both"],
-    enumName: "preparation_area_enum",
-    default: "kitchen",
+    type: 'enum',
+    enum: ['kitchen', 'bar', 'both'],
+    enumName: 'preparation_area_enum',
+    default: 'kitchen',
     nullable: true, // Nullable para compatibilidad con datos existentes
   })
   preparation_area?: PreparationArea;
@@ -89,9 +89,9 @@ export class MenuItem {
 
   @ManyToOne(() => Category, (category) => category.menu_items, {
     nullable: true,
-    onDelete: "SET NULL",
+    onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: "category_id" })
+  @JoinColumn({ name: 'category_id' })
   category_ref?: Category;
 
   // ========== FIN NUEVOS CAMPOS ==========

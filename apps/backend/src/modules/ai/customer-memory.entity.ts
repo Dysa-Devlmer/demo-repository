@@ -8,18 +8,18 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { Customer } from '../customers/customer.entity';
+import { Customer } from '../../entities/customer.entity';
 
 /**
  * Tipos de memoria del cliente - estilo JARVIS
  * Almacena preferencias aprendidas de las conversaciones
  */
 export enum MemoryType {
-  PREFERENCE = 'preference',       // Preferencias alimenticias (vegetariano, sin gluten, etc.)
-  ADDRESS = 'address',             // Direcciones de entrega frecuentes
+  PREFERENCE = 'preference', // Preferencias alimenticias (vegetariano, sin gluten, etc.)
+  ADDRESS = 'address', // Direcciones de entrega frecuentes
   COMMUNICATION = 'communication', // Estilo de comunicación preferido
-  ORDER = 'order',                 // Patrones de pedidos frecuentes
-  PERSONAL = 'personal',           // Info personal (cumpleaños, nombre preferido, etc.)
+  ORDER = 'order', // Patrones de pedidos frecuentes
+  PERSONAL = 'personal', // Info personal (cumpleaños, nombre preferido, etc.)
 }
 
 /**
@@ -27,10 +27,10 @@ export enum MemoryType {
  * A mayor uso, mayor confianza
  */
 export enum ConfidenceLevel {
-  LOW = 'low',           // Primera vez detectado
-  MEDIUM = 'medium',     // Confirmado 2-3 veces
-  HIGH = 'high',         // Patrón establecido (4+ veces)
-  CONFIRMED = 'confirmed' // Confirmado explícitamente por el cliente
+  LOW = 'low', // Primera vez detectado
+  MEDIUM = 'medium', // Confirmado 2-3 veces
+  HIGH = 'high', // Patrón establecido (4+ veces)
+  CONFIRMED = 'confirmed', // Confirmado explícitamente por el cliente
 }
 
 @Entity('customer_memories')
@@ -75,11 +75,11 @@ export class CustomerMemory {
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: {
-    source?: string;          // Dónde se aprendió (conversación, pedido, etc.)
-    conversationId?: number;  // ID de la conversación donde se aprendió
-    extractedFrom?: string;   // Texto del cual se extrajo
-    isExplicit?: boolean;     // Si el cliente lo dijo explícitamente
-    alternatives?: string[];  // Valores alternativos detectados
+    source?: string; // Dónde se aprendió (conversación, pedido, etc.)
+    conversationId?: number; // ID de la conversación donde se aprendió
+    extractedFrom?: string; // Texto del cual se extrajo
+    isExplicit?: boolean; // Si el cliente lo dijo explícitamente
+    alternatives?: string[]; // Valores alternativos detectados
   };
 
   @Column({ name: 'is_active', default: true })

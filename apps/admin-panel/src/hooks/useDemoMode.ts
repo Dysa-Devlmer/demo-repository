@@ -14,6 +14,7 @@ export const DEMO_DATA = {
   orders: [
     {
       id: "1",
+      orderNumber: "ORDER-0001",
       customerName: "María González",
       customerPhone: "+56 9 8765 4321",
       orderType: "delivery" as const,
@@ -31,6 +32,7 @@ export const DEMO_DATA = {
     },
     {
       id: "2",
+      orderNumber: "ORDER-0002",
       customerName: "Carlos Ruiz",
       customerPhone: "+56 9 7654 3210",
       orderType: "pickup" as const,
@@ -47,6 +49,7 @@ export const DEMO_DATA = {
     },
     {
       id: "3",
+      orderNumber: "ORDER-0003",
       customerName: "Ana López",
       customerPhone: "+56 9 6543 2109",
       orderType: "dine-in" as const,
@@ -63,6 +66,7 @@ export const DEMO_DATA = {
     },
     {
       id: "4",
+      orderNumber: "ORDER-0004",
       customerName: "Pedro Silva",
       customerPhone: "+56 9 5432 1098",
       orderType: "delivery" as const,
@@ -80,6 +84,7 @@ export const DEMO_DATA = {
     },
     {
       id: "5",
+      orderNumber: "ORDER-0005",
       customerName: "Laura Martín",
       customerPhone: "+56 9 4321 0987",
       orderType: "delivery" as const,
@@ -302,6 +307,7 @@ export const DEMO_DATA = {
 function sanitizeOrders(orders: any[]): typeof DEMO_DATA.orders {
   return orders.map(order => ({
     ...order,
+    orderNumber: order.orderNumber || `ORDER-${order.id}`,
     total: Number(order.total) || 0,
     subtotal: Number(order.subtotal) || 0,
     deliveryFee: Number(order.deliveryFee) || 0,

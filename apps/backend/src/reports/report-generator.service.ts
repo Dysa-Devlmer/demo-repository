@@ -30,7 +30,7 @@ export class ReportGeneratorService {
     @InjectRepository(MenuItem)
     private readonly menuRepo: Repository<MenuItem>,
     @InjectRepository(Reservation)
-    private readonly reservationRepo: Repository<Reservation>,
+    private readonly reservationRepo: Repository<Reservation>
   ) {}
 
   /**
@@ -85,10 +85,7 @@ export class ReportGeneratorService {
   /**
    * Collect sales data
    */
-  private async collectSalesData(
-    report: Report,
-    generatedAt: Date,
-  ): Promise<ReportData> {
+  private async collectSalesData(report: Report, generatedAt: Date): Promise<ReportData> {
     const orders = await this.orderRepo.find({
       relations: ['customer'],
       order: { created_at: 'DESC' },
@@ -108,8 +105,7 @@ export class ReportGeneratorService {
       totalRevenue: orders.reduce((sum, o) => sum + Number(o.total || 0), 0),
       averageOrderValue:
         orders.length > 0
-          ? orders.reduce((sum, o) => sum + Number(o.total || 0), 0) /
-            orders.length
+          ? orders.reduce((sum, o) => sum + Number(o.total || 0), 0) / orders.length
           : 0,
     };
 
@@ -126,10 +122,7 @@ export class ReportGeneratorService {
   /**
    * Collect customers data
    */
-  private async collectCustomersData(
-    report: Report,
-    generatedAt: Date,
-  ): Promise<ReportData> {
+  private async collectCustomersData(report: Report, generatedAt: Date): Promise<ReportData> {
     const customers = await this.customerRepo.find({
       relations: ['reservations'],
       order: { created_at: 'DESC' },
@@ -167,10 +160,7 @@ export class ReportGeneratorService {
   /**
    * Collect menu data
    */
-  private async collectMenuData(
-    report: Report,
-    generatedAt: Date,
-  ): Promise<ReportData> {
+  private async collectMenuData(report: Report, generatedAt: Date): Promise<ReportData> {
     const menuItems = await this.menuRepo.find({
       order: { category: 'ASC', name: 'ASC' },
       take: 1000,
@@ -191,8 +181,7 @@ export class ReportGeneratorService {
       byCategory: this.groupByField(menuItems, 'category'),
       averagePrice:
         menuItems.length > 0
-          ? menuItems.reduce((sum, i) => sum + Number(i.price || 0), 0) /
-            menuItems.length
+          ? menuItems.reduce((sum, i) => sum + Number(i.price || 0), 0) / menuItems.length
           : 0,
     };
 
@@ -209,10 +198,7 @@ export class ReportGeneratorService {
   /**
    * Collect reservations data
    */
-  private async collectReservationsData(
-    report: Report,
-    generatedAt: Date,
-  ): Promise<ReportData> {
+  private async collectReservationsData(report: Report, generatedAt: Date): Promise<ReportData> {
     const reservations = await this.reservationRepo.find({
       order: { reservation_date: 'DESC' },
       take: 1000,
@@ -231,14 +217,10 @@ export class ReportGeneratorService {
     const summary = {
       totalReservations: reservations.length,
       byStatus: this.groupByField(reservations, 'status'),
-      totalGuests: reservations.reduce(
-        (sum, r) => sum + (r.party_size || 0),
-        0,
-      ),
+      totalGuests: reservations.reduce((sum, r) => sum + (r.party_size || 0), 0),
       averagePartySize:
         reservations.length > 0
-          ? reservations.reduce((sum, r) => sum + (r.party_size || 0), 0) /
-            reservations.length
+          ? reservations.reduce((sum, r) => sum + (r.party_size || 0), 0) / reservations.length
           : 0,
     };
 
@@ -255,10 +237,7 @@ export class ReportGeneratorService {
   /**
    * Collect operations data (summary of all)
    */
-  private async collectOperationsData(
-    report: Report,
-    generatedAt: Date,
-  ): Promise<ReportData> {
+  private async collectOperationsData(report: Report, generatedAt: Date): Promise<ReportData> {
     const [orders, customers, menuItems, reservations] = await Promise.all([
       this.orderRepo.count(),
       this.customerRepo.count(),
@@ -296,18 +275,12 @@ export class ReportGeneratorService {
       doc.on('error', reject);
 
       // Header
-      doc
-        .fontSize(20)
-        .font('Helvetica-Bold')
-        .text(reportData.title, { align: 'center' });
+      doc.fontSize(20).font('Helvetica-Bold').text(reportData.title, { align: 'center' });
 
       doc.moveDown();
 
       if (reportData.description) {
-        doc
-          .fontSize(12)
-          .font('Helvetica')
-          .text(reportData.description, { align: 'center' });
+        doc.fontSize(12).font('Helvetica').text(reportData.description, { align: 'center' });
         doc.moveDown();
       }
 
@@ -333,9 +306,7 @@ export class ReportGeneratorService {
         Object.entries(reportData.summary).forEach(([key, value]) => {
           const label = this.formatLabel(key);
           const valueStr =
-            typeof value === 'object'
-              ? JSON.stringify(value, null, 2)
-              : String(value);
+            typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
 
           doc.fontSize(10).font('Helvetica').text(`${label}: ${valueStr}`);
         });
@@ -369,9 +340,7 @@ export class ReportGeneratorService {
           headers.forEach((header, i) => {
             const value = row[header];
             const valueStr =
-              value instanceof Date
-                ? value.toLocaleDateString('es-ES')
-                : String(value || 'N/A');
+              value instanceof Date ? value.toLocaleDateString('es-ES') : String(value || 'N/A');
 
             doc.text(valueStr, 50 + i * 80, y, {
               width: 75,
@@ -391,7 +360,7 @@ export class ReportGeneratorService {
           doc
             .fontSize(8)
             .text(
-              `Mostrando 50 de ${reportData.data.length} registros. Descargue en formato Excel para ver todos.`,
+              `Mostrando 50 de ${reportData.data.length} registros. Descargue en formato Excel para ver todos.`
             );
         }
       }
@@ -402,12 +371,7 @@ export class ReportGeneratorService {
         doc.switchToPage(i);
         doc
           .fontSize(8)
-          .text(
-            `Página ${i + 1} de ${pages.count}`,
-            50,
-            doc.page.height - 50,
-            { align: 'center' },
-          );
+          .text(`Página ${i + 1} de ${pages.count}`, 50, doc.page.height - 50, { align: 'center' });
       }
 
       doc.end();
@@ -429,10 +393,7 @@ export class ReportGeneratorService {
 
       summarySheet.addRow(['Reporte:', reportData.title]);
       summarySheet.addRow(['Descripción:', reportData.description]);
-      summarySheet.addRow([
-        'Generado:',
-        reportData.generatedAt.toLocaleString('es-ES'),
-      ]);
+      summarySheet.addRow(['Generado:', reportData.generatedAt.toLocaleString('es-ES')]);
       if (reportData.dateRange) {
         summarySheet.addRow(['Período:', reportData.dateRange]);
       }
@@ -440,10 +401,7 @@ export class ReportGeneratorService {
 
       summarySheet.addRow(['Resumen Ejecutivo']);
       Object.entries(reportData.summary).forEach(([key, value]) => {
-        const valueStr =
-          typeof value === 'object'
-            ? JSON.stringify(value, null, 2)
-            : String(value);
+        const valueStr = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
         summarySheet.addRow([this.formatLabel(key), valueStr]);
       });
 
@@ -471,9 +429,7 @@ export class ReportGeneratorService {
       reportData.data.forEach((row) => {
         const values = headers.map((header) => {
           const value = row[header];
-          return value instanceof Date
-            ? value.toLocaleDateString('es-ES')
-            : value;
+          return value instanceof Date ? value.toLocaleDateString('es-ES') : value;
         });
         dataSheet.addRow(values);
       });
@@ -506,18 +462,14 @@ export class ReportGeneratorService {
     const headers = Object.keys(reportData.data[0]);
 
     // CSV header row
-    const csvRows: string[] = [
-      headers.map(this.formatLabel).map(this.escapeCsvValue).join(','),
-    ];
+    const csvRows: string[] = [headers.map(this.formatLabel).map(this.escapeCsvValue).join(',')];
 
     // CSV data rows
     reportData.data.forEach((row) => {
       const values = headers.map((header) => {
         const value = row[header];
         const valueStr =
-          value instanceof Date
-            ? value.toLocaleDateString('es-ES')
-            : String(value || '');
+          value instanceof Date ? value.toLocaleDateString('es-ES') : String(value || '');
         return this.escapeCsvValue(valueStr);
       });
       csvRows.push(values.join(','));
@@ -556,7 +508,7 @@ export class ReportGeneratorService {
         acc[key] = (acc[key] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
   }
 }

@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
-import { AuditLog } from './entities/audit-log.entity';
+import { AuditLog } from '../common/entities/audit-log.entity';
 import { Repository } from 'typeorm';
 
 // Mock bcrypt before importing

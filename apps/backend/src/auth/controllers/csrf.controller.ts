@@ -17,16 +17,16 @@ export class CsrfController {
       type: 'object',
       properties: {
         csrfToken: { type: 'string' },
-        sessionId: { type: 'string' }
-      }
-    }
+        sessionId: { type: 'string' },
+      },
+    },
   })
   getCsrfToken(@Req() request: Request, @Res() response: Response) {
     // 🚀 Enterprise: Ensure session exists
     if (!request.session) {
       return response.status(500).json({
         error: 'Session not configured',
-        message: 'Server session configuration required'
+        message: 'Server session configuration required',
       });
     }
 
@@ -39,13 +39,13 @@ export class CsrfController {
       httpOnly: false, // Accessible to JavaScript for form submissions
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
     return response.json({
       csrfToken,
       sessionId: request.sessionID,
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     });
   }
 
@@ -53,7 +53,7 @@ export class CsrfController {
   @ApiOperation({ summary: 'Verify CSRF token validity' })
   @ApiResponse({
     status: 200,
-    description: 'CSRF token verification result'
+    description: 'CSRF token verification result',
   })
   verifyCsrfToken(@Req() request: Request) {
     const sessionToken = request.session?.csrfToken;
@@ -63,7 +63,7 @@ export class CsrfController {
       valid: !!(sessionToken && headerToken && sessionToken === headerToken),
       sessionExists: !!request.session,
       tokenExists: !!sessionToken,
-      headerTokenExists: !!headerToken
+      headerTokenExists: !!headerToken,
     };
   }
 }

@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { User } from '../../auth/entities/user.entity';
@@ -26,9 +21,7 @@ export class SerializeUserInterceptor implements NestInterceptor {
 
         // Transform array of users
         if (Array.isArray(data)) {
-          return data.map((item) =>
-            item instanceof User ? this.transformUser(item) : item
-          );
+          return data.map((item) => (item instanceof User ? this.transformUser(item) : item));
         }
 
         // Transform nested user in object
@@ -43,6 +36,14 @@ export class SerializeUserInterceptor implements NestInterceptor {
 
   private transformUser(user: User): any {
     const transformed = { ...user };
+
+    // Remove sensitive fields before returning user data
+    delete transformed.password;
+    delete transformed.passwordResetToken;
+    delete transformed.passwordResetExpires;
+    delete transformed.emailVerificationToken;
+    delete transformed.twoFactorSecret;
+    delete transformed.twoFactorBackupCodes;
 
     // Add snake_case aliases
     if (user.firstName) {

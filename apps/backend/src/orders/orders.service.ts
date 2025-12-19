@@ -1,17 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { Order } from "../entities/order.entity";
-import { OrderItem } from "../entities/order-item.entity";
-import { Customer } from "../entities/customer.entity";
-import { MenuItem } from "../entities/menu-item.entity";
-import { CreateOrderDto } from "./dto/create-order.dto";
-import { UpdateOrderDto } from "./dto/update-order.dto";
-import { OrderStatus } from "../entities/order.entity";
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Order } from '../entities/order.entity';
+import { OrderItem } from '../entities/order-item.entity';
+import { Customer } from '../entities/customer.entity';
+import { MenuItem } from '../entities/menu-item.entity';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderDto } from './dto/update-order.dto';
+import { OrderStatus } from '../entities/order.entity';
 
 @Injectable()
 export class OrdersService {
@@ -21,7 +17,7 @@ export class OrdersService {
     private readonly orderItemsRepo: Repository<OrderItem>,
     @InjectRepository(Customer)
     private readonly customersRepo: Repository<Customer>,
-    @InjectRepository(MenuItem) private readonly menuRepo: Repository<MenuItem>,
+    @InjectRepository(MenuItem) private readonly menuRepo: Repository<MenuItem>
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
@@ -29,9 +25,7 @@ export class OrdersService {
       where: { id: dto.customerId },
     });
     if (!customer) {
-      throw new BadRequestException(
-        `Customer with ID ${dto.customerId} not found`,
-      );
+      throw new BadRequestException(`Customer with ID ${dto.customerId} not found`);
     }
 
     const items: OrderItem[] = [];
@@ -43,9 +37,7 @@ export class OrdersService {
         where: { id: item.menuItemId },
       });
       if (!menuItem) {
-        throw new BadRequestException(
-          `Menu item with ID ${item.menuItemId} not found`,
-        );
+        throw new BadRequestException(`Menu item with ID ${item.menuItemId} not found`);
       }
 
       const orderItem = this.orderItemsRepo.create({
@@ -58,10 +50,10 @@ export class OrdersService {
       itemsSnapshot.push({
         id: menuItem.id,
         name: menuItem.name,
-        description: menuItem.description || "",
+        description: menuItem.description || '',
         price: Number(menuItem.price),
         quantity: item.quantity,
-        category: menuItem.category || "",
+        category: menuItem.category || '',
         image_url: menuItem.image || null,
       });
 
@@ -80,17 +72,17 @@ export class OrdersService {
     const order = this.ordersRepo.create({
       order_number: `ORDER-${shortNumber}`,
       customer_name: customer.name,
-      customer_phone: customer.phone || "",
+      customer_phone: customer.phone || '',
       customer_email: customer.email,
-      order_type: dto.orderType || "dine-in",
-      status: "pending",
+      order_type: dto.orderType || 'dine-in',
+      status: 'pending',
       items: itemsSnapshot,
       subtotal: total,
       tax: tax,
       tip: tip,
       total: finalTotal,
-      delivery_address: dto.deliveryAddress || "",
-      notes: dto.notes || "",
+      delivery_address: dto.deliveryAddress || '',
+      notes: dto.notes || '',
     });
 
     return this.ordersRepo.save(order);
@@ -132,7 +124,7 @@ export class OrdersService {
           continue;
         }
 
-        const firstItem = order.items[0] as any;
+        const firstItem = order.items[0];
         // Si ya tiene 'name', no necesita migración
         if (firstItem.name) {
           continue;

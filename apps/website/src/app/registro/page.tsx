@@ -33,7 +33,7 @@ interface RegistrationData {
   subdomain: string
 
   // Step 3: Plan Selection
-  plan: 'basic' | 'professional' | 'enterprise'
+  plan: 'saas-multi' | 'saas-dedicated' | 'on-premise'
 
   // Step 4: Payment
   paymentMethod: 'stripe' | 'paypal'
@@ -43,7 +43,18 @@ interface RegistrationData {
   agreedToPrivacy: boolean
 }
 
-const plans = {
+interface PlanConfig {
+  name: string
+  price: number
+  features: string[]
+  color: string
+  bgColor: string
+  popular: boolean
+  setupFee?: boolean
+  monthlyFee?: number
+}
+
+const plans: Record<RegistrationData['plan'], PlanConfig> = {
   'saas-multi': {
     name: 'SaaS Multi-Tenant',
     price: 99990,
@@ -57,7 +68,8 @@ const plans = {
     price: 199990,
     features: ['Servidor dedicado', '3x más rendimiento', 'IP dedicada', 'SLA 99.9%'],
     color: 'border-gray-300',
-    bgColor: 'bg-white'
+    bgColor: 'bg-white',
+    popular: false
   },
   'on-premise': {
     name: 'On-Premise',
@@ -66,7 +78,8 @@ const plans = {
     setupFee: true,
     features: ['Instalación en tu servidor', '100% control de datos', 'Código fuente', 'Ingeniero dedicado'],
     color: 'border-purple-500',
-    bgColor: 'bg-purple-50'
+    bgColor: 'bg-purple-50',
+    popular: false
   }
 }
 
@@ -81,7 +94,7 @@ export default function RegistroPage() {
     address: '',
     city: '',
     subdomain: '',
-    plan: 'professional',
+    plan: 'saas-multi',
     paymentMethod: 'stripe',
     agreedToTerms: false,
     agreedToPrivacy: false

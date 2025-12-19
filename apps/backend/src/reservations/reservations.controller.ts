@@ -8,13 +8,13 @@ import {
   Body,
   Param,
   ParseIntPipe,
-} from "@nestjs/common";
-import { ReservationsService } from "./reservations.service";
-import { CreateReservationDto } from "./dto/create-reservation.dto";
-import { UpdateReservationDto } from "./dto/update-reservation.dto";
-import { ReservationStatus } from "../entities/reservation.entity";
+} from '@nestjs/common';
+import { ReservationsService } from './reservations.service';
+import { CreateReservationDto } from './dto/create-reservation.dto';
+import { UpdateReservationDto } from './dto/update-reservation.dto';
+import { ReservationStatus } from '../entities/reservation.entity';
 
-@Controller("reservations")
+@Controller('reservations')
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
@@ -28,29 +28,23 @@ export class ReservationsController {
     return await this.reservationsService.findAll();
   }
 
-  @Get(":id")
-  async findOne(@Param("id", ParseIntPipe) id: number) {
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.reservationsService.findOne(id);
   }
 
-  @Put(":id")
-  async update(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateReservationDto,
-  ) {
+  @Put(':id')
+  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateReservationDto) {
     return await this.reservationsService.update(id, dto);
   }
 
-  @Patch(":id/status")
-  async updateStatus(
-    @Param("id", ParseIntPipe) id: number,
-    @Body("status") status: string,
-  ) {
+  @Patch(':id/status')
+  async updateStatus(@Param('id', ParseIntPipe) id: number, @Body('status') status: string) {
     return await this.reservationsService.updateStatus(id, status as ReservationStatus);
   }
 
-  @Delete(":id")
-  async remove(@Param("id", ParseIntPipe) id: number) {
+  @Delete(':id')
+  async remove(@Param('id', ParseIntPipe) id: number) {
     return await this.reservationsService.remove(id);
   }
 }

@@ -64,7 +64,7 @@ export class ComplianceReportsService {
 
   constructor(
     @InjectRepository(AuditLog)
-    private readonly auditLogRepository: Repository<AuditLog>,
+    private readonly auditLogRepository: Repository<AuditLog>
   ) {
     this.initializeReportsDirectory();
   }
@@ -84,11 +84,10 @@ export class ComplianceReportsService {
   /**
    * Generate SOC 2 Type II Compliance Report
    */
-  async generateSOC2Report(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<ComplianceReport> {
-    this.logger.log(`Generating SOC 2 report for period ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  async generateSOC2Report(startDate: Date, endDate: Date): Promise<ComplianceReport> {
+    this.logger.log(
+      `Generating SOC 2 report for period ${startDate.toISOString()} to ${endDate.toISOString()}`
+    );
 
     const auditLogs = await this.auditLogRepository.find({
       where: {
@@ -155,11 +154,10 @@ export class ComplianceReportsService {
   /**
    * Generate ISO 27001 Compliance Report
    */
-  async generateISO27001Report(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<ComplianceReport> {
-    this.logger.log(`Generating ISO 27001 report for period ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  async generateISO27001Report(startDate: Date, endDate: Date): Promise<ComplianceReport> {
+    this.logger.log(
+      `Generating ISO 27001 report for period ${startDate.toISOString()} to ${endDate.toISOString()}`
+    );
 
     const auditLogs = await this.auditLogRepository.find({
       where: {
@@ -221,11 +219,10 @@ export class ComplianceReportsService {
   /**
    * Generate GDPR Compliance Report
    */
-  async generateGDPRReport(
-    startDate: Date,
-    endDate: Date,
-  ): Promise<ComplianceReport> {
-    this.logger.log(`Generating GDPR report for period ${startDate.toISOString()} to ${endDate.toISOString()}`);
+  async generateGDPRReport(startDate: Date, endDate: Date): Promise<ComplianceReport> {
+    this.logger.log(
+      `Generating GDPR report for period ${startDate.toISOString()} to ${endDate.toISOString()}`
+    );
 
     const auditLogs = await this.auditLogRepository.find({
       where: {
@@ -295,9 +292,9 @@ export class ComplianceReportsService {
   // ============================================================================
 
   private async assessAccessControls(logs: AuditLog[]): Promise<ComplianceControl> {
-    const authEvents = logs.filter(log => log.action === 'LOGIN' || log.action === 'LOGOUT');
-    const failedLogins = logs.filter(log => log.action === 'LOGIN' && !log.success);
-    const unauthorized = logs.filter(log => log.responseStatus === 403);
+    const authEvents = logs.filter((log) => log.action === 'LOGIN' || log.action === 'LOGOUT');
+    const failedLogins = logs.filter((log) => log.action === 'LOGIN' && !log.success);
+    const unauthorized = logs.filter((log) => log.responseStatus === 403);
 
     const findings: string[] = [];
     const evidence: string[] = [];
@@ -325,15 +322,19 @@ export class ComplianceReportsService {
       status,
       evidence,
       findings,
-      recommendations: findings.length > 0
-        ? ['Implement stricter account lockout policies', 'Review and enhance access control rules']
-        : [],
+      recommendations:
+        findings.length > 0
+          ? [
+              'Implement stricter account lockout policies',
+              'Review and enhance access control rules',
+            ]
+          : [],
     };
   }
 
   private async assessSystemMonitoring(logs: AuditLog[]): Promise<ComplianceControl> {
-    const criticalEvents = logs.filter(log => log.severity === 'CRITICAL');
-    const highSeverity = logs.filter(log => log.severity === 'HIGH');
+    const criticalEvents = logs.filter((log) => log.severity === 'CRITICAL');
+    const highSeverity = logs.filter((log) => log.severity === 'HIGH');
 
     const evidence = [
       `Total audit logs: ${logs.length}`,
@@ -355,11 +356,10 @@ export class ComplianceReportsService {
   }
 
   private async assessConfigurationManagement(logs: AuditLog[]): Promise<ComplianceControl> {
-    const configChanges = logs.filter(log =>
-      log.action === 'UPDATE' && (
-        log.endpoint?.includes('/settings') ||
-        log.endpoint?.includes('/config')
-      )
+    const configChanges = logs.filter(
+      (log) =>
+        log.action === 'UPDATE' &&
+        (log.endpoint?.includes('/settings') || log.endpoint?.includes('/config'))
     );
 
     const evidence = [
@@ -371,7 +371,8 @@ export class ComplianceReportsService {
     return {
       id: 'CC6.3',
       name: 'Configuration Management',
-      description: 'The entity authorizes, designs, develops, implements, operates, approves, maintains, and monitors configuration management',
+      description:
+        'The entity authorizes, designs, develops, implements, operates, approves, maintains, and monitors configuration management',
       status: ComplianceStatus.COMPLIANT,
       evidence,
       findings: [],
@@ -402,7 +403,7 @@ export class ComplianceReportsService {
   }
 
   private async assessSystemSecurity(logs: AuditLog[]): Promise<ComplianceControl> {
-    const securityEvents = logs.filter(log => log.isSuspicious);
+    const securityEvents = logs.filter((log) => log.isSuspicious);
 
     const evidence = [
       `Security events detected: ${securityEvents.length}`,
@@ -423,8 +424,8 @@ export class ComplianceReportsService {
   }
 
   private async assessAuthentication(logs: AuditLog[]): Promise<ComplianceControl> {
-    const loginEvents = logs.filter(log => log.action === 'LOGIN');
-    const successfulLogins = loginEvents.filter(log => log.success);
+    const loginEvents = logs.filter((log) => log.action === 'LOGIN');
+    const successfulLogins = loginEvents.filter((log) => log.success);
 
     const evidence = [
       `Total login attempts: ${loginEvents.length}`,
@@ -488,8 +489,8 @@ export class ComplianceReportsService {
   }
 
   private async assessUserAccessManagement(logs: AuditLog[]): Promise<ComplianceControl> {
-    const userCreations = logs.filter(log =>
-      log.action === 'CREATE' && log.endpoint?.includes('/users')
+    const userCreations = logs.filter(
+      (log) => log.action === 'CREATE' && log.endpoint?.includes('/users')
     );
 
     const evidence = [
@@ -549,7 +550,7 @@ export class ComplianceReportsService {
   }
 
   private async assessVulnerabilityManagement(logs: AuditLog[]): Promise<ComplianceControl> {
-    const securityEvents = logs.filter(log => log.isSuspicious);
+    const securityEvents = logs.filter((log) => log.isSuspicious);
 
     const evidence = [
       'Security scanning performed',
@@ -561,7 +562,8 @@ export class ComplianceReportsService {
     return {
       id: 'A.12.6',
       name: 'Technical Vulnerability Management',
-      description: 'Information about technical vulnerabilities shall be obtained in a timely fashion',
+      description:
+        'Information about technical vulnerabilities shall be obtained in a timely fashion',
       status: ComplianceStatus.COMPLIANT,
       evidence,
       findings: [],
@@ -580,7 +582,8 @@ export class ComplianceReportsService {
     return {
       id: 'A.18.1',
       name: 'Compliance with Legal Requirements',
-      description: 'All relevant legislative, statutory, regulatory, and contractual requirements shall be identified',
+      description:
+        'All relevant legislative, statutory, regulatory, and contractual requirements shall be identified',
       status: ComplianceStatus.COMPLIANT,
       evidence,
       findings: [],
@@ -630,8 +633,8 @@ export class ComplianceReportsService {
   }
 
   private async assessRightOfAccess(logs: AuditLog[]): Promise<ComplianceControl> {
-    const dataAccessRequests = logs.filter(log =>
-      log.action === 'READ' && log.endpoint?.includes('/profile')
+    const dataAccessRequests = logs.filter(
+      (log) => log.action === 'READ' && log.endpoint?.includes('/profile')
     );
 
     const evidence = [
@@ -643,7 +646,8 @@ export class ComplianceReportsService {
     return {
       id: 'GDPR-Art15',
       name: 'Right of Access',
-      description: 'Data subjects have the right to obtain confirmation of personal data processing',
+      description:
+        'Data subjects have the right to obtain confirmation of personal data processing',
       status: ComplianceStatus.COMPLIANT,
       evidence,
       findings: [],
@@ -652,11 +656,10 @@ export class ComplianceReportsService {
   }
 
   private async assessRightToErasure(logs: AuditLog[]): Promise<ComplianceControl> {
-    const deletionRequests = logs.filter(log =>
-      log.action === 'DELETE' && (
-        log.endpoint?.includes('/users') ||
-        log.endpoint?.includes('/customers')
-      )
+    const deletionRequests = logs.filter(
+      (log) =>
+        log.action === 'DELETE' &&
+        (log.endpoint?.includes('/users') || log.endpoint?.includes('/customers'))
     );
 
     const evidence = [
@@ -687,7 +690,8 @@ export class ComplianceReportsService {
     return {
       id: 'GDPR-Art25',
       name: 'Data Protection by Design',
-      description: 'The controller shall implement appropriate technical and organisational measures',
+      description:
+        'The controller shall implement appropriate technical and organisational measures',
       status: ComplianceStatus.COMPLIANT,
       evidence,
       findings: [],
@@ -734,7 +738,7 @@ export class ComplianceReportsService {
   }
 
   private async assessBreachNotification(logs: AuditLog[]): Promise<ComplianceControl> {
-    const securityIncidents = logs.filter(log => log.severity === 'CRITICAL');
+    const securityIncidents = logs.filter((log) => log.severity === 'CRITICAL');
 
     const evidence = [
       'Breach detection mechanisms in place',
@@ -746,7 +750,8 @@ export class ComplianceReportsService {
     return {
       id: 'GDPR-Art33',
       name: 'Breach Notification',
-      description: 'Personal data breach shall be notified to supervisory authority within 72 hours',
+      description:
+        'Personal data breach shall be notified to supervisory authority within 72 hours',
       status: ComplianceStatus.COMPLIANT,
       evidence,
       findings: [],
@@ -761,10 +766,10 @@ export class ComplianceReportsService {
   private calculateSummary(controls: ComplianceControl[]) {
     return {
       totalControls: controls.length,
-      compliant: controls.filter(c => c.status === ComplianceStatus.COMPLIANT).length,
-      nonCompliant: controls.filter(c => c.status === ComplianceStatus.NON_COMPLIANT).length,
-      partial: controls.filter(c => c.status === ComplianceStatus.PARTIAL).length,
-      notAssessed: controls.filter(c => c.status === ComplianceStatus.NOT_ASSESSED).length,
+      compliant: controls.filter((c) => c.status === ComplianceStatus.COMPLIANT).length,
+      nonCompliant: controls.filter((c) => c.status === ComplianceStatus.NON_COMPLIANT).length,
+      partial: controls.filter((c) => c.status === ComplianceStatus.PARTIAL).length,
+      notAssessed: controls.filter((c) => c.status === ComplianceStatus.NOT_ASSESSED).length,
     };
   }
 
@@ -772,7 +777,7 @@ export class ComplianceReportsService {
     const { totalControls, compliant, partial } = summary;
     if (totalControls === 0) return 0;
 
-    const score = ((compliant * 100) + (partial * 50)) / totalControls;
+    const score = (compliant * 100 + partial * 50) / totalControls;
     return Math.round(score * 100) / 100;
   }
 
@@ -785,8 +790,8 @@ export class ComplianceReportsService {
   private generateRecommendations(controls: ComplianceControl[]): string[] {
     const recommendations = new Set<string>();
 
-    controls.forEach(control => {
-      control.recommendations.forEach(rec => recommendations.add(rec));
+    controls.forEach((control) => {
+      control.recommendations.forEach((rec) => recommendations.add(rec));
     });
 
     return Array.from(recommendations);
@@ -808,11 +813,13 @@ export class ComplianceReportsService {
   /**
    * Get all compliance reports
    */
-  async getAllReports(): Promise<{
-    filename: string;
-    standard: ComplianceStandard;
-    generatedAt: Date;
-  }[]> {
+  async getAllReports(): Promise<
+    {
+      filename: string;
+      standard: ComplianceStandard;
+      generatedAt: Date;
+    }[]
+  > {
     try {
       const files = await fs.readdir(this.reportsPath);
       const reports: Array<{
@@ -861,10 +868,14 @@ export class ComplianceReportsService {
   generateHTMLReport(report: ComplianceReport): string {
     const statusColor = (status: ComplianceStatus) => {
       switch (status) {
-        case ComplianceStatus.COMPLIANT: return '#22c55e';
-        case ComplianceStatus.PARTIAL: return '#eab308';
-        case ComplianceStatus.NON_COMPLIANT: return '#ef4444';
-        default: return '#6b7280';
+        case ComplianceStatus.COMPLIANT:
+          return '#22c55e';
+        case ComplianceStatus.PARTIAL:
+          return '#eab308';
+        case ComplianceStatus.NON_COMPLIANT:
+          return '#ef4444';
+        default:
+          return '#6b7280';
       }
     };
 
@@ -920,7 +931,9 @@ export class ComplianceReportsService {
   </div>
 
   <h2 style="margin: 30px 0 20px 0; color: #111827;">Controls Assessment</h2>
-  ${report.controls.map(control => `
+  ${report.controls
+    .map(
+      (control) => `
     <div class="control">
       <div class="control-header">
         <div>
@@ -933,23 +946,33 @@ export class ComplianceReportsService {
       </div>
       <div class="evidence">
         <strong>Evidence:</strong>
-        ${control.evidence.map(e => `<div class="evidence-item">✓ ${e}</div>`).join('')}
+        ${control.evidence.map((e) => `<div class="evidence-item">✓ ${e}</div>`).join('')}
       </div>
-      ${control.findings.length > 0 ? `
+      ${
+        control.findings.length > 0
+          ? `
         <div style="background: #fef2f2; padding: 15px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #ef4444;">
           <strong>Findings:</strong>
-          ${control.findings.map(f => `<div style="color: #991b1b; margin-top: 5px;">• ${f}</div>`).join('')}
+          ${control.findings.map((f) => `<div style="color: #991b1b; margin-top: 5px;">• ${f}</div>`).join('')}
         </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
-  `).join('')}
+  `
+    )
+    .join('')}
 
-  ${report.recommendations.length > 0 ? `
+  ${
+    report.recommendations.length > 0
+      ? `
     <h2 style="margin: 30px 0 20px 0; color: #111827;">Recommendations</h2>
     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-      ${report.recommendations.map(rec => `<div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">• ${rec}</div>`).join('')}
+      ${report.recommendations.map((rec) => `<div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">• ${rec}</div>`).join('')}
     </div>
-  ` : ''}
+  `
+      : ''
+  }
 </body>
 </html>
     `.trim();

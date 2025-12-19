@@ -1,4 +1,4 @@
-import { SetMetadata } from "@nestjs/common";
+import { SetMetadata } from '@nestjs/common';
 
 export interface RateLimitOptions {
   windowMs: number; // Time window in milliseconds
@@ -8,8 +8,7 @@ export interface RateLimitOptions {
   skipFailedRequests?: boolean;
 }
 
-export const RateLimit = (options: RateLimitOptions) =>
-  SetMetadata("rateLimit", options);
+export const RateLimit = (options: RateLimitOptions) => SetMetadata('rateLimit', options);
 
 // Common rate limit presets for enterprise use
 export const RateLimitPresets = {

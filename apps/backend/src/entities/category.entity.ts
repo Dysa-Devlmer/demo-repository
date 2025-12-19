@@ -5,16 +5,16 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
-import { MenuItem } from "./menu-item.entity";
+} from 'typeorm';
+import { MenuItem } from './menu-item.entity';
 
 export enum PreparationArea {
-  KITCHEN = "kitchen",
-  BAR = "bar",
-  BOTH = "both",
+  KITCHEN = 'kitchen',
+  BAR = 'bar',
+  BOTH = 'both',
 }
 
-@Entity("categories")
+@Entity('categories')
 export class Category {
   @PrimaryGeneratedColumn()
   id: number;
@@ -25,14 +25,14 @@ export class Category {
   @Column({ length: 100, unique: true })
   slug: string; // Para URL amigable: "platos-principales"
 
-  @Column({ type: "text", nullable: true })
+  @Column({ type: 'text', nullable: true })
   description?: string;
 
   @Column({ nullable: true })
   icon?: string; // Nombre del icono (ej: "utensils", "coffee", "cake")
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: PreparationArea,
     default: PreparationArea.KITCHEN,
   })

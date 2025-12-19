@@ -5,28 +5,28 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-} from "typeorm";
+} from 'typeorm';
 
 export enum SettingStatus {
-  ACTIVE = "active",
-  DRAFT = "draft",
-  ARCHIVED = "archived",
+  ACTIVE = 'active',
+  DRAFT = 'draft',
+  ARCHIVED = 'archived',
 }
 
 export enum SettingCategory {
-  RESTAURANT = "restaurant",
-  WHATSAPP = "whatsapp",
-  TWILIO = "twilio",
-  OLLAMA = "ollama",
-  DATABASE = "database",
-  GENERAL = "general",
-  SECURITY = "security",
-  NOTIFICATIONS = "notifications",
+  RESTAURANT = 'restaurant',
+  WHATSAPP = 'whatsapp',
+  TWILIO = 'twilio',
+  OLLAMA = 'ollama',
+  DATABASE = 'database',
+  GENERAL = 'general',
+  SECURITY = 'security',
+  NOTIFICATIONS = 'notifications',
 }
 
-@Entity("settings")
-@Index(["category", "key"])
-@Index(["status"])
+@Entity('settings')
+@Index(['category', 'key'])
+@Index(['status'])
 export class Setting {
   @PrimaryGeneratedColumn()
   id: number;
@@ -35,11 +35,11 @@ export class Setting {
   @Index()
   key: string;
 
-  @Column({ type: "text" })
+  @Column({ type: 'text' })
   value: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: SettingCategory,
     default: SettingCategory.GENERAL,
   })
@@ -49,7 +49,7 @@ export class Setting {
   description?: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: SettingStatus,
     default: SettingStatus.ACTIVE,
   })
@@ -61,20 +61,20 @@ export class Setting {
   @Column({ default: false })
   is_required: boolean;
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   validation_rules?: {
-    type?: "string" | "number" | "email" | "url" | "phone";
+    type?: 'string' | 'number' | 'email' | 'url' | 'phone';
     min?: number;
     max?: number;
     pattern?: string;
     options?: string[]; // Para valores predefinidos
   };
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata?: {
     changed_by?: string;
     previous_value?: string;
-    environment?: "development" | "production";
+    environment?: 'development' | 'production';
     restart_required?: boolean;
   };
 

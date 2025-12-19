@@ -26,7 +26,7 @@ export class MercadoPagoService {
     private paymentRepository: Repository<Payment>,
     @InjectRepository(Subscription)
     private subscriptionRepository: Repository<Subscription>,
-    private emailService: EmailService,
+    private emailService: EmailService
   ) {
     const accessToken = this.configService.get<string>('MERCADOPAGO_ACCESS_TOKEN');
 
@@ -39,7 +39,7 @@ export class MercadoPagoService {
       accessToken,
       options: {
         timeout: 5000,
-      }
+      },
     });
 
     this.paymentClient = new MPPayment(this.mercadoPago);
@@ -200,10 +200,12 @@ export class MercadoPagoService {
    * Maneja un pago aprobado
    */
   private async handleApprovedPayment(payment: any) {
-    this.logger.log(`✅ Pago aprobado: ${payment.id} - $${payment.transaction_amount} ${payment.currency_id}`);
+    this.logger.log(
+      `✅ Pago aprobado: ${payment.id} - $${payment.transaction_amount} ${payment.currency_id}`
+    );
 
     try {
-      const metadata = payment.metadata as any;
+      const metadata = payment.metadata;
       const email = metadata?.email || payment.payer?.email;
 
       if (!email) {
@@ -287,14 +289,16 @@ export class MercadoPagoService {
     try {
       // Verificar si el pago ya existe
       const existingPayment = await this.paymentRepository.findOne({
-        where: { external_payment_id: String(paymentData.id) }
+        where: { external_payment_id: String(paymentData.id) },
       });
 
       if (existingPayment) {
         // Actualizar pago existente
         existingPayment.status = this.mapPaymentStatus(paymentData.status);
         existingPayment.status_detail = paymentData.status_detail;
-        existingPayment.date_approved = paymentData.date_approved ? new Date(paymentData.date_approved) : null;
+        existingPayment.date_approved = paymentData.date_approved
+          ? new Date(paymentData.date_approved)
+          : null;
         existingPayment.webhook_data = paymentData;
         await this.paymentRepository.save(existingPayment);
         this.logger.log(`✅ Pago actualizado: ${existingPayment.id}`);
@@ -341,14 +345,14 @@ export class MercadoPagoService {
    */
   private mapPaymentStatus(mpStatus: string): PaymentStatus {
     const statusMap: Record<string, PaymentStatus> = {
-      'approved': PaymentStatus.APPROVED,
-      'pending': PaymentStatus.PENDING,
-      'in_process': PaymentStatus.IN_PROCESS,
-      'rejected': PaymentStatus.REJECTED,
-      'refunded': PaymentStatus.REFUNDED,
-      'cancelled': PaymentStatus.CANCELLED,
-      'in_mediation': PaymentStatus.IN_MEDIATION,
-      'charged_back': PaymentStatus.CHARGED_BACK,
+      approved: PaymentStatus.APPROVED,
+      pending: PaymentStatus.PENDING,
+      in_process: PaymentStatus.IN_PROCESS,
+      rejected: PaymentStatus.REJECTED,
+      refunded: PaymentStatus.REFUNDED,
+      cancelled: PaymentStatus.CANCELLED,
+      in_mediation: PaymentStatus.IN_MEDIATION,
+      charged_back: PaymentStatus.CHARGED_BACK,
     };
     return statusMap[mpStatus] || PaymentStatus.PENDING;
   }
@@ -368,7 +372,7 @@ export class MercadoPagoService {
   private async updateSubscription(userId: number, payment: Payment, metadata: any) {
     try {
       let subscription = await this.subscriptionRepository.findOne({
-        where: { user_id: userId }
+        where: { user_id: userId },
       });
 
       const now = new Date();
@@ -508,7 +512,7 @@ export class MercadoPagoService {
     this.logger.log(`❌ Pago rechazado: ${payment.id} - Razón: ${payment.status_detail}`);
 
     try {
-      const metadata = payment.metadata as any;
+      const metadata = payment.metadata;
       const email = metadata?.email || payment.payer?.email;
 
       if (!email) {
@@ -520,20 +524,20 @@ export class MercadoPagoService {
 
       // Traducir razón de rechazo al español
       const reasons: Record<string, string> = {
-        'cc_rejected_insufficient_amount': 'Fondos insuficientes en tu tarjeta',
-        'cc_rejected_bad_filled_security_code': 'Código de seguridad (CVV) incorrecto',
-        'cc_rejected_bad_filled_date': 'Fecha de vencimiento incorrecta',
-        'cc_rejected_bad_filled_other': 'Revisa los datos de tu tarjeta',
-        'cc_rejected_call_for_authorize': 'Debes autorizar el pago con tu banco',
-        'cc_rejected_card_disabled': 'Tu tarjeta está deshabilitada. Contacta a tu banco',
-        'cc_rejected_duplicated_payment': 'Ya realizaste un pago similar recientemente',
-        'cc_rejected_high_risk': 'Tu banco rechazó el pago por seguridad',
-        'cc_rejected_max_attempts': 'Superaste el número máximo de intentos',
-        'cc_rejected_other_reason': 'Tu banco rechazó el pago. Contacta a tu banco',
+        cc_rejected_insufficient_amount: 'Fondos insuficientes en tu tarjeta',
+        cc_rejected_bad_filled_security_code: 'Código de seguridad (CVV) incorrecto',
+        cc_rejected_bad_filled_date: 'Fecha de vencimiento incorrecta',
+        cc_rejected_bad_filled_other: 'Revisa los datos de tu tarjeta',
+        cc_rejected_call_for_authorize: 'Debes autorizar el pago con tu banco',
+        cc_rejected_card_disabled: 'Tu tarjeta está deshabilitada. Contacta a tu banco',
+        cc_rejected_duplicated_payment: 'Ya realizaste un pago similar recientemente',
+        cc_rejected_high_risk: 'Tu banco rechazó el pago por seguridad',
+        cc_rejected_max_attempts: 'Superaste el número máximo de intentos',
+        cc_rejected_other_reason: 'Tu banco rechazó el pago. Contacta a tu banco',
       };
 
-      const reason = reasons[payment.status_detail] ||
-                    `El pago fue rechazado. Motivo: ${payment.status_detail}`;
+      const reason =
+        reasons[payment.status_detail] || `El pago fue rechazado. Motivo: ${payment.status_detail}`;
 
       await this.emailService.sendPaymentFailed({
         firstName: payment.payer?.name || 'Usuario',
@@ -563,11 +567,7 @@ export class MercadoPagoService {
    * Verifica la firma del webhook de MercadoPago
    * @see https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
    */
-  verifyWebhookSignature(
-    xSignature: string,
-    xRequestId: string,
-    dataId: string,
-  ): boolean {
+  verifyWebhookSignature(xSignature: string, xRequestId: string, dataId: string): boolean {
     try {
       const webhookSecret = this.configService.get<string>('MERCADOPAGO_WEBHOOK_SECRET');
 
@@ -584,7 +584,7 @@ export class MercadoPagoService {
       // Parsear el header x-signature
       // Formato: ts=timestamp,v1=hash
       const signatureParts: Record<string, string> = {};
-      xSignature.split(',').forEach(part => {
+      xSignature.split(',').forEach((part) => {
         const [key, value] = part.split('=');
         if (key && value) {
           signatureParts[key.trim()] = value.trim();
@@ -610,10 +610,7 @@ export class MercadoPagoService {
         .digest('hex');
 
       // Comparar de forma segura
-      const isValid = crypto.timingSafeEqual(
-        Buffer.from(v1),
-        Buffer.from(expectedHash)
-      );
+      const isValid = crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expectedHash));
 
       if (!isValid) {
         this.logger.warn('⚠️ Firma de webhook inválida');

@@ -24,24 +24,21 @@ export const AppDataSource = new DataSource({
   password: process.env.DATABASE_PASSWORD || 'supersecret',
   database: process.env.DATABASE_NAME || 'chatbotdysa',
   namingStrategy: new SnakeNamingStrategy(),
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true, ca: process.env.DB_CA }
-    : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: true, ca: process.env.DB_CA }
+      : false,
   entities: [
     join(
       __dirname,
-      process.env.NODE_ENV === 'production'
-        ? '../dist/**/*.entity.js'
-        : '**/*.entity.{ts,js}'
-    )
+      process.env.NODE_ENV === 'production' ? '../dist/**/*.entity.js' : '**/*.entity.{ts,js}'
+    ),
   ],
   migrations: [
     join(
       __dirname,
-      process.env.NODE_ENV === 'production'
-        ? '../dist/migrations/*.js'
-        : 'migrations/*.{ts,js}'
-    )
+      process.env.NODE_ENV === 'production' ? '../dist/migrations/*.js' : 'migrations/*.{ts,js}'
+    ),
   ],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
@@ -49,8 +46,8 @@ export const AppDataSource = new DataSource({
     max: parseInt(process.env.DB_POOL_MAX || '50', 10),
     min: parseInt(process.env.DB_POOL_MIN || '5', 10),
     idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
-    connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '5000', 10)
-  }
+    connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '5000', 10),
+  },
 });
 
 // Enterprise Health Check Function
@@ -73,9 +70,9 @@ export async function checkDatabaseHealth(): Promise<{
         responseTime: `${responseTime}ms`,
         database: AppDataSource.options.database,
         host: (AppDataSource.options as any).host,
-        ssl: process.env.NODE_ENV === 'production' ? 'enabled' : 'disabled'
+        ssl: process.env.NODE_ENV === 'production' ? 'enabled' : 'disabled',
       },
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   } catch (error) {
     return {
@@ -83,9 +80,9 @@ export async function checkDatabaseHealth(): Promise<{
       details: {
         error: error instanceof Error ? error.message : 'Unknown error',
         database: AppDataSource.options.database,
-        host: (AppDataSource.options as any).host
+        host: (AppDataSource.options as any).host,
       },
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 }
@@ -109,7 +106,7 @@ export async function initializeDataSource(): Promise<void> {
         database: AppDataSource.options.database,
         ssl: process.env.NODE_ENV === 'production' ? 'enabled' : 'disabled',
         poolMax: AppDataSource.options.extra?.max,
-        poolMin: AppDataSource.options.extra?.min
+        poolMin: AppDataSource.options.extra?.min,
       });
     }
   } catch (error) {
@@ -120,7 +117,7 @@ export async function initializeDataSource(): Promise<void> {
       console.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 

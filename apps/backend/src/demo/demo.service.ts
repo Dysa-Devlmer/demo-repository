@@ -141,8 +141,9 @@ export class DemoService {
    */
   getActiveDemoSessions(): DemoSession[] {
     const now = new Date();
-    return Array.from(this.demoSessions.values())
-      .filter(session => session.isActive && session.endTime > now);
+    return Array.from(this.demoSessions.values()).filter(
+      (session) => session.isActive && session.endTime > now
+    );
   }
 
   /**
@@ -224,7 +225,7 @@ export class DemoService {
     }
 
     return Array.from(featureCounts.entries())
-      .sort(([,a], [,b]) => b - a)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([feature]) => feature);
   }

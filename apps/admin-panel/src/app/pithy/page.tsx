@@ -38,7 +38,8 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  type PieLabelRenderProps
 } from 'recharts';
 import { apiService } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -306,7 +307,11 @@ export default function PithyPage() {
                         outerRadius={80}
                         paddingAngle={5}
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }: PieLabelRenderProps) => {
+                          const percentValue =
+                            typeof percent === 'number' ? percent : Number(percent ?? 0);
+                          return `${name}: ${(percentValue * 100).toFixed(0)}%`;
+                        }}
                       >
                         {sentimentData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />

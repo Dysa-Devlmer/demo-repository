@@ -12,7 +12,7 @@ import {
   HttpStatus,
   HttpException,
   NotFoundException,
-  Logger
+  Logger,
 } from '@nestjs/common';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { ConversationsService } from './conversations.service';
@@ -37,7 +37,7 @@ export class ConversationsController {
     @Query('channel') channel?: string,
     @Query('customerId') customerId?: string,
     @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query('limit') limit?: string
   ) {
     return this.conversationsService.findAll({
       status: status as any,
@@ -54,15 +54,18 @@ export class ConversationsController {
   }
 
   @Post()
-  async create(@Body() createDto: {
-    customer_phone: string;
-    customer_name?: string;
-    platform?: string;
-    status?: string;
-  }) {
+  async create(
+    @Body()
+    createDto: {
+      customer_phone: string;
+      customer_name?: string;
+      platform?: string;
+      status?: string;
+    }
+  ) {
     // Buscar o crear cliente basándose en el teléfono
     let customer = await this.conversationsService['customersRepo'].findOne({
-      where: { phone: createDto.customer_phone }
+      where: { phone: createDto.customer_phone },
     });
 
     // Si no existe, crear un nuevo cliente
@@ -71,7 +74,7 @@ export class ConversationsController {
         name: createDto.customer_name || 'Cliente ' + createDto.customer_phone,
         phone: createDto.customer_phone,
         source: 'admin' as any,
-        is_active: true
+        is_active: true,
       });
       customer = await this.conversationsService['customersRepo'].save(newCustomer);
     }
@@ -82,26 +85,29 @@ export class ConversationsController {
 
     const conversation = await this.conversationsService.create({
       customerId: customer.id,
-      channel: (createDto.platform === 'whatsapp' ? ConversationChannel.WHATSAPP :
-                createDto.platform === 'phone' ? ConversationChannel.PHONE :
-                ConversationChannel.WEB_WIDGET) as ConversationChannel,
+      channel: (createDto.platform === 'whatsapp'
+        ? ConversationChannel.WHATSAPP
+        : createDto.platform === 'phone'
+          ? ConversationChannel.PHONE
+          : ConversationChannel.WEB_WIDGET) as ConversationChannel,
       subject: createDto.platform ? `${createDto.platform} conversation` : 'New conversation',
       metadata: {
         platform: createDto.platform || 'web',
-        created_from: 'admin_panel'
-      }
+        created_from: 'admin_panel',
+      },
     });
 
     return {
       success: true,
-      data: conversation
+      data: conversation,
     };
   }
 
   @Post(':id/messages')
   async addMessage(
     @Param('id', ParseIntPipe) id: number,
-    @Body() messageDto: {
+    @Body()
+    messageDto: {
       message: string;
       sender?: 'customer' | 'bot' | 'human' | 'agent';
     }
@@ -133,7 +139,10 @@ export class ConversationsController {
 
             this.logger.log(`📤 Enviando mensaje de agente a WhatsApp: ${formattedPhone}`);
 
-            const result = await this.whatsappService.sendTextMessage(formattedPhone, messageDto.message);
+            const result = await this.whatsappService.sendTextMessage(
+              formattedPhone,
+              messageDto.message
+            );
             whatsappSent = result.success;
 
             if (result.success) {
@@ -146,7 +155,9 @@ export class ConversationsController {
             // No fallar la operación, solo loguear
           }
         } else {
-          this.logger.debug(`Canal no es WhatsApp o no hay teléfono: channel=${conversation.channel}, phone=${customerPhone}`);
+          this.logger.debug(
+            `Canal no es WhatsApp o no hay teléfono: channel=${conversation.channel}, phone=${customerPhone}`
+          );
         }
       }
 
@@ -155,9 +166,14 @@ export class ConversationsController {
         // Preparar contexto para Ollama
         const previousMessages = conversation.messages
           .slice(-5) // Últimos 5 mensajes para contexto
-          .map(msg => ({
-            role: msg.role === 'bot' ? 'assistant' as const : msg.role === 'user' ? 'user' as const : 'user' as const,
-            content: msg.content
+          .map((msg) => ({
+            role:
+              msg.role === 'bot'
+                ? ('assistant' as const)
+                : msg.role === 'user'
+                  ? ('user' as const)
+                  : ('user' as const),
+            content: msg.content,
           }));
 
         // Generar respuesta con Ollama
@@ -171,8 +187,8 @@ export class ConversationsController {
               address: 'Santiago, Chile',
               phone: '+56 9 1234 5678',
               hours: 'Lunes a Domingo: 12:00 - 23:00',
-              specialties: ['Comida Chilena', 'Mariscos', 'Parrilladas']
-            }
+              specialties: ['Comida Chilena', 'Mariscos', 'Parrilladas'],
+            },
           }
         );
 
@@ -189,8 +205,8 @@ export class ConversationsController {
           message: savedMessage,
           ai_response: aiResponse?.content,
           whatsapp_sent: whatsappSent,
-          message_id: savedMessage?.id
-        }
+          message_id: savedMessage?.id,
+        },
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al procesar el mensaje';
@@ -198,7 +214,7 @@ export class ConversationsController {
       throw new HttpException(
         {
           success: false,
-          error: errorMessage
+          error: errorMessage,
         },
         HttpStatus.INTERNAL_SERVER_ERROR
       );
@@ -208,7 +224,8 @@ export class ConversationsController {
   @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateDto: {
+    @Body()
+    updateDto: {
       status?: string;
       agent_id?: string;
       mode?: 'auto' | 'manual' | 'hybrid';
@@ -219,14 +236,15 @@ export class ConversationsController {
       const updated = await this.conversationsService.update(id, updateDto);
       return {
         success: true,
-        data: updated
+        data: updated,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al actualizar la conversación';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al actualizar la conversación';
       throw new HttpException(
         {
           success: false,
-          error: errorMessage
+          error: errorMessage,
         },
         error instanceof NotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR
       );
@@ -239,14 +257,15 @@ export class ConversationsController {
       await this.conversationsService.delete(id);
       return {
         success: true,
-        message: 'Conversación eliminada exitosamente'
+        message: 'Conversación eliminada exitosamente',
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al eliminar la conversación';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error al eliminar la conversación';
       throw new HttpException(
         {
           success: false,
-          error: errorMessage
+          error: errorMessage,
         },
         error instanceof NotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR
       );

@@ -128,12 +128,19 @@ export class WebhookSecurityGuard implements CanActivate {
     // In production, use Redis or dedicated rate limiting service
     const userAgent = request.headers['user-agent'];
     const suspiciousPatterns = [
-      'bot', 'crawler', 'spider', 'scraper',
-      'python-requests', 'curl', 'wget'
+      'bot',
+      'crawler',
+      'spider',
+      'scraper',
+      'python-requests',
+      'curl',
+      'wget',
     ];
 
-    if (userAgent && suspiciousPatterns.some(pattern =>
-      userAgent.toLowerCase().includes(pattern))) {
+    if (
+      userAgent &&
+      suspiciousPatterns.some((pattern) => userAgent.toLowerCase().includes(pattern))
+    ) {
       this.logger.warn(`Suspicious user agent: ${userAgent}`);
       return false;
     }

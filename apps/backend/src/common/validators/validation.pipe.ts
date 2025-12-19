@@ -1,11 +1,6 @@
-import {
-  PipeTransform,
-  Injectable,
-  ArgumentMetadata,
-  BadRequestException,
-} from "@nestjs/common";
-import { validate } from "class-validator";
-import { plainToInstance } from "class-transformer";
+import { PipeTransform, Injectable, ArgumentMetadata, BadRequestException } from '@nestjs/common';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class ValidationPipe implements PipeTransform<any> {
@@ -26,7 +21,7 @@ export class ValidationPipe implements PipeTransform<any> {
       });
 
       throw new BadRequestException({
-        message: "Datos de entrada inválidos",
+        message: 'Datos de entrada inválidos',
         errors: errorMessages,
       });
     }

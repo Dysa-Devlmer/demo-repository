@@ -5,21 +5,21 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
-import { Reservation } from "./reservation.entity";
-import { Order } from "./order.entity";
-import { Conversation } from "./conversation.entity";
-import { Review } from "./review.entity";
-import { Notification } from "./notification.entity";
+} from 'typeorm';
+import { Reservation } from './reservation.entity';
+import { Order } from './order.entity';
+import { Conversation } from './conversation.entity';
+import { Review } from './review.entity';
+import { Notification } from './notification.entity';
 
 export enum CustomerSource {
-  WHATSAPP = "whatsapp",
-  WEB_WIDGET = "web_widget",
-  PHONE = "phone",
-  ADMIN = "admin",
+  WHATSAPP = 'whatsapp',
+  WEB_WIDGET = 'web_widget',
+  PHONE = 'phone',
+  ADMIN = 'admin',
 }
 
-@Entity("customers")
+@Entity('customers')
 export class Customer {
   @PrimaryGeneratedColumn()
   id: number;
@@ -37,7 +37,7 @@ export class Customer {
   whatsapp_phone?: string;
 
   @Column({
-    type: "enum",
+    type: 'enum',
     enum: CustomerSource,
     default: CustomerSource.WEB_WIDGET,
   })
@@ -46,15 +46,15 @@ export class Customer {
   @Column({ nullable: true })
   address?: string;
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   preferences?: {
     dietary_restrictions?: string[];
     favorite_dishes?: string[];
-    preferred_contact_method?: "whatsapp" | "email" | "phone";
+    preferred_contact_method?: 'whatsapp' | 'email' | 'phone';
     language?: string;
   };
 
-  @Column({ type: "jsonb", nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   metadata?: {
     first_visit?: Date;
     total_orders?: number;

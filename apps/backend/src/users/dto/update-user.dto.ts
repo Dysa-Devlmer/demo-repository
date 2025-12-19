@@ -25,7 +25,7 @@ export class UpdateUserDto {
   @ApiProperty({
     description: 'User status',
     enum: ['active', 'inactive'],
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsIn(['active', 'inactive'])
@@ -36,7 +36,7 @@ export class UpdateUserRolesDto {
   @ApiProperty({
     description: 'Array of role IDs to assign to the user',
     type: [Number],
-    example: [1, 2]
+    example: [1, 2],
   })
   @IsOptional()
   roleIds?: number[];

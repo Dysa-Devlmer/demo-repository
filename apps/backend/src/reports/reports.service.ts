@@ -1,12 +1,13 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Report, ReportType, ReportFormat, ReportSchedule, ReportStatus } from '../entities/report.entity';
+import {
+  Report,
+  ReportType,
+  ReportFormat,
+  ReportSchedule,
+  ReportStatus,
+} from '../entities/report.entity';
 import { CreateReportDto } from './dto/create-report.dto';
 import { UpdateReportDto } from './dto/update-report.dto';
 import { ReportResponseDto } from './dto/report-response.dto';
@@ -21,7 +22,7 @@ export class ReportsService {
     @InjectRepository(Report)
     private readonly reportsRepo: Repository<Report>,
     private readonly generatorService: ReportGeneratorService,
-    private readonly storageService: ReportStorageService,
+    private readonly storageService: ReportStorageService
   ) {}
 
   /**
@@ -49,7 +50,7 @@ export class ReportsService {
     const saved = await this.reportsRepo.save(report);
 
     this.logger.log(
-      `Report "${saved.name}" created by user ${userId} - Type: ${saved.type}, Format: ${saved.format}`,
+      `Report "${saved.name}" created by user ${userId} - Type: ${saved.type}, Format: ${saved.format}`
     );
 
     return this.toResponseDto(saved);
@@ -80,7 +81,7 @@ export class ReportsService {
     }
 
     const reports = await queryBuilder.getMany();
-    return reports.map(report => this.toResponseDto(report));
+    return reports.map((report) => this.toResponseDto(report));
   }
 
   /**
@@ -179,7 +180,7 @@ export class ReportsService {
       const storedFile = await this.storageService.storeReport(
         report.id,
         report.format,
-        fileBuffer,
+        fileBuffer
       );
 
       // 3. Update report with generation info
@@ -189,7 +190,7 @@ export class ReportsService {
       await this.reportsRepo.save(report);
 
       this.logger.log(
-        `Report ${id} "${report.name}" generated successfully - Format: ${report.format}, Size: ${storedFile.size} bytes, URL: ${storedFile.url}`,
+        `Report ${id} "${report.name}" generated successfully - Format: ${report.format}, Size: ${storedFile.size} bytes, URL: ${storedFile.url}`
       );
 
       return {
@@ -197,13 +198,8 @@ export class ReportsService {
         generatedAt,
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to generate report ${id} "${report.name}"`,
-        error,
-      );
-      throw new BadRequestException(
-        `Failed to generate report: ${error.message}`,
-      );
+      this.logger.error(`Failed to generate report ${id} "${report.name}"`, error);
+      throw new BadRequestException(`Failed to generate report: ${error.message}`);
     }
   }
 
@@ -216,7 +212,7 @@ export class ReportsService {
       order: { updatedAt: 'DESC' },
     });
 
-    return reports.map(report => this.toResponseDto(report));
+    return reports.map((report) => this.toResponseDto(report));
   }
 
   /**
@@ -230,7 +226,7 @@ export class ReportsService {
       .orderBy('report.schedule', 'ASC')
       .getMany();
 
-    return reports.map(report => this.toResponseDto(report));
+    return reports.map((report) => this.toResponseDto(report));
   }
 
   /**
@@ -271,7 +267,7 @@ export class ReportsService {
 
     let scheduled = 0;
 
-    allReports.forEach(report => {
+    allReports.forEach((report) => {
       byType[report.type]++;
       byFormat[report.format]++;
       if (report.schedule !== ReportSchedule.MANUAL) {

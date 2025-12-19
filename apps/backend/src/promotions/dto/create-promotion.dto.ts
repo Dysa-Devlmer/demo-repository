@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsDateString,
-  IsBoolean,
-} from "class-validator";
+import { IsString, IsOptional, IsNumber, IsDateString, IsBoolean } from 'class-validator';
 
 export class CreatePromotionDto {
   @IsString()
