@@ -45,8 +45,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Backend lint
-        run: npm run -w apps/backend lint
+      - name: Backend lint (check only)
+        run: npm run -w apps/backend lint:check
 
       - name: Backend tests
         env:
