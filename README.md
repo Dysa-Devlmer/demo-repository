@@ -60,6 +60,39 @@ docker-compose up -d
 
 ---
 
+## Desarrollo local (Docker)
+
+Comando recomendado (reset + up + health con retry):
+
+```bash
+./scripts/operations/dev-reset.sh
+```
+
+Health-check manual:
+
+```bash
+./scripts/operations/health.sh
+```
+
+Website (compose separado):
+
+```bash
+docker compose -f infrastructure/docker-compose.web.yml up -d --build
+```
+
+URLs:
+
+* Backend: [http://127.0.0.1:8005/health](http://127.0.0.1:8005/health)
+* Docs API: [http://127.0.0.1:8005/docs](http://127.0.0.1:8005/docs)
+* Admin: [http://127.0.0.1:7001/api/health](http://127.0.0.1:7001/api/health)
+* Website: [http://127.0.0.1:3004](http://127.0.0.1:3004)
+
+Documentacion detallada:
+
+* `docs/es/instalacion/COMANDOS_DESARROLLO.md`
+
+---
+
 ## 🌐 URLs de Acceso
 
 | Servicio | URL | Descripción |
