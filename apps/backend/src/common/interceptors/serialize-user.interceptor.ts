@@ -35,7 +35,7 @@ export class SerializeUserInterceptor implements NestInterceptor {
   }
 
   private transformUser(user: User): any {
-    const transformed = { ...user };
+    const transformed: Record<string, unknown> = { ...user };
 
     // Remove sensitive fields before returning user data
     delete transformed.password;

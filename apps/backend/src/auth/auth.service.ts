@@ -434,7 +434,7 @@ export class AuthService {
         resource,
         resourceId: resourceId?.toString(),
         userId,
-        ipAddress: metadata?.ipAddress,
+        ip: metadata?.ipAddress ?? metadata?.ip,
         userAgent: metadata?.userAgent,
         metadata,
         severity: this.getAuditSeverity(action),
