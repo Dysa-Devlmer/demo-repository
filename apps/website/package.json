@@ -4,7 +4,7 @@
   "private": true,
   "description": "ChatBotDysa Enterprise+++++ - Landing Page & Registration Portal",
   "scripts": {
-    "dev": "next dev -p 6001",
+    "dev": "next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start -p 6001",
     "lint": "next lint",

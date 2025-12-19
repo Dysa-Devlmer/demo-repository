@@ -70,7 +70,7 @@ EXPOSE 7001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD wget --quiet --tries=1 --spider http://localhost:7001/api/health || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1:7001/api/health || exit 1
 
 # Start application
 CMD ["node", "server.js"]
