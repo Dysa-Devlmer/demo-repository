@@ -6,15 +6,13 @@
 # Windows/macOS/Linux
 # ============================================
 
-version: '3.8'
-
 services:
   # ============================================
   # Backend API (NestJS)
   # ============================================
   backend:
     build:
-      context: ./apps/backend
+      context: ../apps/backend
       dockerfile: Dockerfile
     image: chatbotdysa/backend:latest
     container_name: chatbotdysa-backend
@@ -33,7 +31,7 @@ services:
       - REDIS_PORT=6379
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=phi3:mini
-      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_me_please_32_chars}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY}
       - SENDGRID_FROM_EMAIL=${SENDGRID_FROM_EMAIL:-noreply@zgamersa.com}
       - MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN}
@@ -61,7 +59,7 @@ services:
   # ============================================
   admin-panel:
     build:
-      context: ./apps/admin-panel
+      context: ../apps/admin-panel
       dockerfile: Dockerfile
     image: chatbotdysa/admin-panel:latest
     container_name: chatbotdysa-admin
@@ -78,27 +76,6 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    networks:
-      - chatbotdysa-network
-
-  # ============================================
-  # Landing Page (Next.js)
-  # ============================================
-  landing:
-    build:
-      context: ./apps/landing-page
-      dockerfile: Dockerfile
-    image: chatbotdysa/landing:latest
-    container_name: chatbotdysa-landing
-    restart: unless-stopped
-    ports:
-      - "3004:3004"
-    environment:
-      - NODE_ENV=production
-      - HOSTNAME=0.0.0.0
-      - NEXT_PUBLIC_API_URL=http://localhost:8005
-      - NEXT_PUBLIC_LANDING_URL=http://localhost:3004
-      - NEXT_PUBLIC_CONTACT_EMAIL=${CONTACT_EMAIL:-contacto@zgamersa.com}
     networks:
       - chatbotdysa-network
 
