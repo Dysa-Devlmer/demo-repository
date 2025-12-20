@@ -35,4 +35,13 @@ export class AlertInboxEntity {
   @Index()
   @Column({ type: 'text' })
   fingerprint!: string;
+
+  @Column({ type: 'timestamptz', name: 'acknowledged_at', nullable: true })
+  acknowledgedAt!: Date | null;
+
+  @Column({ type: 'text', name: 'acknowledged_by', nullable: true })
+  acknowledgedBy!: string | null;
+
+  @Column({ type: 'text', name: 'ack_note', nullable: true })
+  ackNote!: string | null;
 }

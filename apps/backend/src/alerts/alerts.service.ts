@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createHash } from 'crypto';
@@ -90,5 +90,26 @@ export class AlertsService {
       pages: Math.ceil(total / limit),
       items,
     };
+  }
+
+  async getById(id: string) {
+    const item = await this.repo.findOne({ where: { id } });
+    if (!item) {
+      throw new NotFoundException('Alert not found');
+    }
+    return item;
+  }
+
+  async ack(id: string, opts: { by: string; note?: string }) {
+    const item = await this.getById(id);
+    if (item.acknowledgedAt) {
+      return item;
+    }
+
+    item.acknowledgedAt = new Date();
+    item.acknowledgedBy = opts.by;
+    item.ackNote = opts.note ?? null;
+
+    return this.repo.save(item);
   }
 }

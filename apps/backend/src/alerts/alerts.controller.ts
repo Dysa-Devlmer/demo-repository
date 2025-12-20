@@ -6,6 +6,7 @@ import {
   Headers,
   Ip,
   Logger,
+  Param,
   Post,
   Query,
   Req,
@@ -76,5 +77,19 @@ export class AlertsController {
     });
 
     return { ok: true, ...result };
+  }
+
+  @Get(':id')
+  async getAlert(@Param('id') id: string) {
+    const item = await this.alertsService.getById(id);
+    return { ok: true, item };
+  }
+
+  @Post(':id/ack')
+  async acknowledgeAlert(@Param('id') id: string, @Body() body: { note?: string }, @Req() req: Request) {
+    const user = (req as any).user;
+    const by = user?.email || user?.id || 'system';
+    const item = await this.alertsService.ack(id, { by, note: body?.note });
+    return { ok: true, item };
   }
 }
