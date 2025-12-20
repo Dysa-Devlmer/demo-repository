@@ -6,6 +6,8 @@ export class MetricsService implements OnModuleInit {
   private readonly registry = new client.Registry();
   private httpRequests!: client.Counter<string>;
   private httpRequestDurationSeconds!: client.Histogram<string>;
+  private dbUp!: client.Gauge<string>;
+  private redisUp!: client.Gauge<string>;
 
   onModuleInit() {
     client.collectDefaultMetrics({ register: this.registry });
@@ -24,6 +26,21 @@ export class MetricsService implements OnModuleInit {
       buckets: [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5],
       registers: [this.registry],
     });
+
+    this.dbUp = new client.Gauge({
+      name: 'db_up',
+      help: 'Database connectivity (1=up, 0=down)',
+      registers: [this.registry],
+    });
+
+    this.redisUp = new client.Gauge({
+      name: 'redis_up',
+      help: 'Redis connectivity (1=up, 0=down)',
+      registers: [this.registry],
+    });
+
+    this.dbUp.set(0);
+    this.redisUp.set(0);
   }
 
   httpRequestsTotal() {
@@ -32,6 +49,14 @@ export class MetricsService implements OnModuleInit {
 
   httpRequestDuration() {
     return this.httpRequestDurationSeconds;
+  }
+
+  setDbUp(value: number) {
+    this.dbUp.set(value);
+  }
+
+  setRedisUp(value: number) {
+    this.redisUp.set(value);
   }
 
   async metrics(): Promise<string> {
