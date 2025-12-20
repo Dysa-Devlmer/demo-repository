@@ -24,10 +24,15 @@ export class AuditMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
     const startTime = Date.now();
-    const requestId = this.generateRequestId();
+    const incoming = req.get('x-request-id');
+    const requestId =
+      (req as any).requestId ||
+      (incoming && incoming.trim() ? incoming.trim() : undefined) ||
+      this.generateRequestId();
 
     // Add request ID to headers for tracing
     req['requestId'] = requestId;
+    (req as any).id = requestId;
     res.setHeader('X-Request-ID', requestId);
 
     // Capture response data

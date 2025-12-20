@@ -13,10 +13,20 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = ctx.getResponse<Response>();
     const { method, url, ip, headers } = request;
     const userAgent = headers['user-agent'] || 'Unknown';
+    const requestId = (request as any).requestId;
     const startTime = Date.now();
 
     // Log the incoming request
-    this.logger.log(`➤ ${method} ${url} - IP: ${ip} - User-Agent: ${userAgent}`);
+    this.logger.log(
+      JSON.stringify({
+        msg: 'http_request',
+        requestId,
+        method,
+        path: url,
+        ip,
+        userAgent,
+      })
+    );
 
     return next.handle().pipe(
       tap({
@@ -25,14 +35,29 @@ export class LoggingInterceptor implements NestInterceptor {
           const contentLength = response.get('content-length') || 0;
 
           this.logger.log(
-            `✓ ${method} ${url} - Status: ${response.statusCode} - Duration: ${duration}ms - Size: ${contentLength}b`
+            JSON.stringify({
+              msg: 'http_response',
+              requestId,
+              method,
+              path: url,
+              statusCode: response.statusCode,
+              durationMs: duration,
+              sizeBytes: Number(contentLength),
+            })
           );
         },
         error: (error) => {
           const duration = Date.now() - startTime;
 
           this.logger.error(
-            `✗ ${method} ${url} - Error: ${error.message} - Duration: ${duration}ms`,
+            JSON.stringify({
+              msg: 'http_error',
+              requestId,
+              method,
+              path: url,
+              error: error.message,
+              durationMs: duration,
+            }),
             error.stack
           );
         },

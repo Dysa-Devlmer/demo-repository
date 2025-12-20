@@ -7,6 +7,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { CorsMiddleware } from './common/middleware/cors.middleware';
 import { SecurityMiddleware } from './common/middleware/security.middleware';
+import { requestIdMiddleware } from './common/middleware/request-id.middleware';
 import { CsrfGuard } from './auth/guards/csrf.guard';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
@@ -29,6 +30,8 @@ async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       logger: ['error', 'warn', 'log', 'debug', 'verbose'],
     });
+
+    app.use(requestIdMiddleware);
 
     // 🚀 Servir archivos estáticos desde carpeta uploads
     app.useStaticAssets(join(process.cwd(), 'public', 'uploads'), {
