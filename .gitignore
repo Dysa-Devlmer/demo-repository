@@ -133,3 +133,10 @@ reports/
 testsprite_tests/tmp/
 tests/.auth/
 apps/backend/storage/compliance-reports/
+
+# Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
+**/*.zip
+**/*.trace
