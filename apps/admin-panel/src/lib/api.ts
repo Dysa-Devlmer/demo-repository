@@ -357,6 +357,10 @@ export const apiService = {
       const requestId = res?.headers?.['x-request-id'] || null;
       return { ...(data || {}), requestId };
     },
+    metaAlertnames: async (q: string, limit = 20) => {
+      const res = await api.get('/alerts/meta/alertnames', { params: { q, limit } });
+      return unwrap(res);
+    },
   },
   
   // Settings management

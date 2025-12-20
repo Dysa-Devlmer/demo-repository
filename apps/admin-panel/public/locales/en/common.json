@@ -23,7 +23,17 @@
     "severity": "Severity",
     "status": "Status",
     "instanceJob": "Instance / Job",
-    "filters": "Filters",
+    "filters": {
+      "title": "Filters",
+      "savedViews": "Saved views",
+      "saveView": "Save view",
+      "viewName": "View name",
+      "apply": "Apply view",
+      "delete": "Delete",
+      "alertname": "Alert name",
+      "status": "Status",
+      "severity": "Severity"
+    },
     "filterStatus": "Status",
     "filterSeverity": "Severity",
     "filterAlertname": "Alert name",
@@ -60,7 +70,8 @@
     "critical": "Critical",
     "warning": "Warning",
     "info": "Info",
-    "empty": "No alerts"
+    "empty": "No alerts",
+    "noResults": "No results"
   },
   "dashboard": {
     "title": "Dashboard",

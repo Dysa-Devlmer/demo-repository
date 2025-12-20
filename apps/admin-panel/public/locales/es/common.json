@@ -23,7 +23,17 @@
     "severity": "Severidad",
     "status": "Estado",
     "instanceJob": "Instancia / Job",
-    "filters": "Filtros",
+    "filters": {
+      "title": "Filtros",
+      "savedViews": "Vistas guardadas",
+      "saveView": "Guardar vista",
+      "viewName": "Nombre de la vista",
+      "apply": "Aplicar vista",
+      "delete": "Eliminar",
+      "alertname": "Nombre de alerta",
+      "status": "Estado",
+      "severity": "Severidad"
+    },
     "filterStatus": "Estado",
     "filterSeverity": "Severidad",
     "filterAlertname": "Nombre de alerta",
@@ -60,7 +70,8 @@
     "critical": "Crítica",
     "warning": "Advertencia",
     "info": "Info",
-    "empty": "No hay alertas"
+    "empty": "No hay alertas",
+    "noResults": "Sin resultados"
   },
   "dashboard": {
     "title": "Dashboard",

@@ -22,7 +22,17 @@
     "severity": "Sévérité",
     "status": "Statut",
     "instanceJob": "Instance / Job",
-    "filters": "Filtres",
+    "filters": {
+      "title": "Filtres",
+      "savedViews": "Vues enregistrées",
+      "saveView": "Enregistrer la vue",
+      "viewName": "Nom de la vue",
+      "apply": "Appliquer la vue",
+      "delete": "Supprimer",
+      "alertname": "Nom de l'alerte",
+      "status": "Statut",
+      "severity": "Sévérité"
+    },
     "filterStatus": "Statut",
     "filterSeverity": "Sévérité",
     "filterAlertname": "Nom de l'alerte",
@@ -59,7 +69,8 @@
     "critical": "Critique",
     "warning": "Avertissement",
     "info": "Info",
-    "empty": "Aucune alerte"
+    "empty": "Aucune alerte",
+    "noResults": "Aucun résultat"
   },
   "dashboard": {
     "title": "Tableau de Bord",
