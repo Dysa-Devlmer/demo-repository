@@ -1,4 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -62,6 +63,7 @@ import { CategoriesModule } from './categories/categories.module';
 // Quick Replies Module
 import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { HttpMetricsInterceptor } from './metrics/http-metrics.interceptor';
 
 @Module({
   imports: [
@@ -139,7 +141,14 @@ import { MetricsModule } from './metrics/metrics.module';
     MetricsModule,
   ],
   controllers: [AppController, HealthController, AnalyticsController],
-  providers: [AppService, AnalyticsService],
+  providers: [
+    AppService,
+    AnalyticsService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpMetricsInterceptor,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
