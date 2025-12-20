@@ -463,7 +463,7 @@ jobs:
 
       - name: 🏗️ Build and Push Enterprise Container
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./apps/backend
           platforms: linux/amd64,linux/arm64
