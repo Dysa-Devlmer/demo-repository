@@ -90,6 +90,7 @@ URLs:
 Documentacion detallada:
 
 * `docs/es/instalacion/COMANDOS_DESARROLLO.md`
+* Nota macOS (Playwright): `docs/es/guides/PLAYWRIGHT_MACOS.md`
 
 ---
 
