@@ -61,6 +61,7 @@ import { CategoriesModule } from './categories/categories.module';
 
 // Quick Replies Module
 import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -133,6 +134,9 @@ import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module
 
     // Uploads Module for Widget
     UploadsModule,
+
+    // Observability
+    MetricsModule,
   ],
   controllers: [AppController, HealthController, AnalyticsController],
   providers: [AppService, AnalyticsService],

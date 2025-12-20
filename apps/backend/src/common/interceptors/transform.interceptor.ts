@@ -18,6 +18,14 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
 
     return next.handle().pipe(
       map((data) => {
+        const requestUrl = request.originalUrl || request.url;
+        if (requestUrl === '/metrics' || requestUrl.startsWith('/metrics/')) {
+          return data;
+        }
+        if (requestUrl === '/api/metrics' || requestUrl.startsWith('/api/metrics/')) {
+          return data;
+        }
+
         // If the data is already in the correct format, return it as-is
         if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
           return data;
