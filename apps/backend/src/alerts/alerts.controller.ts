@@ -1,6 +1,18 @@
-import { Body, Controller, ForbiddenException, Headers, Ip, Logger, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  Ip,
+  Logger,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { AlertsService } from './alerts.service';
+import { ListAlertsDto } from './dto/list-alerts.dto';
 
 @Controller('alerts')
 export class AlertsController {
@@ -50,5 +62,19 @@ export class AlertsController {
     const result = await this.alertsService.saveAlertmanager(body);
 
     return { ok: true, ...result, requestId };
+  }
+
+  @Get()
+  async listAlerts(@Query() q: ListAlertsDto) {
+    const result = await this.alertsService.list({
+      page: q.page ?? 1,
+      limit: q.limit ?? 25,
+      status: q.status,
+      severity: q.severity,
+      alertname: q.alertname,
+      sort: q.sort ?? 'createdAt:desc',
+    });
+
+    return { ok: true, ...result };
   }
 }

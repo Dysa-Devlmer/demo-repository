@@ -58,4 +58,37 @@ export class AlertsService {
 
     return { received: alerts.length, saved: saved.length, ids: saved };
   }
+
+  async list(params: {
+    page: number;
+    limit: number;
+    status?: string;
+    severity?: string;
+    alertname?: string;
+    sort?: 'createdAt:desc' | 'createdAt:asc';
+  }) {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 25;
+
+    const qb = this.repo.createQueryBuilder('a');
+
+    if (params.status) qb.andWhere('a.status = :status', { status: params.status });
+    if (params.severity) qb.andWhere('a.severity = :severity', { severity: params.severity });
+    if (params.alertname) qb.andWhere('a.alertname = :alertname', { alertname: params.alertname });
+
+    const [field, dir] = (params.sort ?? 'createdAt:desc').split(':');
+    qb.orderBy(`a.${field}`, dir.toUpperCase() as 'ASC' | 'DESC');
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      page,
+      limit,
+      total,
+      pages: Math.ceil(total / limit),
+      items,
+    };
+  }
 }
