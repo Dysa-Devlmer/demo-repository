@@ -79,6 +79,12 @@ export class AlertsController {
     return { ok: true, ...result };
   }
 
+  @Get('meta/alertnames')
+  async metaAlertnames(@Query('q') q?: string, @Query('limit') limit?: string) {
+    const items = await this.alertsService.listAlertnames(q, limit ? Number(limit) : 20);
+    return { ok: true, q: q ?? '', items };
+  }
+
   @Get(':id')
   async getAlert(@Param('id') id: string) {
     const item = await this.alertsService.getById(id);

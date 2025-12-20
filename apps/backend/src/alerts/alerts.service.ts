@@ -112,4 +112,22 @@ export class AlertsService {
 
     return this.repo.save(item);
   }
+
+  async listAlertnames(q?: string, limit: number = 20) {
+    const take = Math.max(1, Math.min(limit, 50));
+    const qb = this.repo
+      .createQueryBuilder('a')
+      .select('a.alertname', 'alertname')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('a.alertname')
+      .orderBy('COUNT(*)', 'DESC')
+      .limit(take);
+
+    if (q && q.trim()) {
+      qb.where('a.alertname ILIKE :q', { q: `%${q.trim()}%` });
+    }
+
+    const rows = await qb.getRawMany<{ alertname: string; count: string }>();
+    return rows.map((row) => ({ alertname: row.alertname, count: Number(row.count) }));
+  }
 }
