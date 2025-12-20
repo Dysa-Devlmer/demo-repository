@@ -22,6 +22,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8005
+      - ALERT_WEBHOOK_TOKEN=${ALERT_WEBHOOK_TOKEN:-}
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres

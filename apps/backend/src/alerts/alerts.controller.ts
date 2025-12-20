@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Ip, Logger, Post, Req } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Headers, Ip, Logger, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
 
 @Controller('alerts')
@@ -12,6 +12,17 @@ export class AlertsController {
     @Ip() ip: string,
     @Req() req: Request
   ) {
+    const expected = process.env.ALERT_WEBHOOK_TOKEN;
+    if (expected && expected.trim().length > 0) {
+      const provided = (req.header('x-alert-webhook-token') || req.header('authorization') || '')
+        .trim();
+      const token = provided.startsWith('Bearer ') ? provided.slice(7).trim() : provided;
+
+      if (!token || token !== expected) {
+        throw new ForbiddenException('Invalid alert webhook token');
+      }
+    }
+
     const requestId = (req as any).requestId || (req as any).id;
     const alerts = Array.isArray(body?.alerts) ? body.alerts : [];
     const summary = alerts.map((a: any) => ({

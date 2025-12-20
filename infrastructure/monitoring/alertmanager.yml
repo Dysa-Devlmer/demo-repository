@@ -122,6 +122,10 @@ receivers:
     webhook_configs:
       - url: '${ALERT_WEBHOOK_URL:-http://backend:8005/api/alerts/prometheus}'
         send_resolved: true
+        http_config:
+          authorization:
+            type: Bearer
+            credentials: '${ALERT_WEBHOOK_TOKEN:-}'
 
   # ===== DEFAULT ENTERPRISE RECEIVER =====
   - name: 'enterprise-default'
