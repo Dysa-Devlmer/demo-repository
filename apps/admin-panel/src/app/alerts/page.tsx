@@ -12,30 +12,13 @@ import { apiService } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "@/hooks/useTranslation";
 import { formatRelativeTime } from "@/lib/formatters";
-
-interface AlertItem {
-  id: string;
-  createdAt: string;
-  source: string;
-  status: string;
-  alertname: string;
-  severity?: string | null;
-  instance?: string | null;
-  job?: string | null;
-}
-
-interface AlertsResponse {
-  page: number;
-  limit: number;
-  total: number;
-  pages: number;
-  items: AlertItem[];
-}
+import { AlertDetailsDrawer } from "@/components/alerts/AlertDetailsDrawer";
+import type { AlertInboxItem, AlertsListResponse } from "@/types/alerts";
 
 export default function AlertsPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [items, setItems] = useState<AlertItem[]>([]);
+  const [items, setItems] = useState<AlertInboxItem[]>([]);
   const [page, setPage] = useState(1);
   const [limit] = useState(25);
   const [total, setTotal] = useState(0);
@@ -44,6 +27,8 @@ export default function AlertsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [alertnameFilter, setAlertnameFilter] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
 
   const canPrev = page > 1;
   const canNext = page < pages;
@@ -81,9 +66,7 @@ export default function AlertsPage() {
       if (severityFilter !== "all") params.severity = severityFilter;
       if (alertnameFilter.trim().length > 0) params.alertname = alertnameFilter.trim();
 
-      const response = await apiService.alerts.list(params);
-      const data = (response?.data || {}) as AlertsResponse;
-
+      const data = (await apiService.alerts.list(params)) as AlertsListResponse;
       setItems(Array.isArray(data.items) ? data.items : []);
       setTotal(Number(data.total || 0));
       setPages(Number(data.pages || 1));
@@ -116,7 +99,7 @@ export default function AlertsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alertnameFilter]);
 
-  const statusBadge = (status: string) => {
+  const statusBadge = (status?: string | null) => {
     if (status === "firing") return "destructive";
     if (status === "resolved") return "secondary";
     return "outline";
@@ -218,11 +201,25 @@ export default function AlertsPage() {
                   )}
                   {!loading &&
                     items.map((alert) => (
-                      <TableRow key={alert.id}>
+                      <TableRow
+                        key={alert.id}
+                        className="cursor-pointer hover:bg-muted/40"
+                        onClick={() => {
+                          setSelectedAlertId(alert.id);
+                          setDrawerOpen(true);
+                        }}
+                      >
                         <TableCell className="whitespace-nowrap">
                           {formatRelativeTime(alert.createdAt)}
                         </TableCell>
-                        <TableCell className="font-medium">{alert.alertname}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {alert.alertname}
+                            {alert.acknowledgedAt && (
+                              <Badge variant="secondary">ACK</Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={severityBadge(alert.severity)}>
                             {alert.severity || t("alerts.unknown")}
@@ -258,6 +255,20 @@ export default function AlertsPage() {
             </div>
           </CardContent>
         </Card>
+        <AlertDetailsDrawer
+          open={drawerOpen}
+          alertId={selectedAlertId}
+          onOpenChange={(open) => {
+            setDrawerOpen(open);
+            if (!open) setSelectedAlertId(null);
+          }}
+          onAckUpdated={(updated) => {
+            setItems((prev) =>
+              prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item))
+            );
+            void loadAlerts();
+          }}
+        />
       </div>
     </MainLayout>
   );

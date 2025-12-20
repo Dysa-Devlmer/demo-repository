@@ -69,6 +69,13 @@ const extractData = (response: any) => {
   return response;
 };
 
+function unwrap<T>(res: any): T {
+  if (res?.data?.data !== undefined) return res.data.data as T;
+  if (res?.data !== undefined) return res.data as T;
+  if (res?.success && res?.data !== undefined) return res.data as T;
+  return res as T;
+}
+
 // Demo data for fallback
 const demoData = {
   conversations: [
@@ -309,7 +316,47 @@ export const apiService = {
 
   // Alerts inbox
   alerts: {
-    list: (params?: any) => smartApiCall(() => api.get('/alerts', { params }), demoData.alerts),
+    list: async (params?: any) => {
+      const res = await smartApiCall(() => api.get('/alerts', { params }), demoData.alerts);
+      return unwrap(res);
+    },
+    get: async (id: string, signal?: AbortSignal) => {
+      const isDemoMode =
+        typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true';
+      if (isDemoMode) {
+        const item =
+          demoData.alerts.items.find((alert: any) => alert.id === id) || demoData.alerts.items[0];
+        return { ok: true, item, requestId: null };
+      }
+
+      const res = await api.get(`/alerts/${id}`, { signal });
+      const data = unwrap<any>(res);
+      const requestId = res?.headers?.['x-request-id'] || null;
+      return { ...(data || {}), requestId };
+    },
+    ack: async (id: string, note?: string) => {
+      const isDemoMode =
+        typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true';
+      if (isDemoMode) {
+        const item =
+          demoData.alerts.items.find((alert: any) => alert.id === id) || demoData.alerts.items[0];
+        return {
+          ok: true,
+          item: {
+            ...item,
+            acknowledgedAt: new Date().toISOString(),
+            acknowledgedBy: 'demo',
+            ackNote: note || null,
+          },
+          requestId: null,
+        };
+      }
+
+      const res = await api.post(`/alerts/${id}/ack`, { note });
+      const data = unwrap<any>(res);
+      const requestId = res?.headers?.['x-request-id'] || null;
+      return { ...(data || {}), requestId };
+    },
   },
   
   // Settings management
