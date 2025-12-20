@@ -41,9 +41,10 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --workspace=apps/backend --include-workspace-root
 
       - name: Backend lint (check only)
         run: npm run -w apps/backend lint:check
