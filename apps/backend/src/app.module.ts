@@ -64,6 +64,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { QuickRepliesModule } from './modules/quick-replies/quick-replies.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { HttpMetricsInterceptor } from './metrics/http-metrics.interceptor';
+import { AlertsModule } from './alerts/alerts.module';
 
 @Module({
   imports: [
@@ -139,6 +140,7 @@ import { HttpMetricsInterceptor } from './metrics/http-metrics.interceptor';
 
     // Observability
     MetricsModule,
+    AlertsModule,
   ],
   controllers: [AppController, HealthController, AnalyticsController],
   providers: [
