@@ -107,7 +107,7 @@
     "rxjs": "^7.8.1",
     "sharp": "^0.34.4",
     "socket.io": "^4.8.1",
-    "stripe": "^18.5.0",
+    "stripe": "^20.1.0",
     "swagger-ui-express": "^5.0.1",
     "tar": "^7.5.1",
     "twilio": "^5.10.1",
