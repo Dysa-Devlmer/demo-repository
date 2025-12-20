@@ -1,0 +1,55 @@
+groups:
+  - name: chatbotdysa-alerts
+    rules:
+      - alert: BackendDown
+        expr: up{job="chatbotdysa-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend down"
+          description: "Prometheus cannot scrape backend /metrics for 1m"
+
+      - alert: DbDown
+        expr: db_up{job="chatbotdysa-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database down"
+          description: "db_up is 0 for 1m"
+
+      - alert: RedisDown
+        expr: redis_up{job="chatbotdysa-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis down"
+          description: "redis_up is 0 for 1m"
+
+      - alert: High5xxRate
+        expr: |
+          sum(rate(http_requests_total{job="chatbotdysa-backend",status=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="chatbotdysa-backend"}[5m]))
+          > 0.02
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx rate"
+          description: "5xx rate > 2% over 5m"
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="chatbotdysa-backend"}[5m]))
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency p95"
+          description: "p95 latency > 1s over 5m"

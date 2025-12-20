@@ -3,14 +3,13 @@ global:
   evaluation_interval: 15s
 
 rule_files:
-  # - "first_rules.yml"
-  # - "second_rules.yml"
+  - "alert_rules.yml"
 
 scrape_configs:
   # ChatBotDysa Backend API
   - job_name: 'chatbotdysa-backend'
     static_configs:
-      - targets: ['backend:3000']
+      - targets: ['backend:8005']
     metrics_path: '/metrics'
     scrape_interval: 5s
     scrape_timeout: 5s
@@ -64,7 +63,3 @@ alerting:
     - static_configs:
         - targets:
           # - alertmanager:9093
-
-# Alerting rules
-rule_files:
-  - "alert_rules.yml"
