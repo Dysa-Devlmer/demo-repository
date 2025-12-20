@@ -25,6 +25,7 @@ export { SettingHistory } from '../entities/setting-history.entity';
 
 // Analytics & Monitoring
 export { DashboardSnapshot } from '../entities/dashboard-snapshot.entity';
+export { AlertInboxEntity } from '../alerts/entities/alert-inbox.entity';
 
 // AI Learning (JARVIS)
 export { LearningExperience } from '../entities/learning-experience.entity';

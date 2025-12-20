@@ -1,12 +1,15 @@
 import { Body, Controller, ForbiddenException, Headers, Ip, Logger, Post, Req } from '@nestjs/common';
 import type { Request } from 'express';
+import { AlertsService } from './alerts.service';
 
 @Controller('alerts')
 export class AlertsController {
   private readonly logger = new Logger('AlertsWebhook');
 
+  constructor(private readonly alertsService: AlertsService) {}
+
   @Post('prometheus')
-  handlePrometheusAlert(
+  async handlePrometheusAlert(
     @Body() body: any,
     @Headers('content-type') contentType: string | undefined,
     @Ip() ip: string,
@@ -44,6 +47,8 @@ export class AlertsController {
       })
     );
 
-    return { ok: true, received: alerts.length, requestId };
+    const result = await this.alertsService.saveAlertmanager(body);
+
+    return { ok: true, ...result, requestId };
   }
 }
