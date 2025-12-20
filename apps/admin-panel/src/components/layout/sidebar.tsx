@@ -18,7 +18,8 @@ import {
   Shield,
   FileText,
   Layers,
-  Sparkles
+  Sparkles,
+  Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import LanguageSelector from "@/components/ui/language-selector";
@@ -34,6 +35,7 @@ const navigationKeys = [
   { key: "reservations", href: "/reservations", icon: Calendar },
   { key: "analytics", href: "/analytics", icon: TrendingUp },
   { key: "pithyLearning", href: "/pithy", icon: Sparkles },
+  { key: "alerts", href: "/alerts", icon: Bell },
   { key: "reports", href: "/reports", icon: FileText },
   { key: "users", href: "/users", icon: Shield },
   { key: "aiChat", href: "/ai-chat", icon: Brain },

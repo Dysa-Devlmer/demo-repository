@@ -92,6 +92,50 @@ const demoData = {
     { id: 1, customer: "Ana Martín", date: "2025-09-22", time: "20:00", guests: 4, status: "confirmed" },
     { id: 2, customer: "Luis Rodríguez", date: "2025-09-23", time: "19:30", guests: 2, status: "pending" }
   ],
+  alerts: {
+    page: 1,
+    limit: 25,
+    total: 3,
+    pages: 1,
+    items: [
+      {
+        id: "demo-1",
+        createdAt: new Date().toISOString(),
+        source: "alertmanager",
+        status: "firing",
+        alertname: "BackendDown",
+        severity: "critical",
+        instance: "backend:8005",
+        job: "chatbotdysa-backend",
+        payload: { labels: { alertname: "BackendDown" }, annotations: {} },
+        fingerprint: "demo-fp-1",
+      },
+      {
+        id: "demo-2",
+        createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+        source: "alertmanager",
+        status: "firing",
+        alertname: "High5xxRate",
+        severity: "warning",
+        instance: "backend:8005",
+        job: "chatbotdysa-backend",
+        payload: { labels: { alertname: "High5xxRate" }, annotations: {} },
+        fingerprint: "demo-fp-2",
+      },
+      {
+        id: "demo-3",
+        createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+        source: "alertmanager",
+        status: "resolved",
+        alertname: "RedisDown",
+        severity: "critical",
+        instance: "redis:6379",
+        job: "chatbotdysa-backend",
+        payload: { labels: { alertname: "RedisDown" }, annotations: {} },
+        fingerprint: "demo-fp-3",
+      },
+    ],
+  },
   stats: {
     totalConversations: 3,
     activeCustomers: 3,
@@ -261,6 +305,11 @@ export const apiService = {
     create: (data: any) => api.post('/conversations', data),
     update: (id: number, data: any) => api.put(`/conversations/${id}`, data),
     delete: (id: number) => api.delete(`/conversations/${id}`),
+  },
+
+  // Alerts inbox
+  alerts: {
+    list: (params?: any) => smartApiCall(() => api.get('/alerts', { params }), demoData.alerts),
   },
   
   // Settings management
