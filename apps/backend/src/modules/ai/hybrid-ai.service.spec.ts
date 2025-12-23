@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HybridAIService } from './hybrid-ai.service';
 import { OllamaService, RestaurantContext } from './ollama.service';
+import { LearningMemoryService } from './learning-memory.service';
+import { CustomerMemoryService } from './customer-memory.service';
 import OpenAI from 'openai';
 
 // Mock OpenAI
@@ -13,6 +15,8 @@ describe('HybridAIService - Unit Tests', () => {
   let ollamaService: OllamaService;
   let configService: ConfigService;
   let mockOpenAI: any;
+  let learningMemoryService: LearningMemoryService;
+  let customerMemoryService: CustomerMemoryService;
 
   const mockRestaurantContext: RestaurantContext = {
     customerName: 'Juan Pérez',
@@ -78,17 +82,54 @@ describe('HybridAIService - Unit Tests', () => {
             isOllamaRunning: jest.fn(),
           },
         },
+        {
+          provide: LearningMemoryService,
+          useValue: {
+            analyzeMessage: jest.fn(() => ({
+              intent: 'general',
+              sentiment: 0,
+              complexity: 0,
+            })),
+            saveExperience: jest.fn(async () => ({ id: 1 })),
+            getSuggestedResponse: jest.fn(() => null),
+            recordFeedback: jest.fn(async () => undefined),
+            getInsights: jest.fn(async () => []),
+            getStats: jest.fn(async () => ({
+              totalExperiences: 0,
+              last24hExperiences: 0,
+              experiencesWithFeedback: 0,
+              qTableSize: 0,
+              frequentPatternsCount: 0,
+              totalInteractions: 0,
+              averageReward: 0,
+              explorationRate: 0,
+              learningRate: 0,
+              discountFactor: 0,
+            })),
+          },
+        },
+        {
+          provide: CustomerMemoryService,
+          useValue: {
+            extractMemoriesFromMessage: jest.fn(() => []),
+            saveMemory: jest.fn(async () => undefined),
+            getMemoriesForPrompt: jest.fn(async () => ''),
+            getCustomerMemories: jest.fn(async () => []),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<HybridAIService>(HybridAIService);
     ollamaService = module.get<OllamaService>(OllamaService);
     configService = module.get<ConfigService>(ConfigService);
+    learningMemoryService = module.get<LearningMemoryService>(LearningMemoryService);
+    customerMemoryService = module.get<CustomerMemoryService>(CustomerMemoryService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    service.clearCache();
+    if (service) service.clearCache();
   });
 
   describe('Service Initialization', () => {
@@ -96,8 +137,8 @@ describe('HybridAIService - Unit Tests', () => {
       expect(service).toBeDefined();
     });
 
-    it('should initialize with OpenAI when API key is provided', () => {
-      const stats = service.getStats();
+    it('should initialize with OpenAI when API key is provided', async () => {
+      const stats = await service.getStats();
       expect(stats.primaryProvider).toBe('OpenAI GPT-4o-mini');
       expect(stats.openaiConfigured).toBe(true);
     });
@@ -119,11 +160,46 @@ describe('HybridAIService - Unit Tests', () => {
               isOllamaRunning: jest.fn(),
             },
           },
+          {
+            provide: LearningMemoryService,
+            useValue: {
+              analyzeMessage: jest.fn(() => ({
+                intent: 'general',
+                sentiment: 0,
+                complexity: 0,
+              })),
+              saveExperience: jest.fn(async () => ({ id: 1 })),
+              getSuggestedResponse: jest.fn(() => null),
+              recordFeedback: jest.fn(async () => undefined),
+              getInsights: jest.fn(async () => []),
+              getStats: jest.fn(async () => ({
+                totalExperiences: 0,
+                last24hExperiences: 0,
+                experiencesWithFeedback: 0,
+                qTableSize: 0,
+                frequentPatternsCount: 0,
+                totalInteractions: 0,
+                averageReward: 0,
+                explorationRate: 0,
+                learningRate: 0,
+                discountFactor: 0,
+              })),
+            },
+          },
+          {
+            provide: CustomerMemoryService,
+            useValue: {
+              extractMemoriesFromMessage: jest.fn(() => []),
+              saveMemory: jest.fn(async () => undefined),
+              getMemoriesForPrompt: jest.fn(async () => ''),
+              getCustomerMemories: jest.fn(async () => []),
+            },
+          },
         ],
       }).compile();
 
       const testService = testModule.get<HybridAIService>(HybridAIService);
-      const stats = testService.getStats();
+      const stats = await testService.getStats();
 
       expect(stats.primaryProvider).toBe('Ollama only');
       expect(stats.openaiConfigured).toBe(false);
@@ -254,6 +330,41 @@ describe('HybridAIService - Unit Tests', () => {
               isOllamaRunning: jest.fn(),
             },
           },
+          {
+            provide: LearningMemoryService,
+            useValue: {
+              analyzeMessage: jest.fn(() => ({
+                intent: 'general',
+                sentiment: 0,
+                complexity: 0,
+              })),
+              saveExperience: jest.fn(async () => ({ id: 1 })),
+              getSuggestedResponse: jest.fn(() => null),
+              recordFeedback: jest.fn(async () => undefined),
+              getInsights: jest.fn(async () => []),
+              getStats: jest.fn(async () => ({
+                totalExperiences: 0,
+                last24hExperiences: 0,
+                experiencesWithFeedback: 0,
+                qTableSize: 0,
+                frequentPatternsCount: 0,
+                totalInteractions: 0,
+                averageReward: 0,
+                explorationRate: 0,
+                learningRate: 0,
+                discountFactor: 0,
+              })),
+            },
+          },
+          {
+            provide: CustomerMemoryService,
+            useValue: {
+              extractMemoriesFromMessage: jest.fn(() => []),
+              saveMemory: jest.fn(async () => undefined),
+              getMemoriesForPrompt: jest.fn(async () => ''),
+              getCustomerMemories: jest.fn(async () => []),
+            },
+          },
         ],
       }).compile();
 
@@ -380,16 +491,16 @@ describe('HybridAIService - Unit Tests', () => {
         await service.generateResponse(`Question ${i}`, mockRestaurantContext);
       }
 
-      const stats = service.getStats();
+      const stats = await service.getStats();
       expect(stats.cacheSize).toBeLessThanOrEqual(101); // 100 + 1 during cleanup
     });
   });
 
   describe('getStats', () => {
-    it('should return correct stats when OpenAI configured', () => {
-      const stats = service.getStats();
+    it('should return correct stats when OpenAI configured', async () => {
+      const stats = await service.getStats();
 
-      expect(stats.service).toBe('Hybrid AI Service');
+      expect(stats.service).toBe('Hybrid AI Service + JARVIS Learning');
       expect(stats.primaryProvider).toBe('OpenAI GPT-4o-mini');
       expect(stats.fallbackProvider).toBe('Ollama');
       expect(stats.emergencyFallback).toBe('Pre-programmed responses');
@@ -397,8 +508,8 @@ describe('HybridAIService - Unit Tests', () => {
       expect(stats.model).toBe('gpt-4o-mini');
     });
 
-    it('should show cache statistics', () => {
-      const stats = service.getStats();
+    it('should show cache statistics', async () => {
+      const stats = await service.getStats();
 
       expect(stats.cacheSize).toBe(0);
       expect(stats.cacheExpiration).toBe('60 minutes');
@@ -443,6 +554,41 @@ describe('HybridAIService - Unit Tests', () => {
               isOllamaRunning: jest.fn().mockResolvedValue(true),
             },
           },
+          {
+            provide: LearningMemoryService,
+            useValue: {
+              analyzeMessage: jest.fn(() => ({
+                intent: 'general',
+                sentiment: 0,
+                complexity: 0,
+              })),
+              saveExperience: jest.fn(async () => ({ id: 1 })),
+              getSuggestedResponse: jest.fn(() => null),
+              recordFeedback: jest.fn(async () => undefined),
+              getInsights: jest.fn(async () => []),
+              getStats: jest.fn(async () => ({
+                totalExperiences: 0,
+                last24hExperiences: 0,
+                experiencesWithFeedback: 0,
+                qTableSize: 0,
+                frequentPatternsCount: 0,
+                totalInteractions: 0,
+                averageReward: 0,
+                explorationRate: 0,
+                learningRate: 0,
+                discountFactor: 0,
+              })),
+            },
+          },
+          {
+            provide: CustomerMemoryService,
+            useValue: {
+              extractMemoriesFromMessage: jest.fn(() => []),
+              saveMemory: jest.fn(async () => undefined),
+              getMemoriesForPrompt: jest.fn(async () => ''),
+              getCustomerMemories: jest.fn(async () => []),
+            },
+          },
         ],
       }).compile();
 
@@ -469,6 +615,41 @@ describe('HybridAIService - Unit Tests', () => {
             useValue: {
               generateRestaurantResponse: jest.fn(),
               isOllamaRunning: jest.fn().mockResolvedValue(false),
+            },
+          },
+          {
+            provide: LearningMemoryService,
+            useValue: {
+              analyzeMessage: jest.fn(() => ({
+                intent: 'general',
+                sentiment: 0,
+                complexity: 0,
+              })),
+              saveExperience: jest.fn(async () => ({ id: 1 })),
+              getSuggestedResponse: jest.fn(() => null),
+              recordFeedback: jest.fn(async () => undefined),
+              getInsights: jest.fn(async () => []),
+              getStats: jest.fn(async () => ({
+                totalExperiences: 0,
+                last24hExperiences: 0,
+                experiencesWithFeedback: 0,
+                qTableSize: 0,
+                frequentPatternsCount: 0,
+                totalInteractions: 0,
+                averageReward: 0,
+                explorationRate: 0,
+                learningRate: 0,
+                discountFactor: 0,
+              })),
+            },
+          },
+          {
+            provide: CustomerMemoryService,
+            useValue: {
+              extractMemoriesFromMessage: jest.fn(() => []),
+              saveMemory: jest.fn(async () => undefined),
+              getMemoriesForPrompt: jest.fn(async () => ''),
+              getCustomerMemories: jest.fn(async () => []),
             },
           },
         ],
