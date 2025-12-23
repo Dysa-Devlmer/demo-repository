@@ -52,7 +52,7 @@ export default function AlertsPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams() ?? new URLSearchParams();
   const { views, saveView, deleteView } = useSavedAlertViews();
 
   const page = parseIntSafe(searchParams.get("page"), 1);

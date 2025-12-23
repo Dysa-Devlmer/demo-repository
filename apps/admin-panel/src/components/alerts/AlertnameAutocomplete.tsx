@@ -45,7 +45,9 @@ export function AlertnameAutocomplete({
     const handler = setTimeout(async () => {
       try {
         setLoading(true);
-        const res = await apiService.alerts.metaAlertnames(q, 20);
+        const res = (await apiService.alerts.metaAlertnames(q, 20)) as {
+          items?: AlertnameItem[];
+        };
         const next = Array.isArray(res.items) ? res.items : [];
         cacheRef.current.set(q, next);
         setItems(next);
