@@ -98,6 +98,7 @@ export class SSLCertificateService implements OnModuleDestroy {
           },
           24 * 60 * 60 * 1000
         );
+        this.renewalInterval.unref?.();
       }
 
       this.logger.log('SSL/TLS certificate service initialized', 'SSLCertificateService', {

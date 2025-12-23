@@ -145,6 +145,7 @@ export class SecurityService implements OnModuleDestroy {
         },
         60 * 60 * 1000
       ); // Every hour
+      failedAttemptsInterval.unref?.();
       this.cleanupIntervals.push(failedAttemptsInterval);
 
       // Clean up old alerts
@@ -154,6 +155,7 @@ export class SecurityService implements OnModuleDestroy {
         },
         24 * 60 * 60 * 1000
       ); // Daily
+      alertsInterval.unref?.();
       this.cleanupIntervals.push(alertsInterval);
 
       this.logger.log('Security service initialized', 'SecurityService', {

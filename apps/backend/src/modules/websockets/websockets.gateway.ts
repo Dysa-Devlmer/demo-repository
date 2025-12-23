@@ -74,6 +74,7 @@ export class WebSocketsGateway
     this.statusInterval = setInterval(() => {
       this.broadcastBotStatus();
     }, 30000);
+    this.statusInterval.unref?.();
   }
 
   onModuleDestroy() {

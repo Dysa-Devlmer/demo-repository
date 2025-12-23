@@ -1,11 +1,12 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { MetricsService } from './metrics.service';
 
 @Injectable()
-export class ConnectivityProbe implements OnModuleInit {
+export class ConnectivityProbe implements OnModuleInit, OnModuleDestroy {
+  private timer: NodeJS.Timeout | null = null;
   constructor(
     private readonly dataSource: DataSource,
     private readonly metrics: MetricsService,
@@ -48,6 +49,14 @@ export class ConnectivityProbe implements OnModuleInit {
     };
 
     void run();
-    setInterval(run, 15_000).unref?.();
+    this.timer = setInterval(run, 15_000);
+    this.timer.unref?.();
+  }
+
+  onModuleDestroy() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
   }
 }
