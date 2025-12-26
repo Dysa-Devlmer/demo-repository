@@ -4,6 +4,27 @@ import { Repository } from 'typeorm';
 import { createHash } from 'crypto';
 import { AlertInboxEntity } from './entities/alert-inbox.entity';
 
+type AlertLabels = {
+  alertname?: string;
+  severity?: string;
+  instance?: string;
+  job?: string;
+};
+
+type AlertWebhookItem = {
+  status?: string;
+  labels?: AlertLabels;
+  annotations?: Record<string, string>;
+  startsAt?: string;
+  endsAt?: string;
+  generatorURL?: string;
+};
+
+type AlertWebhookBody = {
+  status?: string;
+  alerts?: AlertWebhookItem[];
+};
+
 @Injectable()
 export class AlertsService {
   constructor(
@@ -11,19 +32,19 @@ export class AlertsService {
     private readonly repo: Repository<AlertInboxEntity>
   ) {}
 
-  fingerprint(input: any): string {
-    const labels = input?.labels ?? {};
-    const status = input?.status ?? 'unknown';
+  fingerprint(input: AlertWebhookItem): string {
+    const labels = input.labels ?? {};
+    const status = input.status ?? 'unknown';
     const base = JSON.stringify({ status, labels });
     return createHash('sha256').update(base).digest('hex');
   }
 
-  async saveAlertmanager(body: any) {
-    const alerts = Array.isArray(body?.alerts) ? body.alerts : [];
+  async saveAlertmanager(body: AlertWebhookBody) {
+    const alerts = Array.isArray(body.alerts) ? body.alerts : [];
     const saved: string[] = [];
 
     for (const alert of alerts) {
-      const labels = alert?.labels ?? {};
+      const labels = alert.labels ?? {};
       const fingerprint = this.fingerprint(alert);
 
       const exists = await this.repo.findOne({ where: { fingerprint } });
@@ -31,26 +52,26 @@ export class AlertsService {
 
       const row = this.repo.create({
         source: 'alertmanager',
-        status: alert?.status ?? body?.status ?? 'unknown',
-        alertname: labels?.alertname ?? 'unknown',
-        severity: labels?.severity ?? null,
-        instance: labels?.instance ?? null,
-        job: labels?.job ?? null,
+        status: alert.status ?? body.status ?? 'unknown',
+        alertname: labels.alertname ?? 'unknown',
+        severity: labels.severity ?? null,
+        instance: labels.instance ?? null,
+        job: labels.job ?? null,
         fingerprint,
         payload: {
           labels,
-          annotations: alert?.annotations ?? {},
-          startsAt: alert?.startsAt,
-          endsAt: alert?.endsAt,
-          generatorURL: alert?.generatorURL,
+          annotations: alert.annotations ?? {},
+          startsAt: alert.startsAt,
+          endsAt: alert.endsAt,
+          generatorURL: alert.generatorURL,
         },
       });
 
       try {
         const out = await this.repo.save(row);
         saved.push(out.id);
-      } catch (error: any) {
-        if (error?.code !== '23505') {
+      } catch (error) {
+        if ((error as { code?: string })?.code !== '23505') {
           throw error;
         }
       }
