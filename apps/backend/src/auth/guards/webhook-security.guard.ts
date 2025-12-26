@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  UnauthorizedException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Logger } from '@nestjs/common';
 import { Request } from 'express';
 import * as crypto from 'crypto';
 
@@ -44,7 +38,8 @@ export class WebhookSecurityGuard implements CanActivate {
 
       return false;
     } catch (error) {
-      this.logger.error('Webhook security validation error:', error);
+      const err = toError(error);
+      this.logger.error('Webhook security validation error:', err.message);
       return false;
     }
   }
@@ -58,7 +53,7 @@ export class WebhookSecurityGuard implements CanActivate {
   }
 
   private validateWhatsAppSignature(request: Request): boolean {
-    const signature = request.headers['x-hub-signature-256'] as string;
+    const signature = getHeader(request, 'x-hub-signature-256');
     const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
@@ -88,13 +83,14 @@ export class WebhookSecurityGuard implements CanActivate {
 
       return isValid;
     } catch (error) {
-      this.logger.error('WhatsApp signature validation error:', error);
+      const err = toError(error);
+      this.logger.error('WhatsApp signature validation error:', err.message);
       return false;
     }
   }
 
   private validateTwilioSignature(request: Request): boolean {
-    const signature = request.headers['x-twilio-signature'] as string;
+    const signature = getHeader(request, 'x-twilio-signature');
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 
     if (!twilioAuthToken) {
@@ -113,7 +109,7 @@ export class WebhookSecurityGuard implements CanActivate {
   }
 
   private hasValidApiKey(request: Request): boolean {
-    const apiKey = request.headers['x-api-key'] as string;
+    const apiKey = getHeader(request, 'x-api-key');
     const validApiKey = process.env.WEBHOOK_API_KEY;
 
     if (!validApiKey) {
@@ -126,7 +122,7 @@ export class WebhookSecurityGuard implements CanActivate {
   private checkRateLimit(request: Request): boolean {
     // 🚀 Enterprise: Simple rate limiting check
     // In production, use Redis or dedicated rate limiting service
-    const userAgent = request.headers['user-agent'];
+    const userAgent = getHeader(request, 'user-agent');
     const suspiciousPatterns = [
       'bot',
       'crawler',
@@ -147,4 +143,16 @@ export class WebhookSecurityGuard implements CanActivate {
 
     return true;
   }
+}
+
+function getHeader(request: Request, name: string): string | null {
+  const value = request.headers[name.toLowerCase()];
+  return typeof value === 'string' ? value : null;
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === 'string' ? error : 'Unknown error');
 }

@@ -19,7 +19,6 @@ import { Permission } from './entities/permission.entity';
 import { AuditLog } from '../common/entities/audit-log.entity';
 import { I18nModule } from '../i18n/i18n.module';
 import { I18nService } from '../i18n/i18n.service';
-import * as crypto from 'crypto';
 
 @Module({
   imports: [

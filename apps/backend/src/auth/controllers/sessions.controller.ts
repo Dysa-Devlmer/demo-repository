@@ -10,6 +10,7 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { SessionsService } from '../services/sessions.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -53,14 +54,14 @@ export class SessionsController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  async getSessions(@Request() req) {
-    const userId = req.user?.sub || req.user?.id;
+  getSessions(@Request() req: ExpressRequest) {
+    const userId = getUserId(req);
     if (!userId) {
       throw new BadRequestException('User ID not found in request');
     }
 
-    const currentToken = req.headers.authorization?.replace('Bearer ', '');
-    const sessions = await this.sessionsService.getUserSessions(userId, currentToken);
+    const currentToken = getBearerToken(req);
+    const sessions = this.sessionsService.getUserSessions(userId, currentToken ?? undefined);
 
     // Return mock data if no sessions found (for demo purposes)
     if (sessions.length === 0) {
@@ -128,13 +129,13 @@ export class SessionsController {
     status: 404,
     description: 'Not found - Session not found or belongs to another user',
   })
-  async revokeSession(@Request() req, @Param('sessionId') sessionId: string) {
-    const userId = req.user?.sub || req.user?.id;
+  revokeSession(@Request() req: ExpressRequest, @Param('sessionId') sessionId: string) {
+    const userId = getUserId(req);
     if (!userId) {
       throw new BadRequestException('User ID not found in request');
     }
 
-    const revoked = await this.sessionsService.revokeSession(userId, sessionId);
+    const revoked = this.sessionsService.revokeSession(userId, sessionId);
 
     if (!revoked) {
       return {
@@ -171,18 +172,18 @@ export class SessionsController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  async revokeAllOtherSessions(@Request() req) {
-    const userId = req.user?.sub || req.user?.id;
+  revokeAllOtherSessions(@Request() req: ExpressRequest) {
+    const userId = getUserId(req);
     if (!userId) {
       throw new BadRequestException('User ID not found in request');
     }
 
-    const currentToken = req.headers.authorization?.replace('Bearer ', '');
+    const currentToken = getBearerToken(req);
     if (!currentToken) {
       throw new BadRequestException('Current token not found');
     }
 
-    const revokedCount = await this.sessionsService.revokeAllOtherSessions(userId, currentToken);
+    const revokedCount = this.sessionsService.revokeAllOtherSessions(userId, currentToken);
 
     return {
       success: true,
@@ -207,8 +208,8 @@ export class SessionsController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  async getSessionStats(@Request() req) {
-    const userId = req.user?.sub || req.user?.id;
+  getSessionStats(@Request() req: ExpressRequest) {
+    const userId = getUserId(req);
     if (!userId) {
       throw new BadRequestException('User ID not found in request');
     }
@@ -224,4 +225,25 @@ export class SessionsController {
       },
     };
   }
+}
+
+function getBearerToken(req: ExpressRequest): string | null {
+  const header = req.headers.authorization;
+  if (typeof header === 'string' && header.startsWith('Bearer ')) {
+    return header.replace('Bearer ', '');
+  }
+  return null;
+}
+
+function getUserId(req: ExpressRequest): number | undefined {
+  const user = (req as { user?: { sub?: number | string; id?: number | string } }).user;
+  const raw = user?.sub ?? user?.id;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
 }

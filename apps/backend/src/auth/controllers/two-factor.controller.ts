@@ -228,7 +228,7 @@ export class TwoFactorController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
-  async get2FAStatus(@User() user: UserEntity) {
+  get2FAStatus(@User() user: UserEntity) {
     return {
       enabled: user.isTwoFactorEnabled,
       backupCodesCount: user.twoFactorBackupCodes?.length || 0,

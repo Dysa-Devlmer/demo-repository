@@ -14,6 +14,7 @@ import { AuditLog, AuditAction, AuditSeverity } from '../common/entities/audit-l
 import * as bcrypt from 'bcryptjs';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import * as crypto from 'crypto';
 
 export interface LoginRequest {
   email: string;
@@ -122,7 +123,7 @@ export class AuthService {
     }
 
     // Reset failed attempts on successful login
-    await this.handleSuccessfulLogin(user, ipAddress, userAgent);
+    await this.handleSuccessfulLogin(user, ipAddress);
 
     // Generate tokens
     const permissions = this.extractPermissions(user);
@@ -202,7 +203,7 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<{ accessToken: string; expiresIn: number }> {
     try {
-      const payload = this.jwtService.verify(refreshToken);
+      const payload = this.jwtService.verify<JwtPayload & { type?: string }>(refreshToken);
 
       if (payload.type !== 'refresh') {
         throw new UnauthorizedException('Token inválido');
@@ -231,7 +232,7 @@ export class AuthService {
         accessToken,
         expiresIn: 3600,
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Token de actualización inválido');
     }
   }
@@ -289,7 +290,6 @@ export class AuthService {
     }
 
     // Generate secure reset token
-    const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
@@ -338,10 +338,10 @@ export class AuthService {
 
     await this.userRepository.update(user.id, {
       password: hashedPassword,
-      passwordResetToken: null as any,
-      passwordResetExpires: null as any,
+      passwordResetToken: null,
+      passwordResetExpires: null,
       failedLoginAttempts: 0,
-      accountLockedUntil: null as any,
+      accountLockedUntil: null,
     });
 
     await this.logAuditEvent(AuditAction.UPDATE, 'User', user.id, {
@@ -387,14 +387,10 @@ export class AuthService {
     });
   }
 
-  private async handleSuccessfulLogin(
-    user: User,
-    ipAddress?: string,
-    userAgent?: string
-  ): Promise<void> {
+  private async handleSuccessfulLogin(user: User, ipAddress?: string): Promise<void> {
     await this.userRepository.update(user.id, {
       failedLoginAttempts: 0,
-      accountLockedUntil: null as any,
+      accountLockedUntil: null,
       lastLoginAt: new Date(),
       lastLoginIp: ipAddress,
     });
@@ -416,7 +412,7 @@ export class AuthService {
     action: AuditAction,
     resource: string,
     resourceId: number | null,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
     userId?: number
   ): Promise<void> {
     try {
@@ -429,14 +425,15 @@ export class AuthService {
       };
       const normalizedAction = actionMap[String(action)] ?? action;
 
+      const meta = toRecord(metadata);
       const auditLog = this.auditRepository.create({
         action: normalizedAction,
         resource,
         resourceId: resourceId?.toString(),
         userId,
-        ip: metadata?.ipAddress ?? metadata?.ip,
-        userAgent: metadata?.userAgent,
-        metadata,
+        ip: toString(meta.ipAddress ?? meta.ip),
+        userAgent: toString(meta.userAgent),
+        metadata: meta,
         severity: this.getAuditSeverity(action),
       });
 
@@ -460,4 +457,15 @@ export class AuthService {
         return AuditSeverity.LOW;
     }
   }
+}
+
+function toRecord(value?: Record<string, unknown>): Record<string, unknown> {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+  return value;
+}
+
+function toString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
 }

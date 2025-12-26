@@ -283,7 +283,8 @@ export class TwoFactorService {
   /**
    * Disable 2FA
    */
-  async disable2FA(userId: number, password: string): Promise<boolean> {
+  async disable2FA(userId: number, _password: string): Promise<boolean> {
+    void _password;
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new BadRequestException('User not found');

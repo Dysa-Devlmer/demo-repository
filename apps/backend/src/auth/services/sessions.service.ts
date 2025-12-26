@@ -51,7 +51,7 @@ export class SessionsService {
   /**
    * Get all sessions for a user
    */
-  async getUserSessions(userId: number, currentToken?: string): Promise<UserSession[]> {
+  getUserSessions(userId: number, currentToken?: string): UserSession[] {
     const userSessions: UserSession[] = [];
 
     this.sessions.forEach((session, token) => {
@@ -71,7 +71,7 @@ export class SessionsService {
   /**
    * Revoke a specific session
    */
-  async revokeSession(userId: number, sessionId: string): Promise<boolean> {
+  revokeSession(userId: number, sessionId: string): boolean {
     let found = false;
 
     this.sessions.forEach((session, token) => {
@@ -87,7 +87,7 @@ export class SessionsService {
   /**
    * Revoke all sessions except current
    */
-  async revokeAllOtherSessions(userId: number, currentToken: string): Promise<number> {
+  revokeAllOtherSessions(userId: number, currentToken: string): number {
     let revokedCount = 0;
 
     const tokensToDelete: string[] = [];

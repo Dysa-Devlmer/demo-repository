@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -34,12 +35,10 @@ export class AuthController {
       'Generate and retrieve a CSRF token for secure form submissions. Token is stored in session.',
   })
   @ApiResponse({ status: 200, description: 'CSRF token generated successfully' })
-  async getCsrfToken(@Session() session: any) {
-    if (!session.csrfToken) {
-      session.csrfToken = CsrfGuard.generateCsrfToken();
-    }
+  getCsrfToken(@Session() session: unknown) {
+    const csrfToken = ensureCsrfToken(session);
     return {
-      csrfToken: session.csrfToken,
+      csrfToken,
       success: true,
       message: 'CSRF token generated',
     };
@@ -92,8 +91,8 @@ export class AuthController {
   @ApiBody({ schema: { properties: { email: { type: 'string', format: 'email' } } } })
   @ApiResponse({ status: 200, description: 'Password reset email sent if account exists' })
   @ApiResponse({ status: 429, description: 'Too many requests - Rate limit exceeded (max 3/min)' })
-  async forgotPassword(@Body() dto: { email: string }, @Request() req) {
-    return this.authService.forgotPassword(dto.email, req.ip, req.headers['user-agent']);
+  async forgotPassword(@Body() dto: { email: string }, @Request() req: ExpressRequest) {
+    return this.authService.forgotPassword(dto.email, getClientIp(req), getUserAgent(req));
   }
 
   @Post('reset-password')
@@ -112,12 +111,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid or expired token' })
   @ApiResponse({ status: 429, description: 'Too many requests - Rate limit exceeded (max 3/min)' })
-  async resetPassword(@Body() dto: { token: string; password: string }, @Request() req) {
+  async resetPassword(
+    @Body() dto: { token: string; password: string },
+    @Request() req: ExpressRequest
+  ) {
     return this.authService.resetPassword(
       dto.token,
       dto.password,
-      req.ip,
-      req.headers['user-agent']
+      getClientIp(req),
+      getUserAgent(req)
     );
   }
 
@@ -148,10 +150,10 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing token' })
   @ApiResponse({ status: 429, description: 'Too many requests - Rate limit exceeded (max 3/min)' })
   async changePassword(
-    @Request() req,
+    @Request() req: ExpressRequest,
     @Body() dto: { currentPassword: string; newPassword: string }
   ) {
-    const userId = req.user?.sub || req.user?.id;
+    const userId = getUserId(req);
     if (!userId) {
       throw new Error('User ID not found in request');
     }
@@ -160,8 +162,8 @@ export class AuthController {
       userId,
       dto.currentPassword,
       dto.newPassword,
-      req.ip,
-      req.headers['user-agent']
+      getClientIp(req),
+      getUserAgent(req)
     );
 
     return {
@@ -169,4 +171,37 @@ export class AuthController {
       message: 'Contraseña cambiada exitosamente',
     };
   }
+}
+
+function ensureCsrfToken(session: unknown): string {
+  if (session && typeof session === 'object') {
+    const record = session as Record<string, unknown>;
+    if (typeof record.csrfToken !== 'string') {
+      record.csrfToken = CsrfGuard.generateCsrfToken();
+    }
+    return record.csrfToken as string;
+  }
+  return CsrfGuard.generateCsrfToken();
+}
+
+function getClientIp(req: ExpressRequest): string | undefined {
+  return typeof req.ip === 'string' ? req.ip : undefined;
+}
+
+function getUserAgent(req: ExpressRequest): string | undefined {
+  const header = req.headers['user-agent'];
+  return typeof header === 'string' ? header : undefined;
+}
+
+function getUserId(req: ExpressRequest): number | undefined {
+  const user = (req as { user?: { sub?: number | string; id?: number | string } }).user;
+  const raw = user?.sub ?? user?.id;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    const parsed = Number(raw);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
 }

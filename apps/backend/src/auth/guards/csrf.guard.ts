@@ -48,7 +48,7 @@ export class CsrfGuard implements CanActivate {
     }
 
     const token = this.extractCsrfToken(request);
-    const sessionToken = request.session?.csrfToken;
+    const sessionToken = getSessionToken(request);
 
     if (!token || !sessionToken || !this.validateCsrfToken(token, sessionToken)) {
       throw new ForbiddenException('Invalid CSRF token');
@@ -58,10 +58,11 @@ export class CsrfGuard implements CanActivate {
   }
 
   private extractCsrfToken(request: Request): string | null {
+    const body = request.body as Record<string, unknown> | undefined;
     return (
-      (request.headers['x-csrf-token'] as string) ||
-      (request.headers['x-xsrf-token'] as string) ||
-      request.body?._token ||
+      getHeader(request, 'x-csrf-token') ||
+      getHeader(request, 'x-xsrf-token') ||
+      (typeof body?._token === 'string' ? body._token : null) ||
       null
     );
   }
@@ -75,7 +76,7 @@ export class CsrfGuard implements CanActivate {
   }
 
   private hasJwtAuthentication(request: Request): boolean {
-    const authHeader = request.headers.authorization as string;
+    const authHeader = getHeader(request, 'authorization');
     // Check for Bearer token (JWT) or Demo token
     return !!(authHeader && (authHeader.startsWith('Bearer ') || authHeader.startsWith('Demo ')));
   }
@@ -83,7 +84,7 @@ export class CsrfGuard implements CanActivate {
   private isAuthenticatedWebhook(request: Request): boolean {
     const path = request.path;
     const isWebhook = path.includes('/webhook');
-    const hasValidAuth = request.headers.authorization || request.headers['x-api-key'];
+    const hasValidAuth = getHeader(request, 'authorization') || getHeader(request, 'x-api-key');
 
     return isWebhook && !!hasValidAuth;
   }
@@ -91,4 +92,17 @@ export class CsrfGuard implements CanActivate {
   static generateCsrfToken(): string {
     return crypto.randomBytes(32).toString('hex');
   }
+}
+
+function getHeader(request: Request, name: string): string | null {
+  const value = request.headers[name.toLowerCase()];
+  return typeof value === 'string' ? value : null;
+}
+
+function getSessionToken(request: Request): string | null {
+  const session = request.session as Record<string, unknown> | undefined;
+  if (session && typeof session.csrfToken === 'string') {
+    return session.csrfToken;
+  }
+  return null;
 }
