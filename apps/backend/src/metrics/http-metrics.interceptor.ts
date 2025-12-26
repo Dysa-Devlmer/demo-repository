@@ -1,5 +1,6 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import type { Request, Response } from 'express';
+import type { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { MetricsService } from './metrics.service';
 
@@ -7,10 +8,10 @@ import { MetricsService } from './metrics.service';
 export class HttpMetricsInterceptor implements NestInterceptor {
   constructor(private readonly metrics: MetricsService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const http = context.switchToHttp();
-    const req = http.getRequest();
-    const res = http.getResponse();
+    const req = http.getRequest<Request>();
+    const res = http.getResponse<Response>();
 
     const path: string = req.originalUrl || req.url || '';
     if (path.startsWith('/metrics')) {
@@ -25,14 +26,16 @@ export class HttpMetricsInterceptor implements NestInterceptor {
           const end = process.hrtime.bigint();
           const durationSeconds = Number(end - start) / 1e9;
           const method = (req.method || 'UNKNOWN').toUpperCase();
-          const route =
-            (req.route && req.route.path) ||
-            (req.baseUrl ? `${req.baseUrl}${req.path || ''}` : '') ||
-            (path.split('?')[0] || 'unknown');
+          const reqRoute = (req as { route?: { path?: unknown } }).route;
+          const routePath = typeof reqRoute?.path === 'string' ? reqRoute.path : undefined;
+          const pathSegment = typeof req.path === 'string' ? req.path : '';
+          const basePath =
+            typeof req.baseUrl === 'string' ? `${req.baseUrl}${pathSegment}` : undefined;
+          const safeRoute = routePath || basePath || path.split('?')[0] || 'unknown';
           const statusCode = String(res.statusCode ?? 0);
 
-          this.metrics.httpRequestsTotal().inc({ method, route, status: statusCode });
-          this.metrics.httpRequestDuration().observe({ method, route }, durationSeconds);
+          this.metrics.httpRequestsTotal().inc({ method, route: safeRoute, status: statusCode });
+          this.metrics.httpRequestDuration().observe({ method, route: safeRoute }, durationSeconds);
         },
       })
     );

@@ -4,6 +4,16 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { MetricsService } from './metrics.service';
 
+type RedisCacheClient = {
+  status?: string;
+  ping?: () => Promise<string>;
+};
+
+type CacheStoreWithClient = {
+  client?: RedisCacheClient;
+  getClient?: () => RedisCacheClient | undefined;
+};
+
 @Injectable()
 export class ConnectivityProbe implements OnModuleInit, OnModuleDestroy {
   private timer: NodeJS.Timeout | null = null;
@@ -14,7 +24,7 @@ export class ConnectivityProbe implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    const run = async () => {
+    const run = async (): Promise<void> => {
       try {
         await this.dataSource.query('SELECT 1');
         this.metrics.setDbUp(1);
@@ -23,10 +33,9 @@ export class ConnectivityProbe implements OnModuleInit, OnModuleDestroy {
       }
 
       try {
-        const store = (this.cacheManager as any).store;
+        const store = (this.cacheManager as { store?: CacheStoreWithClient }).store;
         const redisClient =
-          store?.client ||
-          (typeof store?.getClient === 'function' ? store.getClient() : undefined);
+          store?.client || (typeof store?.getClient === 'function' ? store.getClient() : undefined);
 
         if (redisClient?.status === 'ready') {
           this.metrics.setRedisUp(1);
@@ -49,7 +58,7 @@ export class ConnectivityProbe implements OnModuleInit, OnModuleDestroy {
     };
 
     void run();
-    this.timer = setInterval(run, 15_000);
+    this.timer = setInterval(() => void run(), 15_000);
     this.timer.unref?.();
   }
 
