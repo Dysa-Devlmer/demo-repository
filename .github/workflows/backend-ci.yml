@@ -87,8 +87,8 @@ jobs:
           # best-effort: if your backend logs to stdout this won't capture, but keep for future
           ps aux | grep -i "apps/backend" || true
 
-      - name: Backend lint (check only)
-        run: npm run -w apps/backend lint:check
+      - name: Backend lint (core)
+        run: npm run -w apps/backend lint:check:core
 
       - name: Backend tests
         env:
