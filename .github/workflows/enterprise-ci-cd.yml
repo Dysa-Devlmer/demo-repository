@@ -154,7 +154,7 @@ jobs:
           npx playwright test --reporter=html
 
       - name: Upload E2E test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: e2e-test-results
@@ -241,7 +241,7 @@ jobs:
           npm audit --audit-level=moderate --json > audit-report.json || true
 
       - name: Upload Compliance Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: compliance-artifacts-${{ github.sha }}
           path: |
