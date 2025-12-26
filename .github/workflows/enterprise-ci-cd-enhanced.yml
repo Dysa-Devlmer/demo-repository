@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history for security analysis
 
@@ -165,7 +165,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🏗️ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -271,7 +271,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🏗️ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -387,7 +387,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🏗️ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -437,7 +437,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🏗️ Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -484,7 +484,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🔧 Setup Deployment Environment
         run: |
