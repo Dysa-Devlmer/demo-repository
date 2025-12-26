@@ -153,7 +153,8 @@ export class SecurityAlertsService implements OnModuleDestroy {
 
       return successCount > 0;
     } catch (error) {
-      this.logger.error(`Failed to send alert: ${error.message}`, error.stack);
+      const err = toError(error);
+      this.logger.error(`Failed to send alert: ${err.message}`, err.stack);
       return false;
     }
   }
@@ -353,7 +354,8 @@ export class SecurityAlertsService implements OnModuleDestroy {
           body: message,
         });
       } catch (error) {
-        this.logger.error(`Failed to send SMS to ${phone}: ${error.message}`);
+        const err = toError(error);
+        this.logger.error(`Failed to send SMS to ${phone}: ${err.message}`);
       }
     }
   }
@@ -386,7 +388,8 @@ export class SecurityAlertsService implements OnModuleDestroy {
           body: JSON.stringify(payload),
         });
       } catch (error) {
-        this.logger.error(`Failed to send webhook to ${url}: ${error.message}`);
+        const err = toError(error);
+        this.logger.error(`Failed to send webhook to ${url}: ${err.message}`);
       }
     }
   }
@@ -597,7 +600,7 @@ export class SecurityAlertsService implements OnModuleDestroy {
       description,
       severity: auditLog.severity,
       source: auditLog.endpoint,
-      metadata: auditLog.metadata,
+      metadata: toRecord(auditLog.metadata),
       affectedResources: [
         auditLog.resourceType && auditLog.resourceId
           ? `${auditLog.resourceType}:${auditLog.resourceId}`
@@ -629,7 +632,7 @@ export class SecurityAlertsService implements OnModuleDestroy {
    * Generate alert title from audit log
    */
   private generateTitle(auditLog: AuditLog): string {
-    const titles = {
+    const titles: Partial<Record<AuditAction, string>> = {
       FAILED_LOGIN: 'Multiple Failed Login Attempts Detected',
       UNAUTHORIZED_ACCESS: 'Unauthorized Access Attempt',
       SUSPICIOUS_ACTIVITY: 'Suspicious Activity Detected',
@@ -651,7 +654,7 @@ export class SecurityAlertsService implements OnModuleDestroy {
    * Get recommended actions based on audit log
    */
   private getRecommendedActions(auditLog: AuditLog): string[] {
-    const actions = {
+    const actions: Partial<Record<AuditAction, string[]>> = {
       FAILED_LOGIN: [
         'Review user account for potential compromise',
         'Consider implementing account lockout',
@@ -675,7 +678,21 @@ export class SecurityAlertsService implements OnModuleDestroy {
     };
 
     return (
-      actions[auditLog.action] || ['Review security logs', 'Contact security team if suspicious']
+      actions[auditLog.action] ?? ['Review security logs', 'Contact security team if suspicious']
     );
   }
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === 'string' ? error : 'Unknown error');
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+  return value as Record<string, unknown>;
 }

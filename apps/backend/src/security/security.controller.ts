@@ -4,13 +4,26 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { RequireRoles, ROLES } from '../auth/decorators/roles.decorator';
 import { User } from '../auth/decorators/user.decorator';
 import { AuditMiddleware, AuditEvent } from '../common/middleware/audit.middleware';
-import { AuditReviewService } from '../common/services/audit-review.service';
+import { AuditReviewService, AuditStatistics } from '../common/services/audit-review.service';
+import { AuditAction, AuditSeverity } from '../common/entities/audit-log.entity';
 import { SecurityAlertsService } from './services/security-alerts.service';
-import { LogArchivingService } from './services/log-archiving.service';
-import {
-  ComplianceReportsService,
-  ComplianceStandard,
-} from './services/compliance-reports.service';
+import { AlertConfig, AlertPriority } from './services/security-alerts.service';
+import { LogArchivingService, ArchiveConfig } from './services/log-archiving.service';
+import { ComplianceReport, ComplianceReportsService } from './services/compliance-reports.service';
+import type { AuditLogFilter } from '../common/services/audit-review.service';
+
+type SecurityMetrics = {
+  totalRequests: number;
+  riskLevels: {
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+  };
+  topIPs: Array<{ ip: string; count: number }>;
+  averageResponseTime: number;
+  securityFlags: Record<string, number>;
+};
 
 @Controller('security')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -25,8 +38,8 @@ export class SecurityController {
   ) {}
 
   @Get('dashboard')
-  async getSecurityDashboard() {
-    const metrics = this.auditMiddleware.getSecurityMetrics();
+  getSecurityDashboard() {
+    const metrics = this.toSecurityMetrics(this.auditMiddleware.getSecurityMetrics());
     const recentEvents = this.auditMiddleware.getAuditEvents(50);
 
     return {
@@ -40,8 +53,8 @@ export class SecurityController {
   }
 
   @Get('events')
-  async getAuditEvents(@Query('limit') limit?: string, @Query('riskLevel') riskLevel?: string) {
-    const events = this.auditMiddleware.getAuditEvents(limit ? parseInt(limit) : 100);
+  getAuditEvents(@Query('limit') limit?: string, @Query('riskLevel') riskLevel?: string) {
+    const events = this.auditMiddleware.getAuditEvents(toNumber(limit, 100) ?? 100);
 
     if (riskLevel) {
       return events.filter((event) => event.riskLevel === riskLevel);
@@ -51,13 +64,13 @@ export class SecurityController {
   }
 
   @Get('metrics')
-  async getSecurityMetrics() {
-    return this.auditMiddleware.getSecurityMetrics();
+  getSecurityMetrics() {
+    return this.toSecurityMetrics(this.auditMiddleware.getSecurityMetrics());
   }
 
   @Get('health')
-  async getSecurityHealth() {
-    const metrics = this.auditMiddleware.getSecurityMetrics();
+  getSecurityHealth() {
+    const metrics = this.toSecurityMetrics(this.auditMiddleware.getSecurityMetrics());
     const score = this.calculateSecurityScore(metrics);
 
     return {
@@ -67,8 +80,21 @@ export class SecurityController {
     };
   }
 
-  private generateSecurityAlerts(metrics: any, events: AuditEvent[]): any[] {
-    const alerts: any[] = [];
+  private generateSecurityAlerts(
+    metrics: SecurityMetrics,
+    events: AuditEvent[]
+  ): Array<{
+    type: string;
+    severity: string;
+    message: string;
+    timestamp: string;
+  }> {
+    const alerts: Array<{
+      type: string;
+      severity: string;
+      message: string;
+      timestamp: string;
+    }> = [];
 
     // Check for high-risk events in last hour
     const lastHour = Date.now() - 60 * 60 * 1000;
@@ -111,7 +137,7 @@ export class SecurityController {
     return alerts;
   }
 
-  private calculateSecurityScore(metrics: any): number {
+  private calculateSecurityScore(metrics: SecurityMetrics): number {
     let score = 100;
 
     // Deduct points for high-risk events
@@ -120,7 +146,7 @@ export class SecurityController {
     score -= metrics.riskLevels.medium * 2;
 
     // Deduct points for security flags
-    const flagPenalties = {
+    const flagPenalties: Record<string, number> = {
       SQL_INJECTION_ATTEMPT: 15,
       XSS_ATTEMPT: 10,
       PATH_TRAVERSAL_ATTEMPT: 8,
@@ -129,14 +155,14 @@ export class SecurityController {
     };
 
     Object.entries(metrics.securityFlags).forEach(([flag, count]) => {
-      const penalty = flagPenalties[flag] || 1;
-      score -= (count as number) * penalty;
+      const penalty = flagPenalties[flag] ?? 1;
+      score -= count * penalty;
     });
 
     return Math.max(0, Math.min(100, score));
   }
 
-  private getSecurityRecommendations(score: number, metrics: any): string[] {
+  private getSecurityRecommendations(score: number, metrics: SecurityMetrics): string[] {
     const recommendations: string[] = [];
 
     if (score < 70) {
@@ -185,21 +211,28 @@ export class SecurityController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string
   ) {
-    const filter: any = {};
+    const filter: AuditLogFilter = {};
 
-    if (userId) filter.userId = parseInt(userId);
+    const parsedUserId = toNumber(userId);
+    if (parsedUserId !== undefined) filter.userId = parsedUserId;
     if (userEmail) filter.userEmail = userEmail;
-    if (action) filter.action = action;
-    if (severity) filter.severity = severity;
+    const actionValue = toAuditAction(action);
+    if (actionValue) filter.action = actionValue;
+    const severityValue = toAuditSeverity(severity);
+    if (severityValue) filter.severity = severityValue;
     if (method) filter.method = method;
     if (endpoint) filter.endpoint = endpoint;
     if (ip) filter.ip = ip;
-    if (success !== undefined) filter.success = success === 'true';
-    if (isCritical !== undefined) filter.isCritical = isCritical === 'true';
+    const successValue = toBoolean(success);
+    if (successValue !== undefined) filter.success = successValue;
+    const criticalValue = toBoolean(isCritical);
+    if (criticalValue !== undefined) filter.isCritical = criticalValue;
     if (startDate) filter.startDate = new Date(startDate);
     if (endDate) filter.endDate = new Date(endDate);
-    if (limit) filter.limit = parseInt(limit);
-    if (offset) filter.offset = parseInt(offset);
+    const limitValue = toNumber(limit);
+    if (limitValue !== undefined) filter.limit = limitValue;
+    const offsetValue = toNumber(offset);
+    if (offsetValue !== undefined) filter.offset = offsetValue;
 
     const result = await this.auditReviewService.findAuditLogs(filter);
 
@@ -219,7 +252,7 @@ export class SecurityController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string
   ) {
-    let stats;
+    let stats: AuditStatistics;
 
     if (period === 'custom' && startDate && endDate) {
       stats = await this.auditReviewService.getStatistics(
@@ -240,7 +273,7 @@ export class SecurityController {
   @Get('audit/unreviewed')
   @RequireRoles(ROLES.ADMIN)
   async getUnreviewedLogs(@Query('severity') severity?: string) {
-    const logs = await this.auditReviewService.getUnreviewedLogs(severity as any);
+    const logs = await this.auditReviewService.getUnreviewedLogs(toAuditSeverity(severity));
 
     return {
       success: true,
@@ -253,10 +286,11 @@ export class SecurityController {
   @RequireRoles(ROLES.ADMIN)
   async markLogAsReviewed(
     @Param('id') id: string,
-    @User() user: any,
+    @User() user: Record<string, unknown> | undefined,
     @Body('notes') notes?: string
   ) {
-    await this.auditReviewService.markAsReviewed(parseInt(id), user.id, notes);
+    const reviewerId = toNumber(user?.id) ?? 0;
+    await this.auditReviewService.markAsReviewed(parseInt(id), reviewerId, notes);
 
     return {
       success: true,
@@ -271,11 +305,12 @@ export class SecurityController {
     @Query('endDate') endDate?: string,
     @Query('severity') severity?: string
   ) {
-    const filter: any = {};
+    const filter: AuditLogFilter = {};
 
     if (startDate) filter.startDate = new Date(startDate);
     if (endDate) filter.endDate = new Date(endDate);
-    if (severity) filter.severity = severity;
+    const exportSeverity = toAuditSeverity(severity);
+    if (exportSeverity) filter.severity = exportSeverity;
 
     const csv = await this.auditReviewService.exportToCSV(filter);
 
@@ -331,7 +366,7 @@ export class SecurityController {
 
   @Get('alerts/config')
   @RequireRoles(ROLES.ADMIN)
-  async getAlertsConfig() {
+  getAlertsConfig() {
     return {
       success: true,
       data: this.securityAlertsService.getConfig(),
@@ -340,7 +375,7 @@ export class SecurityController {
 
   @Put('alerts/config')
   @RequireRoles(ROLES.ADMIN)
-  async updateAlertsConfig(@Body() config: any) {
+  updateAlertsConfig(@Body() config: Partial<AlertConfig>) {
     this.securityAlertsService.updateConfig(config);
 
     return {
@@ -352,8 +387,8 @@ export class SecurityController {
 
   @Get('alerts/recent')
   @RequireRoles(ROLES.ADMIN)
-  async getRecentAlerts(@Query('limit') limit?: string) {
-    const alerts = this.securityAlertsService.getRecentAlerts(limit ? parseInt(limit) : 100);
+  getRecentAlerts(@Query('limit') limit?: string) {
+    const alerts = this.securityAlertsService.getRecentAlerts(toNumber(limit, 100) ?? 100);
 
     return {
       success: true,
@@ -364,7 +399,7 @@ export class SecurityController {
 
   @Get('alerts/statistics')
   @RequireRoles(ROLES.ADMIN)
-  async getAlertsStatistics() {
+  getAlertsStatistics() {
     return {
       success: true,
       data: this.securityAlertsService.getStatistics(),
@@ -374,12 +409,13 @@ export class SecurityController {
   @Post('alerts/test')
   @RequireRoles(ROLES.ADMIN)
   async sendTestAlert(@Body() body: { priority?: string; type?: string }) {
+    const priority = toAlertPriority(body.priority) ?? AlertPriority.MEDIUM;
     const result = await this.securityAlertsService.sendAlert({
       type: body.type || 'TEST_ALERT',
-      priority: (body.priority as any) || 'MEDIUM',
+      priority,
       title: 'Test Security Alert',
       description: 'This is a test alert to verify the security alert system is working correctly.',
-      severity: 'MEDIUM' as any,
+      severity: AuditSeverity.MEDIUM,
       source: 'Security Dashboard',
       metadata: { test: true, timestamp: new Date() },
       recommendedActions: [
@@ -401,8 +437,8 @@ export class SecurityController {
 
   @Get('archives')
   @RequireRoles(ROLES.ADMIN)
-  async getArchives() {
-    const archives = await this.logArchivingService.getArchives();
+  getArchives() {
+    const archives = this.logArchivingService.getArchives();
 
     return {
       success: true,
@@ -413,8 +449,8 @@ export class SecurityController {
 
   @Get('archives/statistics')
   @RequireRoles(ROLES.ADMIN)
-  async getArchiveStatistics() {
-    const stats = await this.logArchivingService.getArchiveStatistics();
+  getArchiveStatistics() {
+    const stats = this.logArchivingService.getArchiveStatistics();
 
     return {
       success: true,
@@ -424,7 +460,7 @@ export class SecurityController {
 
   @Get('archives/config')
   @RequireRoles(ROLES.ADMIN)
-  async getArchiveConfig() {
+  getArchiveConfig() {
     return {
       success: true,
       data: this.logArchivingService.getConfig(),
@@ -433,7 +469,7 @@ export class SecurityController {
 
   @Put('archives/config')
   @RequireRoles(ROLES.ADMIN)
-  async updateArchiveConfig(@Body() config: any) {
+  updateArchiveConfig(@Body() config: Partial<ArchiveConfig>) {
     this.logArchivingService.updateConfig(config);
 
     return {
@@ -536,7 +572,7 @@ export class SecurityController {
       ? new Date(startDate)
       : new Date(end.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-    let report;
+    let report: ComplianceReport;
 
     switch (standard.toUpperCase()) {
       case 'SOC2':
@@ -582,4 +618,90 @@ export class SecurityController {
       contentType: 'text/html',
     };
   }
+
+  private toSecurityMetrics(input: unknown): SecurityMetrics {
+    const empty: SecurityMetrics = {
+      totalRequests: 0,
+      riskLevels: { low: 0, medium: 0, high: 0, critical: 0 },
+      topIPs: [],
+      averageResponseTime: 0,
+      securityFlags: {},
+    };
+
+    if (!input || typeof input !== 'object') {
+      return empty;
+    }
+
+    const raw = input as Partial<Record<keyof SecurityMetrics, unknown>>;
+    const riskLevels = (
+      raw.riskLevels && typeof raw.riskLevels === 'object' ? raw.riskLevels : {}
+    ) as Record<string, unknown>;
+    const flags = (
+      raw.securityFlags && typeof raw.securityFlags === 'object' ? raw.securityFlags : {}
+    ) as Record<string, unknown>;
+
+    const normalizedFlags: Record<string, number> = {};
+    for (const [key, value] of Object.entries(flags)) {
+      normalizedFlags[key] = toNumber(value, 0) ?? 0;
+    }
+
+    return {
+      totalRequests: toNumber(raw.totalRequests, 0) ?? 0,
+      riskLevels: {
+        low: toNumber(riskLevels.low, 0) ?? 0,
+        medium: toNumber(riskLevels.medium, 0) ?? 0,
+        high: toNumber(riskLevels.high, 0) ?? 0,
+        critical: toNumber(riskLevels.critical, 0) ?? 0,
+      },
+      topIPs: Array.isArray(raw.topIPs) ? raw.topIPs.filter(isTopIpEntry) : [],
+      averageResponseTime: toNumber(raw.averageResponseTime, 0) ?? 0,
+      securityFlags: normalizedFlags,
+    };
+  }
+}
+
+function toNumber(value: unknown, fallback?: number): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function toBoolean(value: string | undefined): boolean | undefined {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return undefined;
+}
+
+function toAuditSeverity(value?: string): AuditSeverity | undefined {
+  if (!value) return undefined;
+  return (Object.values(AuditSeverity) as string[]).includes(value)
+    ? (value as AuditSeverity)
+    : undefined;
+}
+
+function toAuditAction(value?: string): AuditAction | undefined {
+  if (!value) return undefined;
+  return (Object.values(AuditAction) as string[]).includes(value)
+    ? (value as AuditAction)
+    : undefined;
+}
+
+function toAlertPriority(value?: string): AlertPriority | undefined {
+  if (!value) return undefined;
+  return (Object.values(AlertPriority) as string[]).includes(value)
+    ? (value as AlertPriority)
+    : undefined;
+}
+
+function isTopIpEntry(entry: unknown): entry is { ip: string; count: number } {
+  if (!entry || typeof entry !== 'object') return false;
+  const obj = entry as { ip?: unknown; count?: unknown };
+  return typeof obj.ip === 'string' && typeof obj.count === 'number';
 }

@@ -69,7 +69,7 @@ export class SSLCertificateService implements OnModuleDestroy {
       protocols: ['TLSv1.2', 'TLSv1.3'],
     };
 
-    this.initializeSSL();
+    void this.initializeSSL();
   }
 
   private async initializeSSL() {
@@ -93,8 +93,8 @@ export class SSLCertificateService implements OnModuleDestroy {
 
         // Schedule periodic renewal checks (daily)
         this.renewalInterval = setInterval(
-          async () => {
-            await this.checkRenewals();
+          () => {
+            void this.checkRenewals();
           },
           24 * 60 * 60 * 1000
         );
@@ -107,9 +107,10 @@ export class SSLCertificateService implements OnModuleDestroy {
         domains: this.config.domains.length,
       });
     } catch (error) {
+      const err = toError(error);
       this.logger.error(
         'Failed to initialize SSL certificate service',
-        error.stack,
+        err.stack,
         'SSLCertificateService'
       );
     }
@@ -156,12 +157,13 @@ export class SSLCertificateService implements OnModuleDestroy {
 
       return certificate;
     } catch (error) {
+      const err = toError(error);
       this.logger.error(
         `Failed to create self-signed certificate for ${domain}`,
-        error.stack,
+        err.stack,
         'SSLCertificateService'
       );
-      throw new Error(`Certificate creation failed: ${error.message}`);
+      throw new Error(`Certificate creation failed: ${err.message}`);
     }
   }
 
@@ -175,10 +177,6 @@ export class SSLCertificateService implements OnModuleDestroy {
       );
 
       const certId = `le_${domain}_${Date.now()}`;
-      const keyPath = path.join(this.config.certDir, `${certId}.key`);
-      const certPath = path.join(this.config.certDir, `${certId}.crt`);
-      const chainPath = path.join(this.config.certDir, `${certId}-chain.crt`);
-
       // For now, create self-signed as fallback
       // In production, implement proper ACME protocol
       const certificate = await this.createSelfSignedCertificate(domain);
@@ -193,12 +191,13 @@ export class SSLCertificateService implements OnModuleDestroy {
 
       return certificate;
     } catch (error) {
+      const err = toError(error);
       this.logger.error(
         `Failed to request Let's Encrypt certificate for ${domain}`,
-        error.stack,
+        err.stack,
         'SSLCertificateService'
       );
-      throw error;
+      throw err;
     }
   }
 
@@ -226,13 +225,19 @@ export class SSLCertificateService implements OnModuleDestroy {
             this.certificates.set(certId, certificate);
           }
         } catch (error) {
-          this.logger.warn(`Failed to load certificate: ${certFile}`, 'SSLCertificateService');
+          const err = toError(error);
+          this.logger.warn(
+            `Failed to load certificate: ${certFile}`,
+            'SSLCertificateService',
+            err.message
+          );
         }
       }
 
       this.logger.log(`Loaded ${this.certificates.size} certificates`, 'SSLCertificateService');
     } catch (error) {
-      this.logger.error('Failed to load certificates', error.stack, 'SSLCertificateService');
+      const err = toError(error);
+      this.logger.error('Failed to load certificates', err.stack, 'SSLCertificateService');
     }
   }
 
@@ -240,7 +245,7 @@ export class SSLCertificateService implements OnModuleDestroy {
     try {
       const certContent = fs.readFileSync(certPath, 'utf8');
       const cert = crypto.X509Certificate
-        ? new crypto.X509Certificate(certContent)
+        ? toParsedCertificate(new crypto.X509Certificate(certContent))
         : await this.parseX509Certificate(certPath);
 
       const fingerprint = crypto.createHash('sha256').update(certContent).digest('hex');
@@ -275,11 +280,12 @@ export class SSLCertificateService implements OnModuleDestroy {
         lastChecked: new Date(),
       };
     } catch (error) {
-      throw new Error(`Failed to load certificate info: ${error.message}`);
+      const err = toError(error);
+      throw new Error(`Failed to load certificate info: ${err.message}`);
     }
   }
 
-  private async parseX509Certificate(certPath: string): Promise<any> {
+  private async parseX509Certificate(certPath: string): Promise<ParsedCertificate> {
     try {
       const command = `openssl x509 -in ${certPath} -text -noout`;
       const { stdout } = await execAsync(command);
@@ -296,7 +302,8 @@ export class SSLCertificateService implements OnModuleDestroy {
         issuer: issuerMatch ? issuerMatch[1] : 'Unknown',
       };
     } catch (error) {
-      throw new Error(`Failed to parse certificate: ${error.message}`);
+      const err = toError(error);
+      throw new Error(`Failed to parse certificate: ${err.message}`);
     }
   }
 
@@ -315,19 +322,17 @@ export class SSLCertificateService implements OnModuleDestroy {
         try {
           await this.renewCertificate(cert.id);
         } catch (error) {
+          const err = toError(error);
           this.logger.error(
             `Failed to renew certificate: ${cert.domain}`,
-            error.stack,
+            err.stack,
             'SSLCertificateService'
           );
         }
       }
     } catch (error) {
-      this.logger.error(
-        'Failed to check certificate renewals',
-        error.stack,
-        'SSLCertificateService'
-      );
+      const err = toError(error);
+      this.logger.error('Failed to check certificate renewals', err.stack, 'SSLCertificateService');
     }
   }
 
@@ -354,9 +359,11 @@ export class SSLCertificateService implements OnModuleDestroy {
           fs.unlinkSync(cert.chainPath);
         }
       } catch (error) {
+        const err = toError(error);
         this.logger.warn(
           `Failed to remove old certificate files for: ${cert.domain}`,
-          'SSLCertificateService'
+          'SSLCertificateService',
+          err.message
         );
       }
 
@@ -372,12 +379,13 @@ export class SSLCertificateService implements OnModuleDestroy {
 
       return newCert;
     } catch (error) {
+      const err = toError(error);
       this.logger.error(
         `Certificate renewal failed: ${cert.domain}`,
-        error.stack,
+        err.stack,
         'SSLCertificateService'
       );
-      throw error;
+      throw err;
     }
   }
 
@@ -412,7 +420,8 @@ export class SSLCertificateService implements OnModuleDestroy {
         dhparam: this.generateDHParams(),
       };
     } catch (error) {
-      this.logger.error('Failed to get HTTPS options', error.stack, 'SSLCertificateService');
+      const err = toError(error);
+      this.logger.error('Failed to get HTTPS options', err.stack, 'SSLCertificateService');
       return null;
     }
   }
@@ -423,13 +432,14 @@ export class SSLCertificateService implements OnModuleDestroy {
 
       if (!fs.existsSync(dhParamsPath)) {
         // Generate DH params asynchronously
-        this.generateDHParamsAsync(dhParamsPath);
+        void this.generateDHParamsAsync(dhParamsPath);
         return undefined;
       }
 
       return fs.readFileSync(dhParamsPath);
     } catch (error) {
-      this.logger.warn('Failed to load DH params', 'SSLCertificateService');
+      const err = toError(error);
+      this.logger.warn('Failed to load DH params', 'SSLCertificateService', err.message);
       return undefined;
     }
   }
@@ -444,7 +454,8 @@ export class SSLCertificateService implements OnModuleDestroy {
       await execAsync(command);
       this.logger.log('DH parameters generated successfully', 'SSLCertificateService');
     } catch (error) {
-      this.logger.error('Failed to generate DH parameters', error.stack, 'SSLCertificateService');
+      const err = toError(error);
+      this.logger.error('Failed to generate DH parameters', err.stack, 'SSLCertificateService');
     }
   }
 
@@ -456,7 +467,7 @@ export class SSLCertificateService implements OnModuleDestroy {
     return this.certificates.get(id);
   }
 
-  async deleteCertificate(id: string): Promise<void> {
+  deleteCertificate(id: string): void {
     const cert = this.certificates.get(id);
     if (!cert) {
       throw new Error(`Certificate not found: ${id}`);
@@ -478,12 +489,9 @@ export class SSLCertificateService implements OnModuleDestroy {
         domain: cert.domain,
       });
     } catch (error) {
-      this.logger.error(
-        `Failed to delete certificate: ${id}`,
-        error.stack,
-        'SSLCertificateService'
-      );
-      throw error;
+      const err = toError(error);
+      this.logger.error(`Failed to delete certificate: ${id}`, err.stack, 'SSLCertificateService');
+      throw err;
     }
   }
 
@@ -505,4 +513,27 @@ export class SSLCertificateService implements OnModuleDestroy {
       await this.initializeSSL();
     }
   }
+}
+
+type ParsedCertificate = {
+  validFrom: string | null;
+  validTo: string | null;
+  subject: string;
+  issuer: string;
+};
+
+function toParsedCertificate(cert: crypto.X509Certificate): ParsedCertificate {
+  return {
+    validFrom: cert.validFrom || null,
+    validTo: cert.validTo || null,
+    subject: cert.subject || 'Unknown',
+    issuer: cert.issuer || 'Unknown',
+  };
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === 'string' ? error : 'Unknown error');
 }

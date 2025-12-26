@@ -52,8 +52,8 @@ export class LogArchivingService {
     @InjectRepository(AuditLog)
     private readonly auditLogRepository: Repository<AuditLog>
   ) {
-    this.initializeArchiveDirectory();
-    this.loadArchiveIndex();
+    void this.initializeArchiveDirectory();
+    void this.loadArchiveIndex();
   }
 
   /**
@@ -65,7 +65,8 @@ export class LogArchivingService {
       await fs.mkdir(path.join(this.config.archivePath, 'metadata'), { recursive: true });
       this.logger.log(`Archive directory initialized: ${this.config.archivePath}`);
     } catch (error) {
-      this.logger.error('Failed to initialize archive directory:', error.message);
+      const err = toError(error);
+      this.logger.error('Failed to initialize archive directory:', err.message);
     }
   }
 
@@ -80,14 +81,18 @@ export class LogArchivingService {
       for (const file of files) {
         if (file.endsWith('.meta.json')) {
           const content = await fs.readFile(path.join(metadataPath, file), 'utf-8');
-          const metadata: ArchiveMetadata = JSON.parse(content);
+          const metadata = toArchiveMetadata(JSON.parse(content) as unknown);
+          if (!metadata) {
+            continue;
+          }
           this.archiveIndex.set(metadata.filename, metadata);
         }
       }
 
       this.logger.log(`Loaded ${this.archiveIndex.size} archive metadata entries`);
     } catch (error) {
-      this.logger.warn('Failed to load archive index:', error.message);
+      const err = toError(error);
+      this.logger.warn('Failed to load archive index:', err.message);
     }
   }
 
@@ -117,7 +122,8 @@ export class LogArchivingService {
           `${result.deletedCount} logs deleted, ${result.filesCreated} files created`
       );
     } catch (error) {
-      this.logger.error('Automatic archiving failed:', error.message);
+      const err = toError(error);
+      this.logger.error('Automatic archiving failed:', err.message);
     } finally {
       this.isArchiving = false;
     }
@@ -198,8 +204,6 @@ export class LogArchivingService {
 
     // Generate filename
     const filename = `audit_logs_${this.formatDateForFilename(dateRange.from)}_to_${this.formatDateForFilename(dateRange.to)}.json`;
-    const filepath = path.join(this.config.archivePath, filename);
-
     // Convert logs to JSON
     const jsonData = JSON.stringify(logs, null, 2);
     let finalData: Buffer = Buffer.from(jsonData);
@@ -264,21 +268,22 @@ export class LogArchivingService {
       }
 
       // Parse JSON
-      const logs: AuditLog[] = JSON.parse(fileData.toString());
+      const logs = toAuditLogs(JSON.parse(fileData.toString()) as unknown);
 
       this.logger.log(`Restored ${logs.length} logs from ${filename}`);
 
       return logs;
     } catch (error) {
-      this.logger.error(`Failed to restore from archive ${filename}:`, error.message);
-      throw error;
+      const err = toError(error);
+      this.logger.error(`Failed to restore from archive ${filename}:`, err.message);
+      throw err;
     }
   }
 
   /**
    * Get all archive files
    */
-  async getArchives(): Promise<ArchiveMetadata[]> {
+  getArchives(): ArchiveMetadata[] {
     return Array.from(this.archiveIndex.values()).sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
     );
@@ -287,14 +292,14 @@ export class LogArchivingService {
   /**
    * Get archive statistics
    */
-  async getArchiveStatistics(): Promise<{
+  getArchiveStatistics(): {
     totalArchives: number;
     totalRecords: number;
     totalSize: number;
     oldestArchive: Date | null;
     newestArchive: Date | null;
     compressionRatio: number;
-  }> {
+  } {
     const archives = Array.from(this.archiveIndex.values());
 
     const totalRecords = archives.reduce((sum, a) => sum + a.recordCount, 0);
@@ -350,8 +355,9 @@ export class LogArchivingService {
 
       this.logger.log(`Deleted archive: ${filename}`);
     } catch (error) {
-      this.logger.error(`Failed to delete archive ${filename}:`, error.message);
-      throw error;
+      const err = toError(error);
+      this.logger.error(`Failed to delete archive ${filename}:`, err.message);
+      throw err;
     }
   }
 
@@ -394,7 +400,8 @@ export class LogArchivingService {
           await this.deleteArchive(archive.filename);
           deletedCount++;
         } catch (error) {
-          this.logger.error(`Failed to delete old archive ${archive.filename}:`, error.message);
+          const err = toError(error);
+          this.logger.error(`Failed to delete old archive ${archive.filename}:`, err.message);
         }
       }
     }
@@ -449,7 +456,7 @@ export class LogArchivingService {
             userEmail: log.userEmail,
             endpoint: log.endpoint,
             ip: log.ip,
-            metadata: log.metadata,
+            metadata: toRecord(log.metadata),
           }).toLowerCase();
 
           if (searchableText.includes(searchTerm.toLowerCase())) {
@@ -460,7 +467,8 @@ export class LogArchivingService {
           }
         }
       } catch (error) {
-        this.logger.error(`Error searching archive ${archive.filename}:`, error.message);
+        const err = toError(error);
+        this.logger.error(`Error searching archive ${archive.filename}:`, err.message);
       }
     }
 
@@ -469,4 +477,36 @@ export class LogArchivingService {
       searchedArchives,
     };
   }
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === 'string' ? error : 'Unknown error');
+}
+
+function toAuditLogs(value: unknown): AuditLog[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((entry) => entry && typeof entry === 'object') as AuditLog[];
+}
+
+function toArchiveMetadata(value: unknown): ArchiveMetadata | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const metadata = value as Partial<ArchiveMetadata>;
+  if (!metadata.filename || !metadata.createdAt) {
+    return null;
+  }
+  return metadata as ArchiveMetadata;
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+  return value as Record<string, unknown>;
 }

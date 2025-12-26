@@ -136,7 +136,7 @@ export class SecurityService implements OnModuleDestroy {
     this.initializeSecurity();
   }
 
-  private async initializeSecurity() {
+  private initializeSecurity() {
     try {
       // Clean up old failed attempts periodically
       const failedAttemptsInterval = setInterval(
@@ -164,7 +164,8 @@ export class SecurityService implements OnModuleDestroy {
         encryptionEnabled: !!this.encryptionKey,
       });
     } catch (error) {
-      this.logger.error('Failed to initialize security service', error.stack, 'SecurityService');
+      const err = toError(error);
+      this.logger.error('Failed to initialize security service', err.stack, 'SecurityService');
     }
   }
 
@@ -180,8 +181,8 @@ export class SecurityService implements OnModuleDestroy {
       message: this.config.rateLimit.message,
       standardHeaders: this.config.rateLimit.standardHeaders,
       legacyHeaders: this.config.rateLimit.legacyHeaders,
-      handler: async (req: any, res: any) => {
-        await this.createSecurityAlert({
+      handler: (req: Request, res: Response) => {
+        this.createSecurityAlert({
           type: 'rate_limit',
           severity: 'medium',
           ip: this.getClientIP(req),
@@ -191,7 +192,7 @@ export class SecurityService implements OnModuleDestroy {
           description: `Rate limit exceeded for IP: ${this.getClientIP(req)}`,
         });
 
-        res.status(429).json({
+        return res.status(429).json({
           error: 'Rate limit exceeded',
           message: this.config.rateLimit.message,
           retryAfter: Math.ceil(this.config.rateLimit.windowMs / 1000),
@@ -358,11 +359,11 @@ export class SecurityService implements OnModuleDestroy {
         /<embed[^>]*>/gi,
       ];
 
-      const checkForXSS = (obj: any): boolean => {
+      const checkForXSS = (obj: unknown): boolean => {
         if (typeof obj === 'string') {
           return xssPatterns.some((pattern) => pattern.test(obj));
         } else if (typeof obj === 'object' && obj !== null) {
-          return Object.values(obj).some((value) => checkForXSS(value));
+          return Object.values(obj as Record<string, unknown>).some((value) => checkForXSS(value));
         }
         return false;
       };
@@ -374,7 +375,11 @@ export class SecurityService implements OnModuleDestroy {
           ip: this.getClientIP(req),
           userAgent: req.get('User-Agent'),
           endpoint: req.path,
-          payload: { body: req.body, query: req.query, params: req.params },
+          payload: {
+            body: toRecord(req.body),
+            query: toRecord(req.query),
+            params: toRecord(req.params),
+          },
           blocked: true,
           description: 'XSS attempt detected in request',
         });
@@ -399,11 +404,13 @@ export class SecurityService implements OnModuleDestroy {
         /\/\*[\s\S]*?\*\//gi,
       ];
 
-      const checkForSQLInjection = (obj: any): boolean => {
+      const checkForSQLInjection = (obj: unknown): boolean => {
         if (typeof obj === 'string') {
           return sqlPatterns.some((pattern) => pattern.test(obj));
         } else if (typeof obj === 'object' && obj !== null) {
-          return Object.values(obj).some((value) => checkForSQLInjection(value));
+          return Object.values(obj as Record<string, unknown>).some((value) =>
+            checkForSQLInjection(value)
+          );
         }
         return false;
       };
@@ -419,7 +426,11 @@ export class SecurityService implements OnModuleDestroy {
           ip: this.getClientIP(req),
           userAgent: req.get('User-Agent'),
           endpoint: req.path,
-          payload: { body: req.body, query: req.query, params: req.params },
+          payload: {
+            body: toRecord(req.body),
+            query: toRecord(req.query),
+            params: toRecord(req.params),
+          },
           blocked: true,
           description: 'SQL injection attempt detected',
         });
@@ -448,7 +459,8 @@ export class SecurityService implements OnModuleDestroy {
 
       return iv.toString('hex') + ':' + encrypted;
     } catch (error) {
-      this.logger.error('Encryption failed', error.stack, 'SecurityService');
+      const err = toError(error);
+      this.logger.error('Encryption failed', err.stack, 'SecurityService');
       throw new Error(this.i18n.t('errors.encryptionFailed'));
     }
   }
@@ -474,7 +486,8 @@ export class SecurityService implements OnModuleDestroy {
 
       return decrypted;
     } catch (error) {
-      this.logger.error('Decryption failed', error.stack, 'SecurityService');
+      const err = toError(error);
+      this.logger.error('Decryption failed', err.stack, 'SecurityService');
       throw new Error(this.i18n.t('errors.decryptionFailed'));
     }
   }
@@ -618,4 +631,18 @@ export class SecurityService implements OnModuleDestroy {
   getSecurityConfig(): SecurityConfig {
     return { ...this.config };
   }
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === 'string' ? error : 'Unknown error');
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+  return value as Record<string, unknown>;
 }

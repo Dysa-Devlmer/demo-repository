@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { AuditLog } from '../../common/entities/audit-log.entity';
+import { AuditAction, AuditLog, AuditSeverity } from '../../common/entities/audit-log.entity';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -66,7 +66,7 @@ export class ComplianceReportsService {
     @InjectRepository(AuditLog)
     private readonly auditLogRepository: Repository<AuditLog>
   ) {
-    this.initializeReportsDirectory();
+    void this.initializeReportsDirectory();
   }
 
   /**
@@ -77,7 +77,8 @@ export class ComplianceReportsService {
       await fs.mkdir(this.reportsPath, { recursive: true });
       this.logger.log(`Compliance reports directory initialized: ${this.reportsPath}`);
     } catch (error) {
-      this.logger.error('Failed to initialize compliance reports directory:', error.message);
+      const err = toError(error);
+      this.logger.error('Failed to initialize compliance reports directory:', err.message);
     }
   }
 
@@ -101,25 +102,25 @@ export class ComplianceReportsService {
     const controls: ComplianceControl[] = [];
 
     // CC6.1 - Logical and Physical Access Controls
-    controls.push(await this.assessAccessControls(auditLogs));
+    controls.push(this.assessAccessControls(auditLogs));
 
     // CC6.2 - System Monitoring
-    controls.push(await this.assessSystemMonitoring(auditLogs));
+    controls.push(this.assessSystemMonitoring(auditLogs));
 
     // CC6.3 - Configuration Management
-    controls.push(await this.assessConfigurationManagement(auditLogs));
+    controls.push(this.assessConfigurationManagement(auditLogs));
 
     // CC6.6 - Logging and Monitoring
-    controls.push(await this.assessLoggingMonitoring(auditLogs));
+    controls.push(this.assessLoggingMonitoring(auditLogs));
 
     // CC6.7 - System Security
-    controls.push(await this.assessSystemSecurity(auditLogs));
+    controls.push(this.assessSystemSecurity(auditLogs));
 
     // CC7.2 - Authentication
-    controls.push(await this.assessAuthentication(auditLogs));
+    controls.push(this.assessAuthentication(auditLogs));
 
     // CC7.3 - Data Encryption
-    controls.push(await this.assessDataEncryption(auditLogs));
+    controls.push(this.assessDataEncryption(auditLogs));
 
     // Calculate overall status
     const summary = this.calculateSummary(controls);
@@ -171,22 +172,22 @@ export class ComplianceReportsService {
     const controls: ComplianceControl[] = [];
 
     // A.9.1 - Access Control Policy
-    controls.push(await this.assessAccessControlPolicy(auditLogs));
+    controls.push(this.assessAccessControlPolicy(auditLogs));
 
     // A.9.2 - User Access Management
-    controls.push(await this.assessUserAccessManagement(auditLogs));
+    controls.push(this.assessUserAccessManagement(auditLogs));
 
     // A.9.4 - System and Application Access Control
-    controls.push(await this.assessSystemAccessControl(auditLogs));
+    controls.push(this.assessSystemAccessControl(auditLogs));
 
     // A.12.4 - Logging and Monitoring
-    controls.push(await this.assessISO27001Logging(auditLogs));
+    controls.push(this.assessISO27001Logging(auditLogs));
 
     // A.12.6 - Technical Vulnerability Management
-    controls.push(await this.assessVulnerabilityManagement(auditLogs));
+    controls.push(this.assessVulnerabilityManagement(auditLogs));
 
     // A.18.1 - Compliance with Legal Requirements
-    controls.push(await this.assessLegalCompliance(auditLogs));
+    controls.push(this.assessLegalCompliance(auditLogs));
 
     const summary = this.calculateSummary(controls);
     const score = this.calculateComplianceScore(summary);
@@ -236,28 +237,28 @@ export class ComplianceReportsService {
     const controls: ComplianceControl[] = [];
 
     // Article 5 - Principles for Processing Personal Data
-    controls.push(await this.assessDataProcessingPrinciples(auditLogs));
+    controls.push(this.assessDataProcessingPrinciples(auditLogs));
 
     // Article 6 - Lawfulness of Processing
-    controls.push(await this.assessLawfulProcessing(auditLogs));
+    controls.push(this.assessLawfulProcessing(auditLogs));
 
     // Article 15 - Right of Access
-    controls.push(await this.assessRightOfAccess(auditLogs));
+    controls.push(this.assessRightOfAccess(auditLogs));
 
     // Article 17 - Right to Erasure
-    controls.push(await this.assessRightToErasure(auditLogs));
+    controls.push(this.assessRightToErasure(auditLogs));
 
     // Article 25 - Data Protection by Design
-    controls.push(await this.assessDataProtectionByDesign(auditLogs));
+    controls.push(this.assessDataProtectionByDesign(auditLogs));
 
     // Article 30 - Records of Processing Activities
-    controls.push(await this.assessProcessingRecords(auditLogs));
+    controls.push(this.assessProcessingRecords(auditLogs));
 
     // Article 32 - Security of Processing
-    controls.push(await this.assessSecurityOfProcessing(auditLogs));
+    controls.push(this.assessSecurityOfProcessing(auditLogs));
 
     // Article 33 - Breach Notification
-    controls.push(await this.assessBreachNotification(auditLogs));
+    controls.push(this.assessBreachNotification(auditLogs));
 
     const summary = this.calculateSummary(controls);
     const score = this.calculateComplianceScore(summary);
@@ -291,9 +292,11 @@ export class ComplianceReportsService {
   // SOC 2 CONTROL ASSESSMENTS
   // ============================================================================
 
-  private async assessAccessControls(logs: AuditLog[]): Promise<ComplianceControl> {
-    const authEvents = logs.filter((log) => log.action === 'LOGIN' || log.action === 'LOGOUT');
-    const failedLogins = logs.filter((log) => log.action === 'LOGIN' && !log.success);
+  private assessAccessControls(logs: AuditLog[]): ComplianceControl {
+    const authEvents = logs.filter(
+      (log) => log.action === AuditAction.LOGIN || log.action === AuditAction.LOGOUT
+    );
+    const failedLogins = logs.filter((log) => log.action === AuditAction.LOGIN && !log.success);
     const unauthorized = logs.filter((log) => log.responseStatus === 403);
 
     const findings: string[] = [];
@@ -332,9 +335,9 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessSystemMonitoring(logs: AuditLog[]): Promise<ComplianceControl> {
-    const criticalEvents = logs.filter((log) => log.severity === 'CRITICAL');
-    const highSeverity = logs.filter((log) => log.severity === 'HIGH');
+  private assessSystemMonitoring(logs: AuditLog[]): ComplianceControl {
+    const criticalEvents = logs.filter((log) => log.severity === AuditSeverity.CRITICAL);
+    const highSeverity = logs.filter((log) => log.severity === AuditSeverity.HIGH);
 
     const evidence = [
       `Total audit logs: ${logs.length}`,
@@ -355,10 +358,10 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessConfigurationManagement(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessConfigurationManagement(logs: AuditLog[]): ComplianceControl {
     const configChanges = logs.filter(
       (log) =>
-        log.action === 'UPDATE' &&
+        log.action === AuditAction.UPDATE &&
         (log.endpoint?.includes('/settings') || log.endpoint?.includes('/config'))
     );
 
@@ -380,7 +383,7 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessLoggingMonitoring(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessLoggingMonitoring(logs: AuditLog[]): ComplianceControl {
     const logCoverage = logs.length > 0 ? 100 : 0;
 
     const evidence = [
@@ -402,7 +405,7 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessSystemSecurity(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessSystemSecurity(logs: AuditLog[]): ComplianceControl {
     const securityEvents = logs.filter((log) => log.isSuspicious);
 
     const evidence = [
@@ -423,8 +426,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessAuthentication(logs: AuditLog[]): Promise<ComplianceControl> {
-    const loginEvents = logs.filter((log) => log.action === 'LOGIN');
+  private assessAuthentication(logs: AuditLog[]): ComplianceControl {
+    const loginEvents = logs.filter((log) => log.action === AuditAction.LOGIN);
     const successfulLogins = loginEvents.filter((log) => log.success);
 
     const evidence = [
@@ -446,7 +449,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessDataEncryption(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessDataEncryption(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'TLS 1.3 encryption for data in transit',
       'Database-level encryption at rest',
@@ -469,7 +473,8 @@ export class ComplianceReportsService {
   // ISO 27001 CONTROL ASSESSMENTS
   // ============================================================================
 
-  private async assessAccessControlPolicy(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessAccessControlPolicy(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'Access control policy documented',
       'RBAC implementation with 3 roles (Admin, Manager, User)',
@@ -488,9 +493,9 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessUserAccessManagement(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessUserAccessManagement(logs: AuditLog[]): ComplianceControl {
     const userCreations = logs.filter(
-      (log) => log.action === 'CREATE' && log.endpoint?.includes('/users')
+      (log) => log.action === AuditAction.CREATE && log.endpoint?.includes('/users')
     );
 
     const evidence = [
@@ -511,7 +516,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessSystemAccessControl(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessSystemAccessControl(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'JWT-based session management',
       'Secure password policy enforced',
@@ -530,7 +536,7 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessISO27001Logging(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessISO27001Logging(logs: AuditLog[]): ComplianceControl {
     const evidence = [
       `Audit trail maintained: ${logs.length} events`,
       'Tamper-proof logging system',
@@ -549,7 +555,7 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessVulnerabilityManagement(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessVulnerabilityManagement(logs: AuditLog[]): ComplianceControl {
     const securityEvents = logs.filter((log) => log.isSuspicious);
 
     const evidence = [
@@ -571,7 +577,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessLegalCompliance(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessLegalCompliance(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'GDPR compliance documented',
       'Data protection policies established',
@@ -595,7 +602,8 @@ export class ComplianceReportsService {
   // GDPR CONTROL ASSESSMENTS
   // ============================================================================
 
-  private async assessDataProcessingPrinciples(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessDataProcessingPrinciples(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'Data minimization principle applied',
       'Purpose limitation documented',
@@ -614,7 +622,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessLawfulProcessing(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessLawfulProcessing(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'Consent mechanisms implemented',
       'Legal basis for processing documented',
@@ -632,9 +641,9 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessRightOfAccess(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessRightOfAccess(logs: AuditLog[]): ComplianceControl {
     const dataAccessRequests = logs.filter(
-      (log) => log.action === 'READ' && log.endpoint?.includes('/profile')
+      (log) => log.action === AuditAction.READ && log.endpoint?.includes('/profile')
     );
 
     const evidence = [
@@ -655,10 +664,10 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessRightToErasure(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessRightToErasure(logs: AuditLog[]): ComplianceControl {
     const deletionRequests = logs.filter(
       (log) =>
-        log.action === 'DELETE' &&
+        log.action === AuditAction.DELETE &&
         (log.endpoint?.includes('/users') || log.endpoint?.includes('/customers'))
     );
 
@@ -679,7 +688,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessDataProtectionByDesign(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessDataProtectionByDesign(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'Privacy by design principles implemented',
       'Data protection impact assessment conducted',
@@ -699,7 +709,7 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessProcessingRecords(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessProcessingRecords(logs: AuditLog[]): ComplianceControl {
     const evidence = [
       `Processing activities logged: ${logs.length}`,
       'Records of processing maintained',
@@ -718,7 +728,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessSecurityOfProcessing(logs: AuditLog[]): Promise<ComplianceControl> {
+  private assessSecurityOfProcessing(_logs: AuditLog[]): ComplianceControl {
+    void _logs;
     const evidence = [
       'Encryption implemented (TLS 1.3, database encryption)',
       'Access controls enforced (RBAC)',
@@ -737,8 +748,8 @@ export class ComplianceReportsService {
     };
   }
 
-  private async assessBreachNotification(logs: AuditLog[]): Promise<ComplianceControl> {
-    const securityIncidents = logs.filter((log) => log.severity === 'CRITICAL');
+  private assessBreachNotification(logs: AuditLog[]): ComplianceControl {
+    const securityIncidents = logs.filter((log) => log.severity === AuditSeverity.CRITICAL);
 
     const evidence = [
       'Breach detection mechanisms in place',
@@ -773,7 +784,7 @@ export class ComplianceReportsService {
     };
   }
 
-  private calculateComplianceScore(summary: any): number {
+  private calculateComplianceScore(summary: ComplianceReport['summary']): number {
     const { totalControls, compliant, partial } = summary;
     if (totalControls === 0) return 0;
 
@@ -831,7 +842,10 @@ export class ComplianceReportsService {
       for (const file of files) {
         if (file.endsWith('.json')) {
           const content = await fs.readFile(path.join(this.reportsPath, file), 'utf-8');
-          const report: ComplianceReport = JSON.parse(content);
+          const report = toComplianceReport(JSON.parse(content) as unknown);
+          if (!report) {
+            continue;
+          }
 
           reports.push({
             filename: file,
@@ -843,7 +857,8 @@ export class ComplianceReportsService {
 
       return reports.sort((a, b) => b.generatedAt.getTime() - a.generatedAt.getTime());
     } catch (error) {
-      this.logger.error('Failed to list compliance reports:', error.message);
+      const err = toError(error);
+      this.logger.error('Failed to list compliance reports:', err.message);
       return [];
     }
   }
@@ -855,9 +870,10 @@ export class ComplianceReportsService {
     try {
       const filepath = path.join(this.reportsPath, filename);
       const content = await fs.readFile(filepath, 'utf-8');
-      return JSON.parse(content);
+      return toComplianceReport(JSON.parse(content) as unknown);
     } catch (error) {
-      this.logger.error(`Failed to read report ${filename}:`, error.message);
+      const err = toError(error);
+      this.logger.error(`Failed to read report ${filename}:`, err.message);
       return null;
     }
   }
@@ -977,4 +993,28 @@ export class ComplianceReportsService {
 </html>
     `.trim();
   }
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === 'string' ? error : 'Unknown error');
+}
+
+function toComplianceReport(value: unknown): ComplianceReport | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const report = value as Partial<ComplianceReport>;
+  if (
+    !report.id ||
+    !report.standard ||
+    !report.generatedAt ||
+    !report.periodStart ||
+    !report.periodEnd
+  ) {
+    return null;
+  }
+  return report as ComplianceReport;
 }

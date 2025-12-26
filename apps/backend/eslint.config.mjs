@@ -14,6 +14,7 @@ export default tseslint.config(
       'storage/**',
       'public/**',
       'node_modules/**',
+      '**/*.spec.ts',
     ],
   },
   eslint.configs.recommended,
