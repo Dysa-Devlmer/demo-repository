@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 
 export interface AnalyticsConfig {
   enabled: boolean;
@@ -114,6 +114,7 @@ export class AnalyticsService {
   }
 
   // Track business metrics
+  // eslint-disable-next-line @typescript-eslint/require-await -- Method is async for future DB persistence
   async trackMetric(data: Omit<MetricData, 'timestamp'>): Promise<void> {
     if (!this.config.enabled) return;
 
@@ -195,6 +196,7 @@ export class AnalyticsService {
   }
 
   // Generate business reports
+  // eslint-disable-next-line @typescript-eslint/require-await -- Method is async for future report generation/persistence
   async generateReport(
     type: 'daily' | 'weekly' | 'monthly' | 'custom',
     startDate?: string,
@@ -354,6 +356,7 @@ export class AnalyticsService {
   }
 
   // Export report to different formats
+  // eslint-disable-next-line @typescript-eslint/require-await -- Method is async for future file generation
   async exportReport(reportId: string, format: 'json' | 'csv' | 'excel' | 'pdf'): Promise<string> {
     const report = this.getReport(reportId);
     if (!report) {
@@ -416,7 +419,7 @@ export class AnalyticsService {
         module: 'ANALYTICS',
         action: 'scheduled_daily_report_failed',
         metadata: {
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
       });
     }
@@ -442,7 +445,7 @@ export class AnalyticsService {
         module: 'ANALYTICS',
         action: 'scheduled_weekly_report_failed',
         metadata: {
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
       });
     }
@@ -468,7 +471,7 @@ export class AnalyticsService {
         module: 'ANALYTICS',
         action: 'scheduled_monthly_report_failed',
         metadata: {
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         },
       });
     }
@@ -476,6 +479,7 @@ export class AnalyticsService {
 
   // Clean up old data
   @Cron('0 3 * * *') // Daily at 3 AM
+  // eslint-disable-next-line @typescript-eslint/require-await -- Method is async for future DB cleanup
   async cleanupOldData(): Promise<void> {
     const cutoffDate = new Date(Date.now() - this.config.retentionDays * 24 * 60 * 60 * 1000);
 

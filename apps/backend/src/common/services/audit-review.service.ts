@@ -3,11 +3,16 @@
  * ChatBotDysa Enterprise
  *
  * Servicio avanzado de revisión de logs de auditoría con capacidades de análisis forense
+ * eslint-disable rules are used for TypeORM query results with dynamic grouping
  */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable no-case-declarations */
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In, MoreThan, LessThan, Not } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { AuditLog, AuditSeverity, AuditAction } from '../entities/audit-log.entity';
 
 export interface AuditLogFilter {
