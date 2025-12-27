@@ -3,17 +3,19 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
 
+type RequestWithId = Request & { requestId?: string };
+
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingInterceptor.name);
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const ctx = context.switchToHttp();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithId>();
     const response = ctx.getResponse<Response>();
     const { method, url, ip, headers } = request;
-    const userAgent = headers['user-agent'] || 'Unknown';
-    const requestId = (request as any).requestId;
+    const userAgent = normalizeHeaderValue(headers['user-agent']);
+    const requestId = request.requestId;
     const startTime = Date.now();
 
     // Log the incoming request
@@ -30,7 +32,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: (data) => {
+        next: () => {
           const duration = Date.now() - startTime;
           const contentLength = response.get('content-length') || 0;
 
@@ -46,8 +48,10 @@ export class LoggingInterceptor implements NestInterceptor {
             })
           );
         },
-        error: (error) => {
+        error: (error: unknown) => {
           const duration = Date.now() - startTime;
+          const errorMessage = getErrorMessage(error);
+          const errorStack = getErrorStack(error);
 
           this.logger.error(
             JSON.stringify({
@@ -55,13 +59,49 @@ export class LoggingInterceptor implements NestInterceptor {
               requestId,
               method,
               path: url,
-              error: error.message,
+              error: errorMessage,
               durationMs: duration,
             }),
-            error.stack
+            errorStack
           );
         },
       })
     );
   }
+}
+
+function normalizeHeaderValue(value: string | string[] | undefined): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  return 'Unknown';
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof (error as { message?: unknown }).message === 'string') {
+    return (error as { message: string }).message;
+  }
+
+  return 'Unknown error';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+
+  if (typeof (error as { stack?: unknown }).stack === 'string') {
+    return (error as { stack: string }).stack;
+  }
+
+  return undefined;
 }

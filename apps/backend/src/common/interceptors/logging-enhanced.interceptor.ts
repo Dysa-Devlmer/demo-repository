@@ -4,19 +4,26 @@ import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
 import { securityLogger, auditLogger } from '../../config/logger.config';
 
+type RequestWithUser = Request & {
+  user?: {
+    id?: string;
+    email?: string;
+  };
+};
+
 @Injectable()
 export class LoggingEnhancedInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingEnhancedInterceptor.name);
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest<Request>();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const response = context.switchToHttp().getResponse<Response>();
     const { method, url, ip, headers } = request;
-    const userAgent = headers['user-agent'] || 'unknown';
+    const userAgent = normalizeHeaderValue(headers['user-agent']);
     const startTime = Date.now();
 
     // ID de request único
-    const requestId = headers['x-request-id'] || this.generateRequestId();
+    const requestId = normalizeHeaderValue(headers['x-request-id']) || this.generateRequestId();
 
     // Añadir request ID a la response
     response.setHeader('X-Request-ID', requestId);
@@ -28,7 +35,7 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: (data) => {
+        next: () => {
           const duration = Date.now() - startTime;
           const statusCode = response.statusCode;
 
@@ -57,7 +64,7 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
           if (this.isSecurityEndpoint(url)) {
             securityLogger.info('Security endpoint accessed', {
               ...logData,
-              user: (request as any).user?.id || 'anonymous',
+              user: request.user?.id || 'anonymous',
             });
           }
 
@@ -65,15 +72,15 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
           if (this.isAuditableOperation(method, url)) {
             auditLogger.info('Auditable operation', {
               ...logData,
-              user: (request as any).user?.id || 'anonymous',
-              email: (request as any).user?.email || 'unknown',
+              user: request.user?.id || 'anonymous',
+              email: request.user?.email || 'unknown',
               body: this.sanitizeBody(request.body),
             });
           }
         },
-        error: (error) => {
+        error: (error: unknown) => {
           const duration = Date.now() - startTime;
-          const statusCode = error.status || 500;
+          const statusCode = getErrorStatus(error);
 
           const errorData = {
             requestId,
@@ -83,13 +90,13 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
             duration: `${duration}ms`,
             ip,
             userAgent,
-            error: error.message,
-            stack: error.stack,
+            error: getErrorMessage(error),
+            stack: getErrorStack(error),
             timestamp: new Date().toISOString(),
           };
 
           this.logger.error(
-            `❌ ${method} ${url} - ${statusCode} - ${duration}ms - ${error.message}`,
+            `❌ ${method} ${url} - ${statusCode} - ${duration}ms - ${errorData.error}`,
             errorData
           );
 
@@ -97,7 +104,7 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
           if (statusCode === 401 || statusCode === 403) {
             securityLogger.warn('Authentication/Authorization failed', {
               ...errorData,
-              user: (request as any).user?.id || 'anonymous',
+              user: request.user?.id || 'anonymous',
             });
           }
         },
@@ -144,10 +151,10 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
     return auditablePatterns.some((pattern) => url.includes(pattern));
   }
 
-  private sanitizeBody(body: any): any {
-    if (!body) return {};
+  private sanitizeBody(body: unknown): Record<string, unknown> {
+    if (!isPlainObject(body)) return {};
 
-    const sanitized = { ...body };
+    const sanitized: Record<string, unknown> = { ...body };
 
     // Remover campos sensibles
     const sensitiveFields = ['password', 'token', 'secret', 'apiKey', 'creditCard', 'ssn'];
@@ -160,4 +167,56 @@ export class LoggingEnhancedInterceptor implements NestInterceptor {
 
     return sanitized;
   }
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  return Object.getPrototypeOf(value) === Object.prototype;
+}
+
+function normalizeHeaderValue(value: string | string[] | undefined): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  return '';
+}
+
+function getErrorStatus(error: unknown): number {
+  if (isPlainObject(error) && typeof error.status === 'number') {
+    return error.status;
+  }
+
+  return 500;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (isPlainObject(error) && typeof error.message === 'string') {
+    return error.message;
+  }
+
+  return 'Unknown error';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+
+  if (isPlainObject(error) && typeof error.stack === 'string') {
+    return error.stack;
+  }
+
+  return undefined;
 }

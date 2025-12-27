@@ -3,11 +3,14 @@ import { Request, Response, NextFunction } from 'express';
 import { LoggerService } from '../services/logger.service';
 import { v4 as uuidv4 } from 'uuid';
 
+type RequestWithId = Request & { id?: string };
+type SendFn = (body?: unknown) => Response;
+
 @Injectable()
 export class LoggingMiddleware implements NestMiddleware {
   constructor(private readonly loggerService: LoggerService) {}
 
-  use(req: Request & { id?: string }, res: Response, next: NextFunction): void {
+  use(req: RequestWithId, res: Response, next: NextFunction): void {
     // Generate unique request ID
     req.id = uuidv4();
 
@@ -35,9 +38,9 @@ export class LoggingMiddleware implements NestMiddleware {
 
     // Hook into response finish
     const loggerService = this.loggerService;
-    const originalSend = res.send;
+    const originalSend = res.send.bind(res) as SendFn;
 
-    res.send = function (body) {
+    res.send = function (body?: unknown) {
       const responseTime = Date.now() - startTime;
       const statusCode = res.statusCode;
 
@@ -73,17 +76,26 @@ export class LoggingMiddleware implements NestMiddleware {
           module: 'HTTP',
           action: 'error_response',
           metadata: {
-            responseBody:
-              typeof body === 'string'
-                ? body.substring(0, 500)
-                : JSON.stringify(body).substring(0, 500),
+            responseBody: toSafeString(body).substring(0, 500),
           },
         });
       }
 
-      return originalSend.call(this, body);
+      return originalSend(body);
     };
 
     next();
+  }
+}
+
+function toSafeString(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '[unserializable]';
   }
 }

@@ -11,6 +11,45 @@ import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Request, Response } from 'express';
 
+type RequestUser = {
+  id?: string;
+  email?: string;
+  roles?: Array<{ name?: string }>;
+};
+
+type AuditUserSummary = {
+  id?: string;
+  email?: string;
+  role?: string;
+};
+
+type RequestWithUser = Request & { user?: RequestUser };
+
+type AuditLog = {
+  timestamp: string;
+  method: string;
+  endpoint: string;
+  user: AuditUserSummary | null;
+  ip: string;
+  userAgent: string;
+  requestBody?: Record<string, unknown>;
+  isCritical: boolean;
+  isMutation: boolean;
+  status?: 'success' | 'error';
+  statusCode?: number;
+  duration?: string;
+  responseSize?: number;
+  errorMessage?: string;
+  errorStack?: string;
+};
+
+type SecurityAlert = {
+  type: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  message: string;
+  details?: Record<string, unknown>;
+};
+
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   private readonly logger = new Logger(AuditInterceptor.name);
@@ -32,8 +71,8 @@ export class AuditInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse<Response>();
 
     const { method, originalUrl, ip, headers } = request;
-    const userAgent = headers['user-agent'] || 'Unknown';
-    const user = (request as any).user;
+    const userAgent = normalizeHeaderValue(headers['user-agent']);
+    const user = (request as RequestWithUser).user;
 
     const startTime = Date.now();
 
@@ -42,7 +81,7 @@ export class AuditInterceptor implements NestInterceptor {
     const isMutation = this.mutationMethods.includes(method);
 
     // Datos de auditoría
-    const auditData = {
+    const auditData: AuditLog = {
       timestamp: new Date().toISOString(),
       method,
       endpoint: originalUrl,
@@ -68,7 +107,7 @@ export class AuditInterceptor implements NestInterceptor {
     }
 
     return next.handle().pipe(
-      tap((data) => {
+      tap((data: unknown) => {
         const duration = Date.now() - startTime;
 
         // Log exitoso
@@ -85,25 +124,28 @@ export class AuditInterceptor implements NestInterceptor {
         }
 
         // Alertas para operaciones críticas específicas
-        this.checkForSecurityAlerts(successAudit, request, data);
+        this.checkForSecurityAlerts(successAudit);
       }),
-      catchError((error) => {
+      catchError((error: unknown) => {
         const duration = Date.now() - startTime;
+        const errorStatus = getErrorStatus(error);
+        const errorMessage = getErrorMessage(error);
+        const errorStack = getErrorStack(error);
 
         // Log de error
         const errorAudit = {
           ...auditData,
           status: 'error',
-          statusCode: error.status || 500,
-          errorMessage: error.message,
-          errorStack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+          statusCode: errorStatus,
+          errorMessage,
+          errorStack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
           duration: `${duration}ms`,
         };
 
         this.logAuditEvent(errorAudit, 'error');
 
         // Alertas de seguridad para errores de autorización
-        if (error.status === 401 || error.status === 403) {
+        if (errorStatus === 401 || errorStatus === 403) {
           this.securityAlert(errorAudit);
         }
 
@@ -122,10 +164,11 @@ export class AuditInterceptor implements NestInterceptor {
   /**
    * Sanitiza el body de la request removiendo datos sensibles
    */
-  private sanitizeRequestBody(body: any): any {
+  private sanitizeRequestBody(body: unknown): Record<string, unknown> | undefined {
     if (!body) return undefined;
+    if (!isPlainObject(body)) return undefined;
 
-    const sanitized = { ...body };
+    const sanitized: Record<string, unknown> = { ...body };
     const sensitiveFields = ['password', 'token', 'secret', 'apiKey', 'credential'];
 
     Object.keys(sanitized).forEach((key) => {
@@ -140,7 +183,7 @@ export class AuditInterceptor implements NestInterceptor {
   /**
    * Registra evento de auditoría
    */
-  private logAuditEvent(audit: any, level: 'success' | 'error'): void {
+  private logAuditEvent(audit: AuditLog, level: 'success' | 'error'): void {
     const logMessage = {
       timestamp: audit.timestamp,
       level,
@@ -164,7 +207,7 @@ export class AuditInterceptor implements NestInterceptor {
   /**
    * Verifica y genera alertas de seguridad
    */
-  private checkForSecurityAlerts(audit: any, request: Request, response: any): void {
+  private checkForSecurityAlerts(audit: AuditLog): void {
     const user = audit.user;
 
     // Alerta: Usuario eliminado
@@ -173,7 +216,7 @@ export class AuditInterceptor implements NestInterceptor {
         type: 'USER_DELETED',
         severity: 'HIGH',
         message: `User deleted by ${user?.email}`,
-        details: audit,
+        details: toRecord(audit),
       });
     }
 
@@ -186,7 +229,7 @@ export class AuditInterceptor implements NestInterceptor {
         type: 'ROLE_MODIFIED',
         severity: 'HIGH',
         message: `Role modified by ${user?.email}`,
-        details: audit,
+        details: toRecord(audit),
       });
     }
 
@@ -199,7 +242,7 @@ export class AuditInterceptor implements NestInterceptor {
         type: 'SYSTEM_CONFIG_CHANGED',
         severity: 'MEDIUM',
         message: `System configuration changed by ${user?.email}`,
-        details: audit,
+        details: toRecord(audit),
       });
     }
 
@@ -213,7 +256,7 @@ export class AuditInterceptor implements NestInterceptor {
   /**
    * Genera alerta de seguridad
    */
-  private securityAlert(alert: any): void {
+  private securityAlert(alert: SecurityAlert | AuditLog): void {
     this.logger.warn(`[SECURITY ALERT] ${JSON.stringify(alert)}`);
 
     // TODO: Implementar notificaciones
@@ -222,4 +265,64 @@ export class AuditInterceptor implements NestInterceptor {
     // - Guardar en tabla de alertas de seguridad
     // - Notificación push si es crítico
   }
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  return Object.getPrototypeOf(value) === Object.prototype;
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (isPlainObject(value)) {
+    return value;
+  }
+
+  return {};
+}
+
+function normalizeHeaderValue(value: string | string[] | undefined): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  return 'Unknown';
+}
+
+function getErrorStatus(error: unknown): number {
+  if (isPlainObject(error) && typeof error.status === 'number') {
+    return error.status;
+  }
+
+  return 500;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (isPlainObject(error) && typeof error.message === 'string') {
+    return error.message;
+  }
+
+  return 'Unknown error';
+}
+
+function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+
+  if (isPlainObject(error) && typeof error.stack === 'string') {
+    return error.stack;
+  }
+
+  return undefined;
 }

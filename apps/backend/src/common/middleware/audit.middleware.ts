@@ -9,13 +9,36 @@ export interface AuditEvent {
   userAgent: string;
   method: string;
   path: string;
-  query: any;
-  body?: any;
+  query: Record<string, unknown>;
+  body?: Record<string, unknown>;
   statusCode?: number;
   duration: number;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   securityFlags: string[];
 }
+
+interface SecurityMetrics {
+  totalRequests: number;
+  riskLevels: {
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+  };
+  topIPs: Array<{ ip: string; count: number }>;
+  averageResponseTime: number;
+  securityFlags: Record<string, number>;
+}
+
+type RequestWithContext = Request & {
+  requestId?: string;
+  id?: string;
+  user?: {
+    sub?: string;
+    id?: string;
+    userId?: string;
+  };
+};
 
 @Injectable()
 export class AuditMiddleware implements NestMiddleware {
@@ -26,31 +49,31 @@ export class AuditMiddleware implements NestMiddleware {
     const startTime = Date.now();
     const incoming = req.get('x-request-id');
     const requestId =
-      (req as any).requestId ||
+      (req as RequestWithContext).requestId ||
       (incoming && incoming.trim() ? incoming.trim() : undefined) ||
       this.generateRequestId();
 
     // Add request ID to headers for tracing
-    req['requestId'] = requestId;
-    (req as any).id = requestId;
+    const reqWithContext = req as RequestWithContext;
+    reqWithContext.requestId = requestId;
+    reqWithContext.id = requestId;
     res.setHeader('X-Request-ID', requestId);
 
     // Capture response data
-    const originalSend = res.send;
-    res.send = function (body) {
+    const originalSend = res.send.bind(res) as (body?: unknown) => Response;
+    res.send = function (body?: unknown) {
       const duration = Date.now() - startTime;
 
       // Create audit event
       const auditEvent: AuditEvent = {
         timestamp: new Date().toISOString(),
         requestId,
-        userId:
-          (req as any)['user']?.sub || (req as any)['user']?.id || (req as any)['user']?.userId,
+        userId: getUserId(reqWithContext),
         clientIP: getClientIP(req),
         userAgent: req.get('user-agent') || 'Unknown',
         method: req.method,
         path: req.path,
-        query: req.query,
+        query: toRecord(req.query),
         body: shouldLogBody(req) ? sanitizeBody(req.body) : undefined,
         statusCode: res.statusCode,
         duration,
@@ -61,7 +84,7 @@ export class AuditMiddleware implements NestMiddleware {
       // Log and store audit event
       logAuditEvent(auditEvent);
 
-      return originalSend.call(this, body);
+      return originalSend(body);
     };
 
     next();
@@ -77,8 +100,12 @@ export class AuditMiddleware implements NestMiddleware {
   }
 
   // Get security metrics
-  getSecurityMetrics(): any {
+  getSecurityMetrics(): SecurityMetrics {
     const recentEvents = this.auditEvents.slice(-1000);
+    const averageResponseTime =
+      recentEvents.length > 0
+        ? recentEvents.reduce((sum, e) => sum + e.duration, 0) / recentEvents.length
+        : 0;
 
     return {
       totalRequests: recentEvents.length,
@@ -89,8 +116,7 @@ export class AuditMiddleware implements NestMiddleware {
         critical: recentEvents.filter((e) => e.riskLevel === 'CRITICAL').length,
       },
       topIPs: getTopIPs(recentEvents),
-      averageResponseTime:
-        recentEvents.reduce((sum, e) => sum + e.duration, 0) / recentEvents.length,
+      averageResponseTime,
       securityFlags: getSecurityFlagsSummary(recentEvents),
     };
   }
@@ -118,10 +144,11 @@ function shouldLogBody(req: Request): boolean {
   return !sensitiveEndpoints.some((endpoint) => req.path.includes(endpoint));
 }
 
-function sanitizeBody(body: any): any {
-  if (!body) return body;
+function sanitizeBody(body: unknown): Record<string, unknown> | undefined {
+  if (!body) return undefined;
+  if (!isPlainObject(body)) return undefined;
 
-  const sanitized = { ...body };
+  const sanitized: Record<string, unknown> = { ...body };
   const sensitiveFields = ['password', 'token', 'secret', 'key', 'creditCard'];
 
   for (const field of sensitiveFields) {
@@ -238,4 +265,24 @@ function getSecurityFlagsSummary(events: AuditEvent[]): Record<string, number> {
   });
 
   return flagCounts;
+}
+
+function getUserId(req: RequestWithContext): string | undefined {
+  return req.user?.sub || req.user?.id || req.user?.userId;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  return Object.getPrototypeOf(value) === Object.prototype;
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  if (isPlainObject(value)) {
+    return value;
+  }
+
+  return {};
 }

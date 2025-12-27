@@ -2,7 +2,7 @@ import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 interface CacheEntry {
-  data: any;
+  data: unknown;
   timestamp: number;
   ttl: number;
 }
@@ -41,8 +41,8 @@ export class CacheMiddleware implements NestMiddleware {
     }
 
     // Intercept response to cache it
-    const originalJson = res.json;
-    res.json = (data: any) => {
+    const originalJson = res.json.bind(res) as (body?: unknown) => Response;
+    res.json = (data?: unknown): Response => {
       // Cache successful responses only
       if (res.statusCode >= 200 && res.statusCode < 300) {
         const ttl = this.getTTL(req.path);
@@ -62,7 +62,7 @@ export class CacheMiddleware implements NestMiddleware {
         res.setHeader('X-Cache-TTL', ttl);
       }
 
-      return originalJson.call(res, data);
+      return originalJson(data);
     };
 
     next();
@@ -97,7 +97,6 @@ export class CacheMiddleware implements NestMiddleware {
 
   // Clean up expired cache entries periodically
   public cleanupExpiredEntries(): void {
-    const now = Date.now();
     let cleaned = 0;
 
     for (const [key, entry] of this.cache.entries()) {
@@ -116,7 +115,6 @@ export class CacheMiddleware implements NestMiddleware {
 
   // Get cache statistics
   public getCacheStats() {
-    const now = Date.now();
     let validEntries = 0;
     let expiredEntries = 0;
 

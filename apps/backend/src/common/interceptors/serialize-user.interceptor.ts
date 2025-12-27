@@ -9,9 +9,9 @@ import { User } from '../../auth/entities/user.entity';
  */
 @Injectable()
 export class SerializeUserInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     return next.handle().pipe(
-      map((data) => {
+      map((data: unknown) => {
         if (!data) return data;
 
         // Transform single user
@@ -21,11 +21,13 @@ export class SerializeUserInterceptor implements NestInterceptor {
 
         // Transform array of users
         if (Array.isArray(data)) {
-          return data.map((item) => (item instanceof User ? this.transformUser(item) : item));
+          return data.map((item): unknown =>
+            item instanceof User ? this.transformUser(item) : this.transformNestedUsers(item)
+          );
         }
 
         // Transform nested user in object
-        if (typeof data === 'object') {
+        if (isPlainObject(data) || Array.isArray(data)) {
           return this.transformNestedUsers(data);
         }
 
@@ -34,7 +36,7 @@ export class SerializeUserInterceptor implements NestInterceptor {
     );
   }
 
-  private transformUser(user: User): any {
+  private transformUser(user: User): Record<string, unknown> {
     const transformed: Record<string, unknown> = { ...user };
 
     // Remove sensitive fields before returning user data
@@ -66,23 +68,39 @@ export class SerializeUserInterceptor implements NestInterceptor {
     return transformed;
   }
 
-  private transformNestedUsers(obj: any): any {
-    const transformed = Array.isArray(obj) ? [] : {};
+  private transformNestedUsers(obj: unknown): unknown {
+    if (Array.isArray(obj)) {
+      return obj.map((item) => {
+        if (item instanceof User) {
+          return this.transformUser(item);
+        }
 
-    for (const key in obj) {
-      if (obj[key] instanceof User) {
-        transformed[key] = this.transformUser(obj[key]);
-      } else if (Array.isArray(obj[key])) {
-        transformed[key] = obj[key].map((item: any) =>
-          item instanceof User ? this.transformUser(item) : this.transformNestedUsers(item)
-        );
-      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-        transformed[key] = this.transformNestedUsers(obj[key]);
+        return this.transformNestedUsers(item);
+      });
+    }
+
+    if (!isPlainObject(obj)) {
+      return obj;
+    }
+
+    const transformed: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(obj)) {
+      if (value instanceof User) {
+        transformed[key] = this.transformUser(value);
       } else {
-        transformed[key] = obj[key];
+        transformed[key] = this.transformNestedUsers(value);
       }
     }
 
     return transformed;
   }
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  return Object.getPrototypeOf(value) === Object.prototype;
 }

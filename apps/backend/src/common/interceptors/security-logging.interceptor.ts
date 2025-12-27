@@ -3,6 +3,12 @@ import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { Request, Response } from 'express';
 
+type RequestWithUser = Request & {
+  user?: {
+    id?: string | number;
+  };
+};
+
 interface SecurityEvent {
   timestamp: string;
   eventType: 'request' | 'response' | 'error' | 'security_violation';
@@ -10,7 +16,7 @@ interface SecurityEvent {
   url: string;
   userAgent: string;
   ip: string;
-  userId?: number;
+  userId?: string | number;
   statusCode?: number;
   responseTime?: number;
   contentLength?: number;
@@ -23,15 +29,15 @@ interface SecurityEvent {
 export class SecurityLoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('SecurityMonitor');
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest<Request>();
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const request = context.switchToHttp().getRequest<RequestWithUser>();
     const response = context.switchToHttp().getResponse<Response>();
     const startTime = Date.now();
 
     // Extract request information
     const ip = this.getClientIP(request);
-    const userAgent = request.get('user-agent') || 'Unknown';
-    const userId = (request as any).user?.id;
+    const userAgent = normalizeHeaderValue(request.get('user-agent'));
+    const userId = request.user?.id;
 
     // Log incoming request
     this.logSecurityEvent({
@@ -47,7 +53,7 @@ export class SecurityLoggingInterceptor implements NestInterceptor {
     });
 
     return next.handle().pipe(
-      tap((data) => {
+      tap(() => {
         // Log successful response
         const responseTime = Date.now() - startTime;
         const contentLength = response.get('content-length');
@@ -65,9 +71,11 @@ export class SecurityLoggingInterceptor implements NestInterceptor {
           contentLength: contentLength ? parseInt(contentLength, 10) : undefined,
         });
       }),
-      catchError((error) => {
+      catchError((error: unknown) => {
         // Log error response
         const responseTime = Date.now() - startTime;
+        const statusCode = getErrorStatus(error);
+        const errorMessage = getErrorMessage(error);
 
         this.logSecurityEvent({
           timestamp: new Date().toISOString(),
@@ -77,9 +85,9 @@ export class SecurityLoggingInterceptor implements NestInterceptor {
           userAgent,
           ip,
           userId,
-          statusCode: error.status || 500,
+          statusCode,
           responseTime,
-          error: error.message,
+          error: errorMessage,
           securityFlags: this.analyzeError(error),
         });
 
@@ -159,35 +167,37 @@ export class SecurityLoggingInterceptor implements NestInterceptor {
     return flags;
   }
 
-  private analyzeError(error: any): string[] {
+  private analyzeError(error: unknown): string[] {
     const flags: string[] = [];
+    const status = getErrorStatus(error);
+    const message = getErrorMessage(error);
 
     // Authentication/Authorization errors
-    if (error.status === 401) {
+    if (status === 401) {
       flags.push('authentication_failure');
     }
 
-    if (error.status === 403) {
+    if (status === 403) {
       flags.push('authorization_failure');
     }
 
     // Rate limiting
-    if (error.status === 429) {
+    if (status === 429) {
       flags.push('rate_limit_exceeded');
     }
 
     // Security violations
-    if (error.message?.includes('Suspicious') || error.message?.includes('Blocked')) {
+    if (message.includes('Suspicious') || message.includes('Blocked')) {
       flags.push('security_violation');
     }
 
     // SQL injection attempts (if database errors)
-    if (error.message?.includes('syntax error') || error.message?.includes('invalid query')) {
+    if (message.includes('syntax error') || message.includes('invalid query')) {
       flags.push('possible_sql_injection');
     }
 
     // Server errors (potential attacks)
-    if (error.status >= 500) {
+    if (status >= 500) {
       flags.push('server_error');
     }
 
@@ -248,4 +258,38 @@ export class SecurityLoggingInterceptor implements NestInterceptor {
     // - await this.siemService.sendEvent(event);
     // - await this.firewallService.blockIP(event.ip);
   }
+}
+
+function normalizeHeaderValue(value: string | undefined): string {
+  return value?.trim() || 'Unknown';
+}
+
+function getErrorStatus(error: unknown): number {
+  if (error instanceof Error) {
+    return (error as { status?: number }).status ?? 500;
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const status = (error as { status?: unknown }).status;
+    if (typeof status === 'number') {
+      return status;
+    }
+  }
+
+  return 500;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === 'object' && error !== null) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') {
+      return message;
+    }
+  }
+
+  return 'Unknown error';
 }
