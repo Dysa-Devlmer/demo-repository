@@ -55,8 +55,11 @@ export class BackupController {
       },
     },
   })
-  async getBackupStatus() {
+  async getBackupStatus(): Promise<Record<string, unknown>> {
+    // backupService returns any type, spreading into typed return
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const status = await this.backupService.getBackupStatus();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return {
       ...status,
       timestamp: new Date().toISOString(),
@@ -187,9 +190,10 @@ export class BackupController {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
-        error: error.message,
+        error: errorMessage,
         message: `Failed to create ${createBackupDto.type} backup`,
         timestamp: new Date().toISOString(),
       };
@@ -231,10 +235,11 @@ export class BackupController {
         warning: 'System data has been restored. Please verify system integrity.',
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
         backupId,
-        error: error.message,
+        error: errorMessage,
         message: 'Restore operation failed',
         timestamp: new Date().toISOString(),
       };
@@ -260,9 +265,10 @@ export class BackupController {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       return {
         success: false,
-        error: error.message,
+        error: errorMessage,
         message: 'Backup cleanup failed',
         timestamp: new Date().toISOString(),
       };
@@ -291,6 +297,8 @@ export class BackupController {
     status: 404,
     description: 'Backup file not found',
   })
+  // Download handler - async for future file streaming implementation
+  // eslint-disable-next-line @typescript-eslint/require-await
   async downloadBackup(@Param('backupId') backupId: string) {
     // In real implementation, would stream the backup file
     // For now, return download info
@@ -431,6 +439,8 @@ export class BackupController {
       },
     },
   })
+  // Disk usage retrieval - async for future filesystem integration
+  // eslint-disable-next-line @typescript-eslint/require-await
   async getDiskUsage() {
     // In real implementation, would check actual disk usage
     // For now, return simulated data

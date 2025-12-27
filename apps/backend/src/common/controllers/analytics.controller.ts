@@ -10,12 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { AnalyticsService } from '../services/analytics.service';
-import type {
-  MetricData,
-  BusinessReport,
-  DashboardMetrics,
-  AnalyticsConfig,
-} from '../services/analytics.service';
+import type { MetricData, BusinessReport, AnalyticsConfig } from '../services/analytics.service';
 
 @ApiTags('Analytics')
 @Controller('analytics')
@@ -81,13 +76,13 @@ export class AnalyticsController {
       },
     },
   })
-  getDashboardMetrics(): DashboardMetrics {
+  getDashboardMetrics() {
     const metrics = this.analyticsService.getDashboardMetrics();
     return {
       ...metrics,
       timestamp: new Date().toISOString(),
       message: 'Dashboard metrics retrieved successfully',
-    } as any;
+    };
   }
 
   @Post('track')
@@ -393,10 +388,11 @@ export class AnalyticsController {
         contentType: contentTypes[format],
       };
     } catch (error) {
-      if (error.message === 'Report not found') {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage === 'Report not found') {
         throw new HttpException('Report not found', HttpStatus.NOT_FOUND);
       }
-      throw new HttpException('Export failed: ' + error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException('Export failed: ' + errorMessage, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

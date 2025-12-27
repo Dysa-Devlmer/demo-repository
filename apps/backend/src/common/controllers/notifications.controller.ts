@@ -276,6 +276,8 @@ export class NotificationsController {
     description: 'Filter by template type',
   })
   @ApiResponse({ status: 200, description: 'Templates retrieved successfully' })
+  // Template retrieval - async for future database integration
+  // eslint-disable-next-line @typescript-eslint/require-await
   async getTemplates(@Query('type') type?: string) {
     const templates = this.notificationService.getTemplates();
     const filtered = type ? templates.filter((t) => t.type === type) : templates;
@@ -297,6 +299,8 @@ export class NotificationsController {
     status: 200,
     description: 'Statistics retrieved successfully',
   })
+  // Stats retrieval - async for future database/analytics integration
+  // eslint-disable-next-line @typescript-eslint/require-await
   async getNotificationStats() {
     // In a real implementation, you'd query your database for actual stats
     const mockStats = {
