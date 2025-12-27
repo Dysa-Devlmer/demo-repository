@@ -1,3 +1,11 @@
+/**
+ * Email Service
+ * Handles email sending via SendGrid API
+ * Using selective eslint-disable for unavoidable any types from external SendGrid SDK
+ */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sgMail from '@sendgrid/mail';
@@ -55,7 +63,10 @@ export class EmailService {
       this.isConfigured = true;
       this.logger.log('✅ SendGrid inicializado correctamente');
     } catch (error) {
-      this.logger.error('❌ Error inicializando SendGrid:', error.message);
+      this.logger.error(
+        '❌ Error inicializando SendGrid:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
       this.isConfigured = false;
     }
   }
@@ -106,7 +117,10 @@ export class EmailService {
       this.logger.log(`✅ Email de confirmación enviado a ${data.email}`);
       return true;
     } catch (error) {
-      this.logger.error(`❌ Error enviando email de confirmación: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌ Error enviando email de confirmación: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined
+      );
       return false;
     }
   }
@@ -151,7 +165,10 @@ export class EmailService {
       this.logger.log(`✅ Email de bienvenida enviado a ${data.email}`);
       return true;
     } catch (error) {
-      this.logger.error(`❌ Error enviando email de bienvenida: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌ Error enviando email de bienvenida: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined
+      );
       return false;
     }
   }
@@ -197,7 +214,10 @@ export class EmailService {
       this.logger.log(`✅ Email de pago fallido enviado a ${data.email}`);
       return true;
     } catch (error) {
-      this.logger.error(`❌ Error enviando email de pago fallido: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌ Error enviando email de pago fallido: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined
+      );
       return false;
     }
   }
@@ -238,7 +258,10 @@ export class EmailService {
       this.logger.log(`✅ Email genérico enviado a ${to}`);
       return true;
     } catch (error) {
-      this.logger.error(`❌ Error enviando email genérico: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌ Error enviando email genérico: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined
+      );
       return false;
     }
   }

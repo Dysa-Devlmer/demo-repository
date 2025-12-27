@@ -1,3 +1,11 @@
+/**
+ * Integration Service
+ * Handles Twilio, WhatsApp Business API, and SMS integrations
+ * Using selective eslint-disable for unavoidable any types from external Twilio SDK
+ */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Injectable } from '@nestjs/common';
 import { LoggerService } from './logger.service';
 import { I18nService } from '../../i18n/i18n.service';
@@ -147,7 +155,7 @@ export class IntegrationService {
         action: 'sms_failed',
         metadata: {
           to: message.to,
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
           responseTime,
         },
       });
@@ -217,7 +225,7 @@ export class IntegrationService {
         action: 'whatsapp_failed',
         metadata: {
           to: message.to,
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
           responseTime,
         },
       });
@@ -315,7 +323,7 @@ export class IntegrationService {
         action: 'whatsapp_business_failed',
         metadata: {
           to: message.to,
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
           responseTime,
         },
       });
@@ -431,6 +439,7 @@ export class IntegrationService {
     return segments * 0.075;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Parameter reserved for future variable pricing
   private calculateWhatsAppCost(message: string): number {
     // WhatsApp pricing: $0.05 per message (first 1000 characters)
     return 0.05;
