@@ -8,6 +8,11 @@ import {
 import { Request } from 'express';
 import { DemoService } from '../../demo/demo.service';
 
+type RequestWithDemo = Request & {
+  demoSession?: unknown;
+  demoStatus?: unknown;
+};
+
 @Injectable()
 export class DemoGuard implements CanActivate {
   private readonly logger = new Logger(DemoGuard.name);
@@ -60,8 +65,9 @@ export class DemoGuard implements CanActivate {
     this.demoService.trackDemoUsage(demoToken, endpoint);
 
     // Add demo info to request for controllers to use
-    (request as any).demoSession = demoStatus.session;
-    (request as any).demoStatus = demoStatus;
+    const requestWithDemo = request as RequestWithDemo;
+    requestWithDemo.demoSession = demoStatus.session;
+    requestWithDemo.demoStatus = demoStatus;
 
     // Log demo activity
     if (demoStatus.warningLevel === 'warning' || demoStatus.warningLevel === 'critical') {

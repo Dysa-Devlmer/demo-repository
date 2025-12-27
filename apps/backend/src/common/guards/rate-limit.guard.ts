@@ -6,7 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 interface RateLimitRule {
   windowMs: number; // Time window in milliseconds
@@ -31,7 +31,7 @@ export class RateLimitGuard implements CanActivate {
 
   constructor(private readonly reflector: Reflector) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
 
     // Get rate limit configuration from metadata
@@ -131,7 +131,7 @@ export class RateLimitGuard implements CanActivate {
     record.count++;
 
     // Add rate limit headers to response
-    const response = context.switchToHttp().getResponse();
+    const response = context.switchToHttp().getResponse<Response>();
     response.setHeader('X-RateLimit-Limit', rateLimitConfig.maxRequests);
     response.setHeader(
       'X-RateLimit-Remaining',
@@ -158,7 +158,7 @@ export class RateLimitGuard implements CanActivate {
       request.connection.remoteAddress;
 
     // Include user ID if authenticated for more granular limiting
-    const userId = (request as any).user?.id;
+    const userId = (request as RequestWithUser).user?.id;
 
     return userId ? `user:${userId}` : `ip:${ip}`;
   }
@@ -174,3 +174,9 @@ export class RateLimitGuard implements CanActivate {
     }
   }
 }
+
+type RequestWithUser = Request & {
+  user?: {
+    id?: string | number;
+  };
+};

@@ -40,14 +40,16 @@ export class AuthGuard implements CanActivate {
 
     // Debug logging
     this.logger.log(`🔍 Checking auth for ${request.path}`);
-    this.logger.log(`🔍 Auth header: ${request.headers['authorization']}`);
-    this.logger.log(`🔍 X-Demo-Session header: ${request.headers['x-demo-session']}`);
-    this.logger.log(`🔍 x-demo-token header: ${request.headers['x-demo-token']}`);
+    this.logger.log(`🔍 Auth header: ${normalizeHeader(request.headers['authorization'])}`);
+    this.logger.log(
+      `🔍 X-Demo-Session header: ${normalizeHeader(request.headers['x-demo-session'])}`
+    );
+    this.logger.log(`🔍 x-demo-token header: ${normalizeHeader(request.headers['x-demo-token'])}`);
     this.logger.log(`🔍 Demo sessions in memory: ${demoSessions.size}`);
 
     // Try demo authentication first
     const demoToken = this.extractDemoToken(request);
-    this.logger.log(`🔍 Demo token extracted: ${demoToken}`);
+    this.logger.log(`🔍 Demo token extracted: ${demoToken ?? 'none'}`);
     if (demoToken) {
       return this.validateDemoToken(request, demoToken);
     }
@@ -116,8 +118,9 @@ export class AuthGuard implements CanActivate {
     session.usage.requestCount++;
 
     // Add demo info to request
-    (request as any).demoSession = session;
-    (request as any).user = {
+    const requestWithAuth = request as RequestWithAuth;
+    requestWithAuth.demoSession = session;
+    requestWithAuth.user = {
       id: 1,
       email: 'demo@restaurant.com',
       roles: ['admin'],
@@ -131,13 +134,15 @@ export class AuthGuard implements CanActivate {
 
   private async validateJwtToken(request: Request, token: string): Promise<boolean> {
     try {
-      const payload = await this.jwtService.verifyAsync(token);
-      (request as any).user = payload;
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+      const requestWithAuth = request as RequestWithAuth;
+      requestWithAuth.user = payload;
 
-      this.logger.log(`🔑 JWT authentication successful for user ${payload.sub}`);
+      const subject = typeof payload.sub === 'string' ? payload.sub : 'unknown';
+      this.logger.log(`🔑 JWT authentication successful for user ${subject}`);
       return true;
-    } catch (error) {
-      this.logger.warn(`🚫 JWT token validation failed: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.warn(`🚫 JWT token validation failed: ${getErrorMessage(error)}`);
       throw new UnauthorizedException({
         error: 'Invalid Token',
         message: 'JWT token is invalid or expired',
@@ -186,3 +191,45 @@ export const addDemoSession = (sessionId: string, clientIp: string, userAgent: s
 
   return { sessionId, startTime, endTime };
 };
+
+type JwtPayload = {
+  sub?: string;
+  [key: string]: unknown;
+};
+
+type DemoSession = {
+  id: string;
+  startTime: Date;
+  endTime: Date;
+  clientInfo: { ip: string; userAgent: string };
+  usage: { endpoints: string[]; requestCount: number };
+};
+
+type RequestWithAuth = Request & {
+  user?: JwtPayload;
+  demoSession?: DemoSession;
+};
+
+function normalizeHeader(value: string | string[] | undefined): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+
+  return 'undefined';
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof (error as { message?: unknown }).message === 'string') {
+    return (error as { message: string }).message;
+  }
+
+  return 'Unknown error';
+}

@@ -25,7 +25,7 @@ export class SecurityGuard implements CanActivate {
     /\.\.\\/g,
 
     // Command injection
-    /(\||&|;|\$|\`)/,
+    /(\||&|;|\$|`)/,
     /(nc |netcat |wget |curl )/gi,
 
     // NoSQL injection
@@ -44,7 +44,7 @@ export class SecurityGuard implements CanActivate {
   private readonly maxUrlLength = 2048;
   private readonly maxBodySize = 10 * 1024 * 1024; // 10MB
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
 
     // Skip security checks for health check endpoints
