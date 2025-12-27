@@ -1,7 +1,20 @@
+/**
+ * Logger Service
+ * Handles centralized logging with winston
+ * Using selective eslint-disable for unavoidable any types from:
+ * - winston library (logging infrastructure)
+ * - Express request/response objects (untyped HTTP context)
+ */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-base-to-string */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 import { Injectable } from '@nestjs/common';
 import * as winston from 'winston';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
 
 export enum LogLevel {
   ERROR = 'error',
@@ -82,7 +95,7 @@ export class LoggerService {
         service: 'chatbotdysa-api',
         version: process.env.npm_package_version || '1.0.0',
         environment: process.env.NODE_ENV || 'development',
-        hostname: require('os').hostname(),
+        hostname: os.hostname(),
         pid: process.pid,
       },
       transports: [

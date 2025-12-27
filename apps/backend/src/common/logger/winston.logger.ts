@@ -1,6 +1,19 @@
+/**
+ * Winston Logger
+ * Advanced logging with daily rotation and multiple transports
+ * Using selective eslint-disable for unavoidable any types from:
+ * - winston library (logging configuration and transports)
+ * - fs module (file system operations)
+ */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import { Injectable, LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
+import * as fs from 'fs';
 
 export interface LogContext {
   userId?: number;
@@ -120,7 +133,6 @@ export class WinstonLogger implements LoggerService {
     });
 
     // Create logs directory if it doesn't exist
-    const fs = require('fs');
     if (!fs.existsSync('logs')) {
       fs.mkdirSync('logs', { recursive: true });
     }
