@@ -8,7 +8,8 @@ export const CACHE_TTL_METADATA = 'cache:ttl';
  * @param key - Función que genera la key basada en los parámetros de la request
  * @param ttl - Time to live en segundos (opcional)
  */
-export const CacheKey = (key: string | ((req: unknown) => string), ttl?: number) => {
+// Request type in callback must be any to allow flexible property access (params, query, body)
+export const CacheKey = (key: string | ((req: any) => string), ttl?: number) => {
   return (target: object, propertyKey: string, descriptor: PropertyDescriptor) => {
     SetMetadata(CACHE_KEY_METADATA, key)(target, propertyKey, descriptor);
     if (ttl) {
