@@ -30,7 +30,7 @@ type AuditLog = {
   method: string;
   endpoint: string;
   user: AuditUserSummary | null;
-  ip: string;
+  ip?: string;
   userAgent: string;
   requestBody?: Record<string, unknown>;
   isCritical: boolean;
@@ -113,18 +113,18 @@ export class AuditInterceptor implements NestInterceptor {
         // Log exitoso
         const successAudit = {
           ...auditData,
-          status: 'success',
+          status: 'success' as const,
           statusCode: response.statusCode,
           duration: `${duration}ms`,
           responseSize: JSON.stringify(data).length,
         };
 
         if (isCritical || isMutation) {
-          this.logAuditEvent(successAudit, 'success');
+          this.logAuditEvent(successAudit as AuditLog, 'success');
         }
 
         // Alertas para operaciones críticas específicas
-        this.checkForSecurityAlerts(successAudit);
+        this.checkForSecurityAlerts(successAudit as AuditLog);
       }),
       catchError((error: unknown) => {
         const duration = Date.now() - startTime;
@@ -135,18 +135,18 @@ export class AuditInterceptor implements NestInterceptor {
         // Log de error
         const errorAudit = {
           ...auditData,
-          status: 'error',
+          status: 'error' as const,
           statusCode: errorStatus,
           errorMessage,
           errorStack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
           duration: `${duration}ms`,
         };
 
-        this.logAuditEvent(errorAudit, 'error');
+        this.logAuditEvent(errorAudit as AuditLog, 'error');
 
         // Alertas de seguridad para errores de autorización
         if (errorStatus === 401 || errorStatus === 403) {
-          this.securityAlert(errorAudit);
+          this.securityAlert(errorAudit as AuditLog);
         }
 
         throw error;

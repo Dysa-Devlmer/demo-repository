@@ -181,15 +181,15 @@ export class SecurityService implements OnModuleDestroy {
       message: this.config.rateLimit.message,
       standardHeaders: this.config.rateLimit.standardHeaders,
       legacyHeaders: this.config.rateLimit.legacyHeaders,
-      handler: (req: Request, res: Response) => {
+      handler: (req, res) => {
         this.createSecurityAlert({
           type: 'rate_limit',
           severity: 'medium',
-          ip: this.getClientIP(req),
+          ip: this.getClientIP(req as any),
           userAgent: req.get('User-Agent'),
           endpoint: req.path,
           blocked: true,
-          description: `Rate limit exceeded for IP: ${this.getClientIP(req)}`,
+          description: `Rate limit exceeded for IP: ${this.getClientIP(req as any)}`,
         });
 
         return res.status(429).json({

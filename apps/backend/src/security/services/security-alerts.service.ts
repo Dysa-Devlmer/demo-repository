@@ -15,7 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EmailService } from '../../common/services/email.service';
 import { TwilioService } from '../../modules/twilio/twilio.service';
-import { AuditLog, AuditSeverity } from '../../common/entities/audit-log.entity';
+import { AuditLog, AuditSeverity, AuditAction } from '../../common/entities/audit-log.entity';
 import * as crypto from 'crypto';
 
 export enum AlertPriority {

@@ -338,10 +338,10 @@ export class AuthService {
 
     await this.userRepository.update(user.id, {
       password: hashedPassword,
-      passwordResetToken: null,
-      passwordResetExpires: null,
+      passwordResetToken: undefined,
+      passwordResetExpires: undefined,
       failedLoginAttempts: 0,
-      accountLockedUntil: null,
+      accountLockedUntil: undefined,
     });
 
     await this.logAuditEvent(AuditAction.UPDATE, 'User', user.id, {
@@ -390,7 +390,7 @@ export class AuthService {
   private async handleSuccessfulLogin(user: User, ipAddress?: string): Promise<void> {
     await this.userRepository.update(user.id, {
       failedLoginAttempts: 0,
-      accountLockedUntil: null,
+      accountLockedUntil: undefined,
       lastLoginAt: new Date(),
       lastLoginIp: ipAddress,
     });

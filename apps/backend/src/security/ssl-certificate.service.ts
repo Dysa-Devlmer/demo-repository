@@ -227,9 +227,8 @@ export class SSLCertificateService implements OnModuleDestroy {
         } catch (error) {
           const err = toError(error);
           this.logger.warn(
-            `Failed to load certificate: ${certFile}`,
-            'SSLCertificateService',
-            err.message
+            `Failed to load certificate: ${certFile} - ${err.message}`,
+            'SSLCertificateService'
           );
         }
       }
@@ -361,9 +360,8 @@ export class SSLCertificateService implements OnModuleDestroy {
       } catch (error) {
         const err = toError(error);
         this.logger.warn(
-          `Failed to remove old certificate files for: ${cert.domain}`,
-          'SSLCertificateService',
-          err.message
+          `Failed to remove old certificate files for: ${cert.domain} - ${err.message}`,
+          'SSLCertificateService'
         );
       }
 
@@ -439,7 +437,7 @@ export class SSLCertificateService implements OnModuleDestroy {
       return fs.readFileSync(dhParamsPath);
     } catch (error) {
       const err = toError(error);
-      this.logger.warn('Failed to load DH params', 'SSLCertificateService', err.message);
+      this.logger.warn(`Failed to load DH params - ${err.message}`, 'SSLCertificateService');
       return undefined;
     }
   }

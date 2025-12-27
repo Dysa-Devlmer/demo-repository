@@ -100,7 +100,7 @@ function getHeader(request: Request, name: string): string | null {
 }
 
 function getSessionToken(request: Request): string | null {
-  const session = request.session as Record<string, unknown> | undefined;
+  const session = request.session as unknown as Record<string, unknown> | undefined;
   if (session && typeof session.csrfToken === 'string') {
     return session.csrfToken;
   }
