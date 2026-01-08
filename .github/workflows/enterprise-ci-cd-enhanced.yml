@@ -104,12 +104,12 @@ jobs:
           fi
 
       - name: 🛡️ SAST Security Scanning
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: typescript, javascript
 
       - name: 🛡️ Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
 
       - name: 📊 Calculate Enterprise Quality Score
         id: quality-check
