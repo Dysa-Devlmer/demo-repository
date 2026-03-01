@@ -236,7 +236,7 @@ jobs:
           echo "✅ All Enterprise tests passed with coverage: ${{ steps.coverage-check.outputs.coverage }}%"
 
       - name: 📤 Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: enterprise-test-results
@@ -370,7 +370,7 @@ jobs:
           fi
 
       - name: 📤 Upload Performance Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: enterprise-performance-reports
@@ -416,7 +416,7 @@ jobs:
           out: 'dependency-check-report'
 
       - name: 📤 Upload Security Reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: enterprise-security-reports
@@ -530,7 +530,7 @@ jobs:
           echo "**Status**: $OVERALL_STATUS" >> quality-report.md
 
       - name: 📤 Upload Enterprise Quality Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: enterprise-quality-report
           path: quality-report.md
