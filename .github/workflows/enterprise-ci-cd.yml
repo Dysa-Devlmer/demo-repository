@@ -61,7 +61,7 @@ jobs:
           npm test -- --coverage --passWithNoTests || true
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           file: ./apps/${{ matrix.workspace }}/coverage/lcov.info
           flags: ${{ matrix.workspace }}
